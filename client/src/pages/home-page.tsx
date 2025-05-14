@@ -157,14 +157,15 @@ export default function HomePage() {
                     </svg>
                   </div>
                   
-                  <Link href="/weekly-toast">
-                    <Button 
+                  <Button 
                       variant="secondary" 
                       className="bg-white text-primary-700 hover:bg-white/90"
+                      asChild
                     >
-                      Preview Latest Toast
+                      <Link href="/weekly-toast">
+                        Preview Latest Toast
+                      </Link>
                     </Button>
-                  </Link>
                 </div>
               </div>
             </div>

@@ -66,18 +66,19 @@ export default function WeeklyToastPage() {
               Keep adding your daily reflections to get your first weekly toast!
             </p>
             
-            <Link href="/">
-              <Button 
+            <Button 
                 variant="secondary" 
                 className="bg-white text-primary-700 hover:bg-white/90"
+                asChild
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Return to Dashboard
+                <Link href="/">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                  </svg>
+                  Return to Dashboard
+                </Link>
               </Button>
-            </Link>
           </div>
         </div>
       </div>

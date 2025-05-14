@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
+import gamificationRoutes from "./routes/gamification";
 import { WebSocketServer, WebSocket } from "ws";
 import { 
   insertNoteSchema, 
@@ -24,6 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Social features routes
   registerSocialRoutes(app);
+  
+  // Gamification and analytics routes
+  app.use('/api/gamification', gamificationRoutes);
 
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {

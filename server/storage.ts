@@ -8,6 +8,9 @@ import {
   type SharedToast,
   type ToastReaction,
   type ToastComment,
+  type Badge,
+  type UserBadge,
+  type UserActivity,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
@@ -16,7 +19,10 @@ import {
   type InsertFriendship,
   type InsertSharedToast,
   type InsertToastReaction,
-  type InsertToastComment
+  type InsertToastComment,
+  type InsertBadge,
+  type InsertUserBadge,
+  type InsertUserActivity
 } from "@shared/schema";
 import session from "express-session";
 

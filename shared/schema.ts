@@ -111,6 +111,7 @@ export const badges = pgTable("badges", {
   icon: text("icon").notNull(), // SVG or icon name
   category: text("category").notNull(), // streak, sharing, notes, etc.
   threshold: integer("threshold").notNull(), // e.g., 7 for "7-day streak"
+  metadata: json("metadata").$type<Record<string, any>>(), // flexible data for badge requirements
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -119,8 +120,8 @@ export const userBadges = pgTable("user_badges", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   badgeId: integer("badge_id").notNull().references(() => badges.id),
-  awardedAt: timestamp("awarded_at").defaultNow().notNull(),
   seen: boolean("seen").notNull().default(false), // for notification purposes
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => {
   return {
     // Each user can earn a specific badge only once

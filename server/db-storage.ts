@@ -8,6 +8,9 @@ import {
   sharedToasts,
   toastReactions,
   toastComments,
+  badges,
+  userBadges,
+  userActivity,
   type User, 
   type Note, 
   type VoicePreference, 
@@ -17,6 +20,9 @@ import {
   type SharedToast,
   type ToastReaction,
   type ToastComment,
+  type Badge,
+  type UserBadge,
+  type UserActivity,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
@@ -25,8 +31,25 @@ import {
   type InsertFriendship,
   type InsertSharedToast,
   type InsertToastReaction,
-  type InsertToastComment
+  type InsertToastComment,
+  type InsertBadge,
+  type InsertUserBadge,
+  type InsertUserActivity
 } from "@shared/schema";
+import { 
+  getBadgeById, 
+  getBadgesByCategory, 
+  getUserBadges, 
+  getUserBadgeByIds, 
+  createUserBadge, 
+  markUserBadgeSeen, 
+  getUnseenUserBadges, 
+  logUserActivity, 
+  getUserActivity, 
+  getWeeklyActivityCount, 
+  getMonthlyActivityCount,
+  checkAndAwardBadges
+} from './db-storage-gamification';
 import { db, pool } from "./db";
 import { eq, and, gte, lte, desc, asc, or, inArray } from "drizzle-orm";
 import session from "express-session";
@@ -577,5 +600,56 @@ export class DatabaseStorage implements IStorage {
   async deleteToastComment(id: number): Promise<void> {
     await db.delete(toastComments)
       .where(eq(toastComments.id, id));
+  }
+
+  // Badge methods
+  async getBadgeById(id: number): Promise<Badge | undefined> {
+    return getBadgeById(id);
+  }
+
+  async getBadgesByCategory(category: string): Promise<Badge[]> {
+    return getBadgesByCategory(category);
+  }
+
+  async getUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
+    return getUserBadges(userId);
+  }
+
+  async getUserBadgeByIds(userId: number, badgeId: number): Promise<UserBadge | undefined> {
+    return getUserBadgeByIds(userId, badgeId);
+  }
+
+  async createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
+    return createUserBadge(userBadge);
+  }
+
+  async markUserBadgeSeen(id: number): Promise<UserBadge> {
+    return markUserBadgeSeen(id);
+  }
+
+  async getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
+    return getUnseenUserBadges(userId);
+  }
+
+  // Activity and Analytics methods
+  async logUserActivity(activity: InsertUserActivity): Promise<UserActivity> {
+    return logUserActivity(activity);
+  }
+
+  async getUserActivity(userId: number, type?: string, limit?: number): Promise<UserActivity[]> {
+    return getUserActivity(userId, type, limit);
+  }
+
+  async getWeeklyActivityCount(userId: number, activityType: string): Promise<number> {
+    return getWeeklyActivityCount(userId, activityType);
+  }
+
+  async getMonthlyActivityCount(userId: number, activityType: string): Promise<number> {
+    return getMonthlyActivityCount(userId, activityType);
+  }
+
+  // Check and award badges based on user activity
+  async checkAndAwardBadges(userId: number): Promise<UserBadge[]> {
+    return checkAndAwardBadges(userId);
   }
 }

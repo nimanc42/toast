@@ -1,129 +1,164 @@
 import { db } from '../db';
 import { sql } from 'drizzle-orm';
+import { log } from '../vite';
 
-/**
- * Create badges table for gamification
- */
-async function createBadgesTable() {
+interface BadgeData {
+  name: string;
+  description: string;
+  category: string;
+  icon: string;
+  metadata: any;
+}
+
+const initialBadges: BadgeData[] = [
+  {
+    name: "Noteworthy Beginner",
+    description: "You've completed your first note! The journey of a thousand miles begins with a single step.",
+    category: "streak",
+    icon: "🏅",
+    metadata: { days: 1 }
+  },
+  {
+    name: "Consistent Contributor",
+    description: "You've maintained a 3-day streak! Your commitment is starting to show.",
+    category: "streak",
+    icon: "🥉",
+    metadata: { days: 3 }
+  },
+  {
+    name: "Week Warrior",
+    description: "You've maintained a 7-day streak! Keep up the great work!",
+    category: "streak",
+    icon: "🥈",
+    metadata: { days: 7 }
+  },
+  {
+    name: "Fortnight Achiever",
+    description: "Two weeks of consistent notes! Your dedication is impressive.",
+    category: "streak",
+    icon: "⭐",
+    metadata: { days: 14 }
+  },
+  {
+    name: "Month Master",
+    description: "A full month of daily notes! You're now building a powerful habit.",
+    category: "streak",
+    icon: "🥇",
+    metadata: { days: 30 }
+  },
+  {
+    name: "Quarter Champion",
+    description: "Three months of consistent note-taking! Your commitment is extraordinary.",
+    category: "streak",
+    icon: "🏆",
+    metadata: { days: 90 }
+  }
+];
+
+export async function runGamificationMigration(): Promise<boolean> {
   try {
+    log('Starting gamification and analytics migration...', 'migration');
+    
+    // Create badges table
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS badges (
         id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
+        name VARCHAR(100) NOT NULL,
         description TEXT NOT NULL,
-        icon TEXT NOT NULL,
-        category TEXT NOT NULL,
-        threshold INTEGER NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL
-      );
+        category VARCHAR(50) NOT NULL,
+        icon VARCHAR(20) NOT NULL,
+        metadata JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
     `);
-    console.log('Badges table created successfully');
-    return true;
-  } catch (error) {
-    console.error('Error creating badges table:', error);
-    return false;
-  }
-}
-
-/**
- * Create user badges table to track earned badges
- */
-async function createUserBadgesTable() {
-  try {
-    await db.execute(SQL`
+    log('Badges table created successfully', 'migration');
+    
+    // Create user_badges table
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS user_badges (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        badge_id INTEGER NOT NULL REFERENCES badges(id),
-        awarded_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        badge_id INTEGER NOT NULL REFERENCES badges(id) ON DELETE CASCADE,
         seen BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE(user_id, badge_id)
-      );
+      )
     `);
-    console.log('User badges table created successfully');
-    return true;
-  } catch (error) {
-    console.error('Error creating user badges table:', error);
-    return false;
-  }
-}
-
-/**
- * Create user activity table for analytics
- */
-async function createUserActivityTable() {
-  try {
-    await db.execute(SQL`
+    log('User badges table created successfully', 'migration');
+    
+    // Create user_activity table
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS user_activity (
         id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
-        activity_type TEXT NOT NULL,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        activity_type VARCHAR(50) NOT NULL,
         metadata JSONB,
-        created_at TIMESTAMP DEFAULT NOW() NOT NULL
-      );
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
     `);
-    console.log('User activity table created successfully');
-    return true;
-  } catch (error) {
-    console.error('Error creating user activity table:', error);
-    return false;
-  }
-}
-
-/**
- * Seed initial badge data
- */
-async function seedBadges() {
-  try {
-    // Check if badges table already has records
-    const existingBadges = await db.execute(SQL`SELECT COUNT(*) FROM badges`);
-    const count = parseInt(existingBadges.rows[0].count);
+    log('User activity table created successfully', 'migration');
     
-    if (count > 0) {
-      console.log(`Badges table already has ${count} records, skipping seed`);
-      return true;
+    // Create function to calculate user streak
+    await db.execute(sql`
+      CREATE OR REPLACE FUNCTION get_user_streak(user_id_param INTEGER)
+      RETURNS INTEGER AS $$
+      DECLARE
+        streak INTEGER := 0;
+        current_date DATE := CURRENT_DATE;
+        previous_date DATE;
+        note_date DATE;
+        note_record RECORD;
+      BEGIN
+        -- Get the last note date for this user
+        SELECT DATE(created_at) INTO note_date
+        FROM notes
+        WHERE user_id = user_id_param
+        ORDER BY created_at DESC
+        LIMIT 1;
+        
+        -- If no notes or last note is more than a day old, streak is 0
+        IF note_date IS NULL OR note_date < (current_date - INTERVAL '1 day') THEN
+          RETURN 0;
+        END IF;
+        
+        -- Count sequential days with notes, working backwards from today
+        previous_date := current_date;
+        
+        FOR note_record IN (
+          SELECT DISTINCT DATE(created_at) AS note_date
+          FROM notes
+          WHERE user_id = user_id_param
+          ORDER BY note_date DESC
+        ) LOOP
+          -- If this note date is consecutive with the previous one, increment streak
+          IF note_record.note_date = previous_date OR note_record.note_date = (previous_date - INTERVAL '1 day') THEN
+            streak := streak + 1;
+            previous_date := note_record.note_date;
+          ELSE
+            -- Break on first gap
+            EXIT;
+          END IF;
+        END LOOP;
+        
+        RETURN streak;
+      END;
+      $$ LANGUAGE plpgsql;
+    `);
+    
+    // Seed initial badges
+    for (const badge of initialBadges) {
+      await db.execute(sql`
+        INSERT INTO badges (name, description, category, icon, metadata)
+        VALUES (${badge.name}, ${badge.description}, ${badge.category}, ${badge.icon}, ${JSON.stringify(badge.metadata)}::jsonb)
+        ON CONFLICT DO NOTHING
+      `);
     }
+    log('Badges seeded successfully', 'migration');
     
-    // Insert default badge types
-    await db.execute(SQL`
-      INSERT INTO badges (name, description, icon, category, threshold)
-      VALUES 
-        ('Beginner', 'Created your first reflection', 'award', 'notes', 1),
-        ('Consistent', 'Added 3 reflections in one week', 'calendar', 'notes', 3),
-        ('Dedicated', 'Added reflection for 7 days in a row', 'trending-up', 'streak', 7),
-        ('Committed', 'Added reflection for 30 days in a row', 'award-star', 'streak', 30),
-        ('Master', 'Added reflection for 100 days in a row', 'crown', 'streak', 100),
-        ('Social Butterfly', 'Shared 5 toasts with friends', 'share', 'social', 5),
-        ('Popular', 'Received 10 reactions on your toasts', 'heart', 'social', 10),
-        ('Influencer', 'Received 50 reactions across all your toasts', 'thumbs-up', 'social', 50);
-    `);
-    
-    console.log('Badges seeded successfully');
+    log('Gamification and analytics migration completed successfully', 'migration');
     return true;
   } catch (error) {
-    console.error('Error seeding badges:', error);
+    log(`Error in gamification migration: ${error}`, 'migration');
     return false;
   }
-}
-
-/**
- * Run the full migration
- */
-export async function runGamificationMigration() {
-  console.log('Starting gamification and analytics migration...');
-  
-  const badgesCreated = await createBadgesTable();
-  if (!badgesCreated) return false;
-  
-  const userBadgesCreated = await createUserBadgesTable();
-  if (!userBadgesCreated) return false;
-  
-  const userActivityCreated = await createUserActivityTable();
-  if (!userActivityCreated) return false;
-  
-  const badgesSeeded = await seedBadges();
-  if (!badgesSeeded) return false;
-  
-  console.log('Gamification and analytics migration completed successfully');
-  return true;
 }

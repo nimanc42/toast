@@ -37,10 +37,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   // Save note mutation
   const saveMutation = useMutation({
     mutationFn: async (data: { content?: string; audioUrl?: string }) => {
-      const res = await apiRequest("POST", "/api/notes", {
-        userId: user!.id,
-        ...data
-      });
+      const res = await apiRequest("POST", "/api/notes", data);
       return res.json();
     },
     onSuccess: () => {

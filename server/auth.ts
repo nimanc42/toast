@@ -70,12 +70,13 @@ export function setupAuth(app: Express) {
   // Configure session
   const sessionSettings: session.SessionOptions = {
     secret: SESSION_SECRET,
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      sameSite: 'lax'
     },
     store: storage.sessionStore,
   };
@@ -203,12 +204,28 @@ export function setupAuth(app: Express) {
         // Reset rate limit on successful login
         await resetLoginAttempts(ip);
         
-        // Log in the user
+        // Double-login approach: both session and req.login
         req.login(user, (loginErr) => {
           if (loginErr) {
+            console.error("Login error:", loginErr);
             return next(loginErr);
           }
-          return res.json(user);
+          
+          console.log("Login successful, session established:", {
+            sessionID: req.sessionID,
+            user: user
+          });
+          
+          // Force session save before continuing
+          req.session.save((err) => {
+            if (err) {
+              console.error("Session save error:", err);
+              return next(err);
+            }
+            
+            // Respond with user data
+            return res.json(user);
+          });
         });
       })(req, res, next);
     } catch (error) {
@@ -333,6 +350,13 @@ export function setupAuth(app: Express) {
  * Middleware to ensure a user is authenticated
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+  console.log("Authentication check:", { 
+    isAuthenticated: req.isAuthenticated(),
+    hasUser: !!req.user,
+    sessionID: req.sessionID,
+    cookies: req.headers.cookie
+  });
+  
   if (req.isAuthenticated() && req.user) {
     return next();
   }

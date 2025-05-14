@@ -23,15 +23,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
+      console.log("Creating note, user:", req.user);
+      console.log("Request body:", req.body);
+      
       const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
         ...req.body,
         userId
       });
       
+      console.log("Validated data:", validatedData);
       const note = await storage.createNote(validatedData);
+      console.log("Note created:", note);
       res.status(201).json(note);
     } catch (error) {
+      console.error("Error creating note:", error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid data", errors: error.errors });
       } else {

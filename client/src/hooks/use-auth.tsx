@@ -47,12 +47,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check for token in localStorage on initial render and auto-validate
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    console.log('Auth token found in localStorage:', !!token);
+    const tokenExpiry = localStorage.getItem('authTokenExpiry');
     
-    // If there's a token but no user, attempt to validate and refresh the auth state
-    if (token && !user && !isLoading) {
-      // Force a re-fetch of the user data
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    // Check if token exists
+    if (token) {
+      console.log('Auth token found in localStorage');
+      
+      // Check if token is expired
+      if (tokenExpiry) {
+        const expiryDate = new Date(tokenExpiry);
+        const now = new Date();
+        
+        if (now > expiryDate) {
+          console.warn('Auth token expired, clearing token');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('authTokenExpiry');
+          queryClient.setQueryData(["/api/user"], null);
+          return;
+        }
+      }
+      
+      // If there's a valid token but no user, attempt to validate and refresh the auth state
+      if (!user && !isLoading) {
+        console.log('No user in state, validating token and refreshing auth');
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      }
     }
   }, [user, isLoading]);
 
@@ -65,8 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store the JWT token in localStorage
       localStorage.setItem('authToken', response.token);
       
+      // Set token expiry indicator (1 week from now)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7);
+      localStorage.setItem('authTokenExpiry', expiryDate.toISOString());
+      
       // Set the user data in the query cache
       queryClient.setQueryData(["/api/user"], response.user);
+      
+      // Invalidate all queries to refresh them with new authentication
+      queryClient.invalidateQueries();
       
       toast({
         title: "Welcome back!",
@@ -76,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       // Clear any existing token on login failure
       localStorage.removeItem('authToken');
+      localStorage.removeItem('authTokenExpiry');
       
       toast({
         title: "Login failed",
@@ -94,8 +122,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store the JWT token in localStorage
       localStorage.setItem('authToken', response.token);
       
+      // Set token expiry indicator (1 week from now)
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 7);
+      localStorage.setItem('authTokenExpiry', expiryDate.toISOString());
+      
       // Set the user data in the query cache
       queryClient.setQueryData(["/api/user"], response.user);
+      
+      // Invalidate all queries to refresh them with new authentication
+      queryClient.invalidateQueries();
       
       toast({
         title: "Registration successful!",
@@ -105,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onError: (error: Error) => {
       // Clear any existing token on registration failure
       localStorage.removeItem('authToken');
+      localStorage.removeItem('authTokenExpiry');
       
       toast({
         title: "Registration failed",
@@ -119,11 +156,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
-      // Clear the JWT token from localStorage
+      // Clear JWT token and expiry on logout
       localStorage.removeItem('authToken');
+      localStorage.removeItem('authTokenExpiry');
       
-      // Clear the user data from query cache
+      // Clear user data from query cache
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Reset all queries to ensure clean state
+      queryClient.resetQueries();
       
       toast({
         title: "Logged out",
@@ -131,11 +172,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      // Even if server logout fails, clear local auth state
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authTokenExpiry');
+      queryClient.setQueryData(["/api/user"], null);
+      
       toast({
-        title: "Logout failed",
-        description: error.message,
+        title: "Logout issues",
+        description: "There was an issue logging out from the server, but you've been logged out locally.",
         variant: "destructive",
       });
+      
+      console.error("Logout error:", error.message);
     },
   });
 

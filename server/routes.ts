@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, ensureAuthenticated } from "./auth";
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
@@ -14,27 +14,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 
 // This tells TypeScript that req.user is defined after ensureAuthenticated
-declare global {
-  namespace Express {
-    interface Request {
-      user: {
-        id: number;
-        username: string;
-        email: string;
-        name: string;
-        verified: boolean;
-        createdAt: Date;
-      } | undefined;
-    }
-  }
-}
-
-function ensureAuthenticated(req: Request, res: Response, next: Function) {
-  if (req.isAuthenticated() && req.user) {
-    return next();
-  }
-  res.status(401).json({ message: "You must be logged in to access this resource" });
-}
+// We already have a User interface defined in auth.ts, so no need to redefine it here
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes

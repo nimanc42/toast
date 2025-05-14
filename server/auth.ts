@@ -333,7 +333,7 @@ export function setupAuth(app: Express) {
  * Middleware to ensure a user is authenticated
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.user) {
     return next();
   }
   res.status(401).json({ message: "Authentication required" });

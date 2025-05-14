@@ -2,6 +2,8 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
+import { registerSocialRoutes } from "./routes/social";
+import { WebSocketServer, WebSocket } from "ws";
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
@@ -19,6 +21,9 @@ import { z } from "zod";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   setupAuth(app);
+  
+  // Social features routes
+  registerSocialRoutes(app);
 
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {

@@ -1,0 +1,435 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { insertVoicePreferenceSchema } from "@shared/schema";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+
+// Create a schema for the form
+const settingsFormSchema = z.object({
+  voiceStyle: z.enum(["motivational", "friendly", "poetic"]),
+  toastDay: z.enum(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]),
+  toastTone: z.enum(["auto", "uplifting", "reflective", "humorous"]),
+  dailyReminder: z.boolean().default(true),
+  toastNotification: z.boolean().default(true),
+  emailNotifications: z.boolean().default(false),
+});
+
+type SettingsFormValues = z.infer<typeof settingsFormSchema>;
+
+export default function SettingsPage() {
+  const { toast } = useToast();
+  
+  // Fetch user preferences
+  const { data: preferences, isLoading } = useQuery({
+    queryKey: ["/api/preferences"],
+  });
+  
+  // Setup form with default values from fetched preferences
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsFormSchema),
+    defaultValues: {
+      voiceStyle: "motivational",
+      toastDay: "Sunday",
+      toastTone: "auto",
+      dailyReminder: true,
+      toastNotification: true,
+      emailNotifications: false,
+    },
+  });
+  
+  // Update form values when preferences are loaded
+  useState(() => {
+    if (preferences) {
+      form.reset({
+        voiceStyle: preferences.voiceStyle,
+        toastDay: preferences.toastDay,
+        toastTone: preferences.toastTone,
+        dailyReminder: preferences.dailyReminder,
+        toastNotification: preferences.toastNotification,
+        emailNotifications: preferences.emailNotifications,
+      });
+    }
+  });
+  
+  // Update preferences mutation
+  const updateMutation = useMutation({
+    mutationFn: async (values: SettingsFormValues) => {
+      const res = await apiRequest("PUT", "/api/preferences", values);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
+      toast({
+        title: "Settings updated",
+        description: "Your preferences have been saved successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update settings",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Form submission handler
+  const onSubmit = (values: SettingsFormValues) => {
+    updateMutation.mutate(values);
+  };
+  
+  // Play voice sample
+  const playVoiceSample = () => {
+    toast({
+      title: "Voice samples",
+      description: "Voice sample playback is not implemented in this prototype.",
+    });
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Header />
+        <main className="flex-grow bg-gray-50 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      
+      <main className="flex-grow bg-gray-50">
+        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+            
+            <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                  {/* Voice Preferences Section */}
+                  <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                    <h2 className="text-lg font-medium text-gray-900">Voice & Toast Preferences</h2>
+                    <p className="mt-1 text-sm text-gray-500">Customize how your weekly toasts are generated and delivered</p>
+                  </div>
+                  
+                  <div className="px-4 py-5 sm:p-6 border-b border-gray-200">
+                    <div className="space-y-6">
+                      {/* Preferred Voice */}
+                      <FormField
+                        control={form.control}
+                        name="voiceStyle"
+                        render={({ field }) => (
+                          <FormItem className="space-y-4">
+                            <FormLabel>Preferred Voice Style</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+                              >
+                                <FormItem className="relative">
+                                  <FormControl>
+                                    <RadioGroupItem
+                                      value="motivational"
+                                      className="sr-only peer"
+                                      id="voice-motivational"
+                                    />
+                                  </FormControl>
+                                  <FormLabel
+                                    htmlFor="voice-motivational"
+                                    className="flex p-3 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none hover:bg-gray-50 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary-500 peer-data-[state=checked]:border-transparent"
+                                  >
+                                    <div className="w-10 h-10 mr-3 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                      </svg>
+                                    </div>
+                                    <div>
+                                      <span className="block text-sm font-medium text-gray-900">Motivational Coach</span>
+                                      <span className="block text-sm text-gray-500">Energetic, encouraging tone</span>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+                                
+                                <FormItem className="relative">
+                                  <FormControl>
+                                    <RadioGroupItem
+                                      value="friendly"
+                                      className="sr-only peer"
+                                      id="voice-friendly"
+                                    />
+                                  </FormControl>
+                                  <FormLabel
+                                    htmlFor="voice-friendly"
+                                    className="flex p-3 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none hover:bg-gray-50 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary-500 peer-data-[state=checked]:border-transparent"
+                                  >
+                                    <div className="w-10 h-10 mr-3 rounded-full bg-secondary-100 flex items-center justify-center flex-shrink-0">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-secondary-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                      </svg>
+                                    </div>
+                                    <div>
+                                      <span className="block text-sm font-medium text-gray-900">Friendly Conversationalist</span>
+                                      <span className="block text-sm text-gray-500">Warm, casual tone</span>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+                                
+                                <FormItem className="relative">
+                                  <FormControl>
+                                    <RadioGroupItem
+                                      value="poetic"
+                                      className="sr-only peer"
+                                      id="voice-poetic"
+                                    />
+                                  </FormControl>
+                                  <FormLabel
+                                    htmlFor="voice-poetic"
+                                    className="flex p-3 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none hover:bg-gray-50 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary-500 peer-data-[state=checked]:border-transparent"
+                                  >
+                                    <div className="w-10 h-10 mr-3 rounded-full bg-accent-100 flex items-center justify-center flex-shrink-0">
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+                                        <line x1="16" y1="8" x2="2" y2="22"></line>
+                                        <line x1="17.5" y1="15" x2="9" y2="15"></line>
+                                      </svg>
+                                    </div>
+                                    <div>
+                                      <span className="block text-sm font-medium text-gray-900">Poetic Narrator</span>
+                                      <span className="block text-sm text-gray-500">Thoughtful, eloquent tone</span>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                            
+                            <Button
+                              type="button"
+                              variant="link"
+                              size="sm"
+                              className="px-0 text-primary-600"
+                              onClick={playVoiceSample}
+                            >
+                              Preview Voice Samples
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+                              </svg>
+                            </Button>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Toast Delivery Day */}
+                      <FormField
+                        control={form.control}
+                        name="toastDay"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Weekly Toast Day</FormLabel>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select a day" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Sunday">Sunday</SelectItem>
+                                  <SelectItem value="Monday">Monday</SelectItem>
+                                  <SelectItem value="Tuesday">Tuesday</SelectItem>
+                                  <SelectItem value="Wednesday">Wednesday</SelectItem>
+                                  <SelectItem value="Thursday">Thursday</SelectItem>
+                                  <SelectItem value="Friday">Friday</SelectItem>
+                                  <SelectItem value="Saturday">Saturday</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              Choose which day of the week you'd like to receive your toast
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Toast Tone Preference */}
+                      <FormField
+                        control={form.control}
+                        name="toastTone"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel>Toast Tone Preference</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="space-y-2"
+                              >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="auto" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Auto-detect from my notes
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="uplifting" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Always uplifting
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="reflective" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Thoughtful and reflective
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="humorous" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Light-hearted and humorous
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Notification Preferences */}
+                  <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+                    <h2 className="text-lg font-medium text-gray-900">Notification Preferences</h2>
+                    <p className="mt-1 text-sm text-gray-500">Manage how and when you receive notifications</p>
+                  </div>
+                  
+                  <div className="px-4 py-5 sm:p-6">
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="dailyReminder"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="font-medium">
+                                Daily reflection reminder
+                              </FormLabel>
+                              <FormDescription>
+                                Receive a notification if you haven't added your daily reflection
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="toastNotification"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="font-medium">
+                                Weekly toast notification
+                              </FormLabel>
+                              <FormDescription>
+                                Receive a notification when your weekly toast is ready
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="emailNotifications"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="font-medium">
+                                Email notifications
+                              </FormLabel>
+                              <FormDescription>
+                                Receive notifications via email in addition to in-app alerts
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Save Button */}
+                  <div className="px-4 py-5 sm:px-6 border-t border-gray-200 flex justify-end">
+                    <Button 
+                      type="submit"
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Settings"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </div>
+          </div>
+        </div>
+      </main>
+      
+      <Footer />
+    </div>
+  );
+}

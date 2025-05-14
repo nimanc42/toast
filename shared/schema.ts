@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -52,6 +52,57 @@ export const tokens = pgTable("tokens", {
   used: boolean("used").notNull().default(false),
 });
 
+// Friendships/connections between users
+export const friendships = pgTable("friendships", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  friendId: integer("friend_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected, blocked
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    // Enforce uniqueness: A user can only have one relationship with another user
+    userFriendUnique: uniqueIndex("user_friend_unique_idx").on(table.userId, table.friendId),
+  };
+});
+
+// Shared toast settings
+export const sharedToasts = pgTable("shared_toasts", {
+  id: serial("id").primaryKey(),
+  toastId: integer("toast_id").notNull().references(() => toasts.id),
+  shareCode: text("share_code").notNull().unique(), // Unique code for the share link
+  visibility: text("visibility").notNull().default("friends-only"), // public, friends-only, link-only
+  allowComments: boolean("allow_comments").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Optional expiration date
+  viewCount: integer("view_count").notNull().default(0),
+});
+
+// Reactions to shared toasts (likes, etc.)
+export const toastReactions = pgTable("toast_reactions", {
+  id: serial("id").primaryKey(),
+  toastId: integer("toast_id").notNull().references(() => toasts.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  reaction: text("reaction").notNull(), // like, love, applause, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    // Each user can only have one reaction per toast
+    userToastUnique: uniqueIndex("user_toast_unique_idx").on(table.userId, table.toastId),
+  };
+});
+
+// Comments on shared toasts
+export const toastComments = pgTable("toast_comments", {
+  id: serial("id").primaryKey(),
+  toastId: integer("toast_id").notNull().references(() => toasts.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -90,6 +141,32 @@ export const insertTokenSchema = createInsertSchema(tokens).pick({
   token: true,
   type: true,
   expiresAt: true,
+});
+
+export const insertFriendshipSchema = createInsertSchema(friendships).pick({
+  userId: true,
+  friendId: true,
+  status: true,
+});
+
+export const insertSharedToastSchema = createInsertSchema(sharedToasts).pick({
+  toastId: true,
+  shareCode: true,
+  visibility: true,
+  allowComments: true,
+  expiresAt: true,
+});
+
+export const insertToastReactionSchema = createInsertSchema(toastReactions).pick({
+  toastId: true,
+  userId: true,
+  reaction: true,
+});
+
+export const insertToastCommentSchema = createInsertSchema(toastComments).pick({
+  toastId: true,
+  userId: true,
+  comment: true,
 });
 
 // Extended schemas for validation
@@ -131,21 +208,65 @@ export const verifyEmailSchema = z.object({
   token: z.string().uuid("Invalid token format"),
 });
 
+// Share toast schema
+export const shareToastSchema = z.object({
+  toastId: z.number(),
+  visibility: z.enum(["public", "friends-only", "link-only"]).default("friends-only"),
+  allowComments: z.boolean().default(true),
+  expiresAt: z.date().optional(),
+});
+
+// Add friend schema
+export const addFriendSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+});
+
+// Update friendship status schema
+export const updateFriendshipSchema = z.object({
+  friendshipId: z.number(),
+  status: z.enum(["accepted", "rejected", "blocked"]),
+});
+
+// Add reaction schema
+export const addReactionSchema = z.object({
+  toastId: z.number(),
+  reaction: z.string().min(1, "Reaction is required"),
+});
+
+// Add comment schema
+export const addCommentSchema = z.object({
+  toastId: z.number(),
+  comment: z.string().min(1, "Comment cannot be empty").max(500, "Comment too long (max 500 characters)"),
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type InsertVoicePreference = z.infer<typeof insertVoicePreferenceSchema>;
 export type InsertToast = z.infer<typeof insertToastSchema>;
 export type InsertToken = z.infer<typeof insertTokenSchema>;
+export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
+export type InsertSharedToast = z.infer<typeof insertSharedToastSchema>;
+export type InsertToastReaction = z.infer<typeof insertToastReactionSchema>;
+export type InsertToastComment = z.infer<typeof insertToastCommentSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type VoicePreference = typeof voicePreferences.$inferSelect;
 export type Toast = typeof toasts.$inferSelect;
 export type Token = typeof tokens.$inferSelect;
+export type Friendship = typeof friendships.$inferSelect;
+export type SharedToast = typeof sharedToasts.$inferSelect;
+export type ToastReaction = typeof toastReactions.$inferSelect;
+export type ToastComment = typeof toastComments.$inferSelect;
 
 export type RegisterUser = z.infer<typeof registerSchema>;
 export type LoginUser = z.infer<typeof loginSchema>;
 export type ForgotPasswordUser = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordUser = z.infer<typeof resetPasswordSchema>;
 export type VerifyEmailUser = z.infer<typeof verifyEmailSchema>;
+export type ShareToast = z.infer<typeof shareToastSchema>;
+export type AddFriend = z.infer<typeof addFriendSchema>;
+export type UpdateFriendship = z.infer<typeof updateFriendshipSchema>;
+export type AddReaction = z.infer<typeof addReactionSchema>;
+export type AddComment = z.infer<typeof addCommentSchema>;

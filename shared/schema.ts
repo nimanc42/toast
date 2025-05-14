@@ -7,7 +7,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
+  verified: boolean("verified").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -41,6 +42,16 @@ export const toasts = pgTable("toasts", {
   shareUrl: text("share_url"),
 });
 
+export const tokens = pgTable("tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  type: text("type").notNull(), // 'verification' or 'password-reset'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -72,6 +83,13 @@ export const insertToastSchema = createInsertSchema(toasts).pick({
   noteIds: true,
   shared: true,
   shareUrl: true,
+});
+
+export const insertTokenSchema = createInsertSchema(tokens).pick({
+  userId: true,
+  token: true,
+  type: true,
+  expiresAt: true,
 });
 
 // Extended schemas for validation

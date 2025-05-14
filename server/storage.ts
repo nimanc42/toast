@@ -76,7 +76,7 @@ export class MemStorage implements IStorage {
   private preferenceIdCounter: number;
   private toastIdCounter: number;
   private tokenIdCounter: number;
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -92,6 +92,58 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24h
     });
+  }
+  
+  // Token methods implementation for in-memory storage
+  async createToken(insertToken: InsertToken): Promise<Token> {
+    const id = this.tokenIdCounter++;
+    const now = new Date();
+    const token: Token = {
+      ...insertToken,
+      id,
+      createdAt: now,
+      used: false
+    };
+    this.tokens.set(id, token);
+    return token;
+  }
+
+  async getTokenByValue(tokenValue: string): Promise<Token | undefined> {
+    return Array.from(this.tokens.values()).find(
+      (token) => token.token === tokenValue
+    );
+  }
+
+  async getTokensByUserId(userId: number, type?: string): Promise<Token[]> {
+    return Array.from(this.tokens.values())
+      .filter(token => {
+        if (type) {
+          return token.userId === userId && token.type === type;
+        }
+        return token.userId === userId;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async markTokenAsUsed(tokenValue: string): Promise<Token> {
+    const token = await this.getTokenByValue(tokenValue);
+    if (!token) {
+      throw new Error(`Token ${tokenValue} not found`);
+    }
+    
+    const updatedToken = { ...token, used: true };
+    this.tokens.set(token.id, updatedToken);
+    return updatedToken;
+  }
+
+  async deleteExpiredTokens(): Promise<void> {
+    const now = new Date();
+    const expiredTokens = Array.from(this.tokens.values())
+      .filter(token => new Date(token.expiresAt) < now);
+      
+    for (const token of expiredTokens) {
+      this.tokens.delete(token.id);
+    }
   }
 
   // User methods

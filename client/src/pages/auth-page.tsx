@@ -78,284 +78,340 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-secondary-50">
-      <div className="max-w-4xl w-full flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
-        <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
-          <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent mb-2">
-              A Toast to You
-            </h1>
-            <p className="text-sm text-gray-600">Your daily positivity reflections</p>
+    <div className="min-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex flex-col">
+      {/* Mobile header - only visible on small screens */}
+      <div className="md:hidden bg-primary text-white p-4 safe-top">
+        <div className="flex justify-center items-center">
+          <div className="flex flex-col items-center">
+            <h1 className="text-2xl font-bold">A Toast to You</h1>
+            <p className="text-sm opacity-80">Your daily positivity reflections</p>
           </div>
-
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="login">Sign In</TabsTrigger>
-              <TabsTrigger value="register">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                  <FormField
-                    control={loginForm.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter your username" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Enter your password" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={loginForm.control}
-                    name="rememberMe"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <Checkbox 
-                            checked={field.value} 
-                            onCheckedChange={field.onChange} 
-                          />
-                        </FormControl>
-                        <FormLabel className="text-sm font-normal">Remember me</FormLabel>
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={loginMutation.isPending}
-                  >
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      "Sign in"
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter your full name" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="email" 
-                            placeholder="Enter your email" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="username"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Username</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Create a username" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Create a password" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={registerForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirm Password</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="password" 
-                            placeholder="Confirm your password" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={registerMutation.isPending}
-                  >
-                    {registerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
-          </Tabs>
         </div>
-        
-        <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-primary-600 to-secondary-700 p-8 text-white">
-          <div className="h-full flex flex-col justify-center">
-            <div className="mb-6 flex justify-center">
-              <div className="p-4 bg-white/10 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19.562 12.098l1.531 2.652c.47.812-.16 1.82-1.091 1.82h-16.004c-.931 0-1.561-1.008-1.092-1.82l1.532-2.652"></path>
-                  <path d="M3.45 11l7.55-8 7.55 8"></path>
-                  <path d="M4 21v-4"></path>
-                  <path d="M8 21v-8"></path>
-                  <path d="M12 21v-10"></path>
-                  <path d="M16 21v-8"></path>
-                  <path d="M20 21v-4"></path>
-                </svg>
+      </div>
+      
+      <div className="flex-1 flex items-center justify-center p-4 bg-background md:bg-gradient-to-br from-primary-50 to-secondary-50">
+        <div className="max-w-4xl w-full flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
+          <div className="w-full md:w-1/2 flex flex-col justify-center p-4 md:p-8 bg-white">
+            {/* Desktop logo - hidden on mobile since we have the header */}
+            <div className="hidden md:block text-center mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent mb-2">
+                A Toast to You
+              </h1>
+              <p className="text-sm text-gray-600">Your daily positivity reflections</p>
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-2 mb-6">
+                <TabsTrigger value="login" className="text-base">Sign In</TabsTrigger>
+                <TabsTrigger value="register" className="text-base">Sign Up</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <FormField
+                      control={loginForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your username" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="Enter your password" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={loginForm.control}
+                      name="rememberMe"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange} 
+                              className="h-5 w-5"
+                            />
+                          </FormControl>
+                          <FormLabel className="text-base font-normal">Remember me</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 text-base"
+                      disabled={loginMutation.isPending}
+                    >
+                      {loginMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        "Sign in"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </TabsContent>
+              
+              <TabsContent value="register">
+                <Form {...registerForm}>
+                  <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Enter your full name" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="email" 
+                              placeholder="Enter your email" 
+                              {...field} 
+                              className="h-12 text-base"
+                              inputMode="email"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={registerForm.control}
+                      name="username"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Create a username" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="Create a password" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={registerForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="password" 
+                              placeholder="Confirm your password" 
+                              {...field} 
+                              className="h-12 text-base"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button 
+                      type="submit" 
+                      className="w-full h-12 text-base"
+                      disabled={registerMutation.isPending}
+                    >
+                      {registerMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Creating Account...
+                        </>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </TabsContent>
+            </Tabs>
+            
+            {/* Mobile-only feature list */}
+            <div className="md:hidden mt-8 space-y-4 pb-8">
+              <h3 className="text-lg font-semibold text-center text-gray-800">Features</h3>
+              
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-shrink-0 bg-primary/10 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium">Daily Reflections</div>
+                  <div className="text-sm text-gray-600">Capture positive moments</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex-shrink-0 bg-primary/10 p-2 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-medium">Weekly AI Toast</div>
+                  <div className="text-sm text-gray-600">Celebrate your achievements</div>
+                </div>
               </div>
             </div>
-            <h2 className="text-3xl font-bold mb-4 text-center font-accent">Celebrate Every Day</h2>
-            <p className="text-lg mb-6 text-center">
-              A moment of reflection becomes a celebration of growth.
-            </p>
-            <div className="space-y-4">
-              <Card className="bg-white/10 border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-start">
-                    <div className="mr-4 mt-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 11 12 14 22 4"></polyline>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                      </svg>
+          </div>
+          
+          {/* Desktop hero section - hidden on mobile */}
+          <div className="hidden md:block md:w-1/2 bg-gradient-to-br from-primary-600 to-secondary-700 p-8 text-white">
+            <div className="h-full flex flex-col justify-center">
+              <div className="mb-6 flex justify-center">
+                <div className="p-4 bg-white/10 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19.562 12.098l1.531 2.652c.47.812-.16 1.82-1.091 1.82h-16.004c-.931 0-1.561-1.008-1.092-1.82l1.532-2.652"></path>
+                    <path d="M3.45 11l7.55-8 7.55 8"></path>
+                    <path d="M4 21v-4"></path>
+                    <path d="M8 21v-8"></path>
+                    <path d="M12 21v-10"></path>
+                    <path d="M16 21v-8"></path>
+                    <path d="M20 21v-4"></path>
+                  </svg>
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold mb-4 text-center font-accent">Celebrate Every Day</h2>
+              <p className="text-lg mb-6 text-center">
+                A moment of reflection becomes a celebration of growth.
+              </p>
+              <div className="space-y-4">
+                <Card className="bg-white/10 border-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start">
+                      <div className="mr-4 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 11 12 14 22 4"></polyline>
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-medium mb-1">Daily Reflections</h3>
+                        <p className="text-sm text-white/80">
+                          Capture positive moments as they happen
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Daily Reflections</h3>
-                      <p className="text-sm text-white/80">
-                        Capture positive moments as they happen
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-white/10 border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-start">
-                    <div className="mr-4 mt-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                        <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                        <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                      </svg>
+                <Card className="bg-white/10 border-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start">
+                      <div className="mr-4 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                          <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                          <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-medium mb-1">Weekly AI Toast</h3>
+                        <p className="text-sm text-white/80">
+                          Receive personalized audio celebrations of your week
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Weekly AI Toast</h3>
-                      <p className="text-sm text-white/80">
-                        Receive personalized audio celebrations of your week
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card className="bg-white/10 border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-start">
-                    <div className="mr-4 mt-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 16c1.5 0 3-2 3-6s-1.5-6-3-6-3 2-3 6 1.5 6 3 6z"></path>
-                        <path d="M19 6c-1.5 0-3 2-3 6s1.5 6 3 6 3-2 3-6-1.5-6-3-6z"></path>
-                        <path d="M5 6c-1.5 0-3 2-3 6s1.5 6 3 6 3-2 3-6-1.5-6-3-6z"></path>
-                      </svg>
+                <Card className="bg-white/10 border-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-start">
+                      <div className="mr-4 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 16c1.5 0 3-2 3-6s-1.5-6-3-6-3 2-3 6 1.5 6 3 6z"></path>
+                          <path d="M19 6c-1.5 0-3 2-3 6s1.5 6 3 6 3-2 3-6-1.5-6-3-6z"></path>
+                          <path d="M5 6c-1.5 0-3 2-3 6s1.5 6 3 6 3-2 3-6-1.5-6-3-6z"></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="font-medium mb-1">Custom Voice Styles</h3>
+                        <p className="text-sm text-white/80">
+                          Choose your preferred voice for a personalized experience
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium mb-1">Custom Voice Styles</h3>
-                      <p className="text-sm text-white/80">
-                        Choose your preferred voice for a personalized experience
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>

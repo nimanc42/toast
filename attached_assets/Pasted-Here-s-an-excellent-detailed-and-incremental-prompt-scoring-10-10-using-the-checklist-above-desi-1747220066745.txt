@@ -1,0 +1,51 @@
+Here’s an excellent, detailed, and incremental prompt (scoring 10/10 using the checklist above) designed specifically to instruct Replit AI clearly and comprehensively:
+
+⸻
+
+🚀 Replit AI Prompt for “A Toast to You” App
+
+Objective:
+Build a fully functional prototype of a motivational web app called “A Toast to You”, designed for daily positivity reflections and weekly AI-generated celebrations.
+
+Core functionality (MVP Requirements):
+	•	User Authentication:
+	•	Allow users to securely sign-up and log in.
+	•	Store user information safely using Replit’s built-in database.
+	•	Daily Note Input:
+	•	Create an intuitive interface where users can submit a short note each day, either as text or audio.
+	•	Automatically timestamp and store each daily entry securely linked to the authenticated user.
+	•	Weekly Compilation and Playback:
+	•	At a user-selected weekly time, compile all notes submitted by the user during the past 7 days.
+	•	Integrate an AI-generated voice service (e.g., Eleven Labs, or similar accessible via API) to narrate the compiled notes in a coherent, celebratory speech format.
+	•	AI Voice Personalisation:
+	•	Allow users to select their preferred AI voice from predefined options (celebrity-like, motivational coach, friendly conversational voice, etc.).
+	•	Suggest new AI-generated voices weekly based on the user’s past selections and app interaction (similar to Spotify’s recommendation model).
+	•	Tone Selection:
+	•	Enable users to optionally select or pre-define a tone for the weekly toast (e.g., uplifting, humorous, poetic).
+	•	Alternatively, have the app automatically infer the most suitable tone from user notes.
+	•	Privacy and Sharing Options:
+	•	Ensure the initial playback is private and securely available only to the user.
+	•	Provide options for users to easily share the full toast or selected snippets via common platforms (social media, direct links, email).
+
+Additional Technical Guidance:
+	•	Clearly structure the database schema to handle:
+	•	Users (authentication, preferences, voice selection).
+	•	Daily notes (text/audio, timestamp).
+	•	Toast sessions (weekly compilations, tone, sharing preferences).
+	•	Include basic error-handling methods, such as:
+	•	User-friendly notifications if daily notes fail to upload.
+	•	Graceful fallbacks if AI voice generation encounters an issue.
+	•	Create an engaging and intuitive user interface that:
+	•	Simplifies daily note submission (1–2 clicks maximum from login).
+	•	Makes the weekly playback feel celebratory (e.g., animated visuals, engaging typography).
+
+Measurable Outcome (Definition of Done):
+	•	A working prototype hosted on Replit.
+	•	Functional daily entry system.
+	•	Successful weekly playback using AI-generated audio.
+	•	Clear and functional voice/tone selection interface.
+	•	Secure authentication and private-first sharing options.
+
+⸻
+
+Using this prompt structure ensures the AI clearly understands your expectations, resulting in the effective, step-by-step creation of your app.

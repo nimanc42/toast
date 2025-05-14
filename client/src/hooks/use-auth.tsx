@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import React, { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -33,6 +33,13 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  
+  // Check for token in localStorage on initial render
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    console.log('Auth token found in localStorage:', !!token);
+  }, []);
+  
   const {
     data: user,
     error,

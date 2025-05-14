@@ -37,10 +37,23 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   // Save note mutation
   const saveMutation = useMutation({
     mutationFn: async (data: { content?: string; audioUrl?: string }) => {
-      const res = await apiRequest("POST", "/api/notes", data);
-      return res.json();
+      console.log("Saving note with data:", data);
+      console.log("User authenticated:", !!user);
+      console.log("Auth token:", localStorage.getItem('authToken') ? "Present" : "Missing");
+      
+      try {
+        const res = await apiRequest("POST", "/api/notes", data);
+        const json = await res.json();
+        console.log("Save response:", json);
+        return json;
+      } catch (error) {
+        console.error("Error saving note:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Save successful:", data);
+      
       // Reset form
       setTextContent("");
       clearRecording();
@@ -57,6 +70,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
     onError: (error: Error) => {
+      console.error("Save error in onError handler:", error);
       toast({
         title: "Failed to save note",
         description: error.message,

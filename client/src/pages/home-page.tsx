@@ -5,6 +5,7 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import DailyNoteModal from "@/components/daily-note-modal";
 import NoteHistory from "@/components/note-history";
+import FriendsList from "@/components/friends-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";

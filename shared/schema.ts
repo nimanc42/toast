@@ -94,7 +94,12 @@ export const insertTokenSchema = createInsertSchema(tokens).pick({
 
 // Extended schemas for validation
 export const registerSchema = insertUserSchema.extend({
-  confirmPassword: z.string().min(6),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -105,16 +110,42 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().uuid("Invalid token format"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().uuid("Invalid token format"),
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertNote = z.infer<typeof insertNoteSchema>;
 export type InsertVoicePreference = z.infer<typeof insertVoicePreferenceSchema>;
 export type InsertToast = z.infer<typeof insertToastSchema>;
+export type InsertToken = z.infer<typeof insertTokenSchema>;
 
 export type User = typeof users.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type VoicePreference = typeof voicePreferences.$inferSelect;
 export type Toast = typeof toasts.$inferSelect;
+export type Token = typeof tokens.$inferSelect;
 
 export type RegisterUser = z.infer<typeof registerSchema>;
 export type LoginUser = z.infer<typeof loginSchema>;
+export type ForgotPasswordUser = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordUser = z.infer<typeof resetPasswordSchema>;
+export type VerifyEmailUser = z.infer<typeof verifyEmailSchema>;

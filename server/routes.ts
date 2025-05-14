@@ -316,5 +316,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Set up WebSocket server for real-time updates
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws' 
+  });
+  
+  // Store connected clients by user ID
+  const connectedClients = new Map<number, Set<WebSocket>>();
+  
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    let userId: number | null = null;
+    
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log('Received WebSocket message:', data);
+        
+        // Handle authentication message
+        if (data.type === 'auth' && data.token) {
+          // In a real implementation, verify the token and get user ID
+          // For now, we'll trust the user ID sent in the message
+          userId = data.userId;
+          
+          if (userId) {
+            // Add this connection to the user's set of connections
+            if (!connectedClients.has(userId)) {
+              connectedClients.set(userId, new Set());
+            }
+            connectedClients.get(userId)?.add(ws);
+            
+            // Acknowledge successful authentication
+            ws.send(JSON.stringify({
+              type: 'auth_success'
+            }));
+            
+            console.log(`User ${userId} authenticated via WebSocket`);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      
+      // Remove this connection from the user's set of connections
+      if (userId && connectedClients.has(userId)) {
+        connectedClients.get(userId)?.delete(ws);
+        
+        // If no more connections, remove the user from the map
+        if (connectedClients.get(userId)?.size === 0) {
+          connectedClients.delete(userId);
+        }
+      }
+    });
+  });
+  
+  // Export function to send notifications to users
+  (global as any).sendNotificationToUser = (userId: number, notification: any) => {
+    if (connectedClients.has(userId)) {
+      const userConnections = connectedClients.get(userId);
+      
+      if (userConnections) {
+        userConnections.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(notification));
+          }
+        });
+      }
+    }
+  };
+  
   return httpServer;
 }

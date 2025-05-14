@@ -94,6 +94,19 @@ async function addFriend(req: Request, res: Response) {
       status: "pending"
     });
     
+    // Send real-time notification to the friend
+    if ((global as any).sendNotificationToUser) {
+      (global as any).sendNotificationToUser(friend.id, {
+        type: 'friendship_request',
+        friendship,
+        from: {
+          id: userId,
+          username: req.user!.username,
+          name: req.user!.name
+        }
+      });
+    }
+    
     res.status(201).json(friendship);
   } catch (error) {
     console.error("Error adding friend:", error);
@@ -142,6 +155,23 @@ async function updateFriendshipStatus(req: Request, res: Response) {
       friendshipId, 
       validatedData.data.status
     );
+    
+    // Get the other user's ID (the one who needs to be notified)
+    const otherUserId = friendship.userId === userId ? friendship.friendId : friendship.userId;
+    
+    // Send real-time notification to the other user about the status change
+    if ((global as any).sendNotificationToUser) {
+      (global as any).sendNotificationToUser(otherUserId, {
+        type: 'friendship_updated',
+        friendship: updatedFriendship,
+        status: validatedData.data.status,
+        from: {
+          id: userId,
+          username: req.user!.username,
+          name: req.user!.name
+        }
+      });
+    }
     
     res.json(updatedFriendship);
   } catch (error) {
@@ -298,6 +328,33 @@ async function shareToast(req: Request, res: Response) {
       shared: true,
       shareUrl: `/shared/${shareCode}`
     });
+    
+    // If sharing with friends, send notifications
+    if (validatedData.data.visibility === 'friends-only') {
+      try {
+        // Get user's friends to notify them
+        const friends = await storage.getFriendsByUserId(userId, 'accepted');
+        
+        // Send notification to all friends
+        if ((global as any).sendNotificationToUser && friends.length > 0) {
+          friends.forEach(friend => {
+            (global as any).sendNotificationToUser(friend.id, {
+              type: 'toast_shared',
+              sharedToast,
+              shareCode,
+              from: {
+                id: userId,
+                username: req.user!.username,
+                name: req.user!.name
+              }
+            });
+          });
+        }
+      } catch (error) {
+        console.error("Error notifying friends about shared toast:", error);
+        // Non-critical error, continue with the response
+      }
+    }
     
     res.status(201).json(sharedToast);
   } catch (error) {
@@ -594,15 +651,32 @@ async function addToastComment(req: Request, res: Response) {
     // Get user info
     const user = await storage.getUser(userId);
     
-    // Return comment with user info
-    res.status(201).json({
+    // Prepare formatted comment with user info
+    const commentWithUser = {
       ...comment,
       user: {
         id: user!.id,
         username: user!.username,
         name: user!.name
       }
-    });
+    };
+    
+    // If the commenting user is not the toast owner, notify the toast owner
+    if (userId !== toast.userId && (global as any).sendNotificationToUser) {
+      (global as any).sendNotificationToUser(toast.userId, {
+        type: 'toast_comment',
+        comment: commentWithUser,
+        toastId: toast.id,
+        from: {
+          id: userId,
+          username: user!.username,
+          name: user!.name
+        }
+      });
+    }
+    
+    // Return comment with user info
+    res.status(201).json(commentWithUser);
   } catch (error) {
     console.error("Error adding comment:", error);
     res.status(500).json({ message: "Failed to add comment" });

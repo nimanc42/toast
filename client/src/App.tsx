@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { WebSocketProvider } from "@/hooks/websocket-provider";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import WeeklyToastPage from "@/pages/weekly-toast-page";

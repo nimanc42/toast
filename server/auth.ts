@@ -168,12 +168,19 @@ export function setupAuth(app: Express) {
       // Do not return the password
       const { password: _, ...userWithoutPassword } = user;
       
+      // Generate JWT token for the user
+      const token = generateToken(userWithoutPassword);
+      
       // Log user in automatically after registration
       req.login(userWithoutPassword, (err) => {
         if (err) {
           return res.status(500).json({ message: "Login failed after registration" });
         }
-        return res.status(201).json(userWithoutPassword);
+        
+        return res.status(201).json({
+          user: userWithoutPassword,
+          token
+        });
       });
     } catch (error) {
       console.error("Registration error:", error);

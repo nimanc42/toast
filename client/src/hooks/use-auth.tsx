@@ -9,13 +9,24 @@ import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
+// Define response types for auth API
+type LoginResponse = {
+  user: Omit<User, "password">;
+  token: string;
+};
+
+type RegisterResponse = {
+  user: Omit<User, "password">;
+  token: string;
+};
+
 type AuthContextType = {
   user: Omit<User, "password"> | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<Omit<User, "password">, Error, LoginUser>;
+  loginMutation: UseMutationResult<LoginResponse, Error, LoginUser>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<Omit<User, "password">, Error, z.infer<typeof insertUserSchema>>;
+  registerMutation: UseMutationResult<RegisterResponse, Error, z.infer<typeof insertUserSchema>>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -36,14 +47,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/login", credentials);
       return await res.json();
     },
-    onSuccess: (user: Omit<User, "password">) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (response: LoginResponse) => {
+      // Store the JWT token in localStorage
+      localStorage.setItem('authToken', response.token);
+      
+      // Set the user data in the query cache
+      queryClient.setQueryData(["/api/user"], response.user);
+      
       toast({
         title: "Welcome back!",
         description: `You've successfully logged in.`,
       });
     },
     onError: (error: Error) => {
+      // Clear any existing token on login failure
+      localStorage.removeItem('authToken');
+      
       toast({
         title: "Login failed",
         description: error.message,
@@ -57,14 +76,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/register", userData);
       return await res.json();
     },
-    onSuccess: (user: Omit<User, "password">) => {
-      queryClient.setQueryData(["/api/user"], user);
+    onSuccess: (response: RegisterResponse) => {
+      // Store the JWT token in localStorage
+      localStorage.setItem('authToken', response.token);
+      
+      // Set the user data in the query cache
+      queryClient.setQueryData(["/api/user"], response.user);
+      
       toast({
         title: "Registration successful!",
         description: "Your account has been created.",
       });
     },
     onError: (error: Error) => {
+      // Clear any existing token on registration failure
+      localStorage.removeItem('authToken');
+      
       toast({
         title: "Registration failed",
         description: error.message,
@@ -78,7 +105,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Clear the JWT token from localStorage
+      localStorage.removeItem('authToken');
+      
+      // Clear the user data from query cache
       queryClient.setQueryData(["/api/user"], null);
+      
       toast({
         title: "Logged out",
         description: "You've been successfully logged out.",

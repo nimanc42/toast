@@ -174,6 +174,14 @@ export default function HomePage() {
             {/* Note History Section */}
             <NoteHistory />
           </div>
+          
+          {/* Friends Column - Add sidebar with friends list */}
+          <div className="md:col-span-1">
+            <div className="bg-white shadow rounded-lg p-6 sticky top-6">
+              <h3 className="text-lg font-medium mb-4 text-gray-900">Friends</h3>
+              <FriendsList />
+            </div>
+          </div>
         </div>
       </main>
       

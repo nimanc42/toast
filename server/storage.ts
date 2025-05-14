@@ -62,7 +62,7 @@ export interface IStorage {
   getUserStreak(userId: number): Promise<number>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -371,4 +371,8 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import DatabaseStorage
+import { DatabaseStorage } from "./db-storage";
+
+// Create and export the database storage instance
+export const storage = new DatabaseStorage();

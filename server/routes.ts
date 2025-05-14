@@ -13,6 +13,22 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 
+// This tells TypeScript that req.user is defined after ensureAuthenticated
+declare global {
+  namespace Express {
+    interface Request {
+      user: {
+        id: number;
+        username: string;
+        email: string;
+        name: string;
+        verified: boolean;
+        createdAt: Date;
+      } | undefined;
+    }
+  }
+}
+
 function ensureAuthenticated(req: Request, res: Response, next: Function) {
   if (req.isAuthenticated() && req.user) {
     return next();
@@ -27,7 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
         ...req.body,
         userId
@@ -46,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const notes = await storage.getNotesByUserId(userId);
       res.json(notes);
     } catch (error) {
@@ -56,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/notes/today", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -70,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/notes/:id", ensureAuthenticated, async (req, res) => {
     try {
       const noteId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       const note = await storage.getNoteById(noteId);
       if (!note) {
@@ -91,7 +107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/notes/:id", ensureAuthenticated, async (req, res) => {
     try {
       const noteId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       const note = await storage.getNoteById(noteId);
       if (!note) {
@@ -112,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Voice preferences endpoints
   app.get("/api/preferences", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const preferences = await storage.getVoicePreferenceByUserId(userId);
       
       if (!preferences) {
@@ -137,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/preferences", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const validatedData = insertVoicePreferenceSchema.parse({
         ...req.body,
         userId
@@ -164,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Toasts endpoints
   app.get("/api/toasts", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const toasts = await storage.getToastsByUserId(userId);
       res.json(toasts);
     } catch (error) {
@@ -174,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/toasts/latest", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const toasts = await storage.getToastsByUserId(userId);
       
       if (toasts.length === 0) {
@@ -194,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/toasts", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Generate toast content and audio using Eleven Labs API
       // This would be implemented with the actual API integration
@@ -238,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/toasts/:id/share", ensureAuthenticated, async (req, res) => {
     try {
       const toastId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       const toast = await storage.getToastById(toastId);
       if (!toast) {
@@ -259,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats for dashboard
   app.get("/api/stats", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Get streak count (consecutive days with notes)
       const streak = await storage.getUserStreak(userId);

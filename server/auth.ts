@@ -21,6 +21,10 @@ import {
   sendVerificationEmail, 
   sendPasswordResetEmail 
 } from "./services/email";
+import {
+  generateToken,
+  verifyToken as verifyJwtToken
+} from "./services/jwt";
 
 declare global {
   namespace Express {
@@ -204,7 +208,7 @@ export function setupAuth(app: Express) {
         // Reset rate limit on successful login
         await resetLoginAttempts(ip);
         
-        // Double-login approach: both session and req.login
+        // Double-login approach: both session and JWT token
         req.login(user, (loginErr) => {
           if (loginErr) {
             console.error("Login error:", loginErr);
@@ -213,8 +217,11 @@ export function setupAuth(app: Express) {
           
           console.log("Login successful, session established:", {
             sessionID: req.sessionID,
-            user: user
+            user: user.id
           });
+          
+          // Generate JWT token
+          const token = generateToken(user);
           
           // Force session save before continuing
           req.session.save((err) => {
@@ -223,8 +230,11 @@ export function setupAuth(app: Express) {
               return next(err);
             }
             
-            // Respond with user data
-            return res.json(user);
+            // Respond with user data and token
+            return res.json({
+              user,
+              token
+            });
           });
         });
       })(req, res, next);
@@ -348,17 +358,48 @@ export function setupAuth(app: Express) {
 
 /**
  * Middleware to ensure a user is authenticated
+ * Checks both session authentication and JWT bearer token
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
-  console.log("Authentication check:", { 
-    isAuthenticated: req.isAuthenticated(),
-    hasUser: !!req.user,
-    sessionID: req.sessionID,
-    cookies: req.headers.cookie
-  });
-  
+  // First check if the user is authenticated via session
   if (req.isAuthenticated() && req.user) {
+    console.log("User authenticated via session:", req.user.id);
     return next();
   }
+  
+  // If not authenticated via session, check for JWT bearer token
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    
+    try {
+      // Verify the token
+      const { valid, userId } = verifyJwtToken(token);
+      if (valid && userId) {
+        // Get the user from the database
+        storage.getUser(userId)
+          .then(user => {
+            if (user) {
+              // Attach the user to the request
+              req.user = user;
+              console.log("User authenticated via JWT:", userId);
+              return next();
+            } else {
+              console.log("JWT token valid but user not found:", userId);
+              res.status(401).json({ message: "Authentication required" });
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching user from JWT token:", err);
+            res.status(500).json({ message: "Internal server error" });
+          });
+        return;
+      }
+    } catch (error) {
+      console.error("JWT verification error:", error);
+    }
+  }
+  
+  console.log("Authentication failed: No valid session or JWT token");
   res.status(401).json({ message: "Authentication required" });
 }

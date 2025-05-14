@@ -5,15 +5,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import WeeklyToastPage from "@/pages/weekly-toast-page";
 import SettingsPage from "@/pages/settings-page";
 import NotFound from "@/pages/not-found";
-import MobileBottomNav from "@/components/mobile-bottom-nav";
-import MobileHeader from "@/components/mobile-header";
+import Header from "@/components/header";
+import Footer from "@/components/footer";
 
 // Animation variants for page transitions
 const pageVariants = {
@@ -44,33 +44,31 @@ function Router() {
   return (
     <div className="mobile-app-container min-h-screen flex flex-col">
       {/* Only show header on protected routes */}
-      {location !== "/auth" && <MobileHeader />}
+      {location !== "/auth" && <Header />}
       
       {/* Main content with animations */}
       <main className="flex-1 relative overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location}
-            initial="initial"
-            animate="in"
-            exit="out"
-            variants={pageVariants}
-            transition={pageTransition}
-            className="h-full w-full"
-          >
-            <Switch>
-              <ProtectedRoute path="/" component={HomePage} />
-              <ProtectedRoute path="/weekly-toast" component={WeeklyToastPage} />
-              <ProtectedRoute path="/settings" component={SettingsPage} />
-              <Route path="/auth" component={AuthPage} />
-              <Route component={NotFound} />
-            </Switch>
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={location}
+          initial="initial"
+          animate="in"
+          exit="out"
+          variants={pageVariants}
+          transition={pageTransition}
+          className="h-full w-full"
+        >
+          <Switch>
+            <ProtectedRoute path="/" component={HomePage} />
+            <ProtectedRoute path="/weekly-toast" component={WeeklyToastPage} />
+            <ProtectedRoute path="/settings" component={SettingsPage} />
+            <Route path="/auth" component={AuthPage} />
+            <Route component={NotFound} />
+          </Switch>
+        </motion.div>
       </main>
       
-      {/* Only show bottom nav on protected routes */}
-      {location !== "/auth" && <MobileBottomNav />}
+      {/* Only show footer on protected routes */}
+      {location !== "/auth" && <Footer />}
     </div>
   );
 }

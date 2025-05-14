@@ -103,6 +103,40 @@ export const toastComments = pgTable("toast_comments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Badge definitions (system badges)
+export const badges = pgTable("badges", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description").notNull(),
+  icon: text("icon").notNull(), // SVG or icon name
+  category: text("category").notNull(), // streak, sharing, notes, etc.
+  threshold: integer("threshold").notNull(), // e.g., 7 for "7-day streak"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User badge achievements
+export const userBadges = pgTable("user_badges", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  badgeId: integer("badge_id").notNull().references(() => badges.id),
+  awardedAt: timestamp("awarded_at").defaultNow().notNull(),
+  seen: boolean("seen").notNull().default(false), // for notification purposes
+}, (table) => {
+  return {
+    // Each user can earn a specific badge only once
+    userBadgeUnique: uniqueIndex("user_badge_unique_idx").on(table.userId, table.badgeId),
+  };
+});
+
+// User activity logs for analytics
+export const userActivity = pgTable("user_activity", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  activityType: text("activity_type").notNull(), // login, note-create, toast-view, etc.
+  metadata: json("metadata").$type<Record<string, any>>(), // flexible data structure for different activity types
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -167,6 +201,26 @@ export const insertToastCommentSchema = createInsertSchema(toastComments).pick({
   toastId: true,
   userId: true,
   comment: true,
+});
+
+export const insertBadgeSchema = createInsertSchema(badges).pick({
+  name: true,
+  description: true,
+  icon: true,
+  category: true,
+  threshold: true,
+});
+
+export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({
+  userId: true,
+  badgeId: true,
+  seen: true,
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivity).pick({
+  userId: true,
+  activityType: true,
+  metadata: true,
 });
 
 // Extended schemas for validation
@@ -249,6 +303,9 @@ export type InsertFriendship = z.infer<typeof insertFriendshipSchema>;
 export type InsertSharedToast = z.infer<typeof insertSharedToastSchema>;
 export type InsertToastReaction = z.infer<typeof insertToastReactionSchema>;
 export type InsertToastComment = z.infer<typeof insertToastCommentSchema>;
+export type InsertBadge = z.infer<typeof insertBadgeSchema>;
+export type InsertUserBadge = z.infer<typeof insertUserBadgeSchema>;
+export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 
 export type User = typeof users.$inferSelect;
 export type Note = typeof notes.$inferSelect;
@@ -259,6 +316,9 @@ export type Friendship = typeof friendships.$inferSelect;
 export type SharedToast = typeof sharedToasts.$inferSelect;
 export type ToastReaction = typeof toastReactions.$inferSelect;
 export type ToastComment = typeof toastComments.$inferSelect;
+export type Badge = typeof badges.$inferSelect;
+export type UserBadge = typeof userBadges.$inferSelect;
+export type UserActivity = typeof userActivity.$inferSelect;
 
 export type RegisterUser = z.infer<typeof registerSchema>;
 export type LoginUser = z.infer<typeof loginSchema>;

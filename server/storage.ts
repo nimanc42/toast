@@ -91,6 +91,21 @@ export interface IStorage {
   updateToastComment(id: number, comment: string): Promise<ToastComment>;
   deleteToastComment(id: number): Promise<void>;
   
+  // Badge methods
+  getBadgeById(id: number): Promise<Badge | undefined>;
+  getBadgesByCategory(category: string): Promise<Badge[]>;
+  getUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]>;
+  getUserBadgeByIds(userId: number, badgeId: number): Promise<UserBadge | undefined>;
+  createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge>;
+  markUserBadgeSeen(id: number): Promise<UserBadge>;
+  getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]>;
+  
+  // Activity and Analytics methods
+  logUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
+  getUserActivity(userId: number, type?: string, limit?: number): Promise<UserActivity[]>;
+  getWeeklyActivityCount(userId: number, activityType: string): Promise<number>;
+  getMonthlyActivityCount(userId: number, activityType: string): Promise<number>;
+  
   // Additional methods
   getUserStreak(userId: number): Promise<number>;
   

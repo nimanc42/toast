@@ -9,23 +9,17 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} A Toast to You
           </div>
           <div className="flex space-x-6">
-            <Link href="#">
-              <a className="text-gray-400 hover:text-gray-500">
-                <span className="sr-only">Privacy Policy</span>
-                <span className="text-sm">Privacy</span>
-              </a>
+            <Link href="#" className="text-gray-400 hover:text-gray-500">
+              <span className="sr-only">Privacy Policy</span>
+              <span className="text-sm">Privacy</span>
             </Link>
-            <Link href="#">
-              <a className="text-gray-400 hover:text-gray-500">
-                <span className="sr-only">Terms of Service</span>
-                <span className="text-sm">Terms</span>
-              </a>
+            <Link href="#" className="text-gray-400 hover:text-gray-500">
+              <span className="sr-only">Terms of Service</span>
+              <span className="text-sm">Terms</span>
             </Link>
-            <Link href="#">
-              <a className="text-gray-400 hover:text-gray-500">
-                <span className="sr-only">Help Center</span>
-                <span className="text-sm">Help</span>
-              </a>
+            <Link href="#" className="text-gray-400 hover:text-gray-500">
+              <span className="sr-only">Help Center</span>
+              <span className="text-sm">Help</span>
             </Link>
           </div>
         </div>

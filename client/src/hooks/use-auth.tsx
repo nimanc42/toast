@@ -34,12 +34,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  // Check for token in localStorage on initial render
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    console.log('Auth token found in localStorage:', !!token);
-  }, []);
-  
+  // Get user data
   const {
     data: user,
     error,
@@ -48,6 +43,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
+  
+  // Check for token in localStorage on initial render and auto-validate
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    console.log('Auth token found in localStorage:', !!token);
+    
+    // If there's a token but no user, attempt to validate and refresh the auth state
+    if (token && !user && !isLoading) {
+      // Force a re-fetch of the user data
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+    }
+  }, [user, isLoading]);
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginUser) => {

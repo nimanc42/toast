@@ -370,7 +370,7 @@ export function setupAuth(app: Express) {
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   // First check if the user is authenticated via session
   if (req.isAuthenticated() && req.user) {
-    console.log("User authenticated via session:", req.user.id);
+    // User is already authenticated via session
     return next();
   }
   
@@ -389,8 +389,15 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
             if (user) {
               // Attach the user to the request
               req.user = user;
-              console.log("User authenticated via JWT:", userId);
-              return next();
+              
+              // Auto-login this user to establish a session as well (optional but helps with consistency)
+              req.login(user, (err) => {
+                if (err) {
+                  console.error("Error establishing session from JWT:", err);
+                  // Still allow the request to proceed even if session creation fails
+                }
+                return next();
+              });
             } else {
               console.log("JWT token valid but user not found:", userId);
               res.status(401).json({ message: "Authentication required" });
@@ -401,12 +408,18 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
             res.status(500).json({ message: "Internal server error" });
           });
         return;
+      } else {
+        console.log("Invalid JWT token");
+        res.status(401).json({ message: "Invalid authentication token" });
+        return;
       }
     } catch (error) {
       console.error("JWT verification error:", error);
+      res.status(401).json({ message: "Invalid authentication token" });
+      return;
     }
   }
   
-  console.log("Authentication failed: No valid session or JWT token");
+  // No valid authentication method found
   res.status(401).json({ message: "Authentication required" });
 }

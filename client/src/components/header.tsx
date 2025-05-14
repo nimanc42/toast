@@ -41,34 +41,26 @@ export default function Header() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href="/">
-                <a className="text-xl font-bold text-primary-600 font-accent flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                    <line x1="6" y1="1" x2="6" y2="4"></line>
-                    <line x1="10" y1="1" x2="10" y2="4"></line>
-                    <line x1="14" y1="1" x2="14" y2="4"></line>
-                  </svg>
-                  A Toast to You
-                </a>
+              <Link href="/" className="text-xl font-bold text-primary-600 font-accent flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line>
+                </svg>
+                A Toast to You
               </Link>
             </div>
             <nav className="hidden sm:ml-6 sm:flex sm:items-center">
-              <Link href="/">
-                <a className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                  Dashboard
-                </a>
+              <Link href="/" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Dashboard
               </Link>
-              <Link href="/weekly-toast">
-                <a className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                  Weekly Toast
-                </a>
+              <Link href="/weekly-toast" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Weekly Toast
               </Link>
-              <Link href="/settings">
-                <a className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                  Settings
-                </a>
+              <Link href="/settings" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                Settings
               </Link>
             </nav>
           </div>
@@ -93,11 +85,11 @@ export default function Header() {
                     <div className="font-medium">{user?.name}</div>
                     <div className="text-gray-500 truncate">{user?.email}</div>
                   </div>
-                  <Link href="/settings">
-                    <DropdownMenuItem>
-                      <a className="w-full">Settings</a>
-                    </DropdownMenuItem>
-                  </Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="w-full">
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}

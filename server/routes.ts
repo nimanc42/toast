@@ -14,7 +14,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 
 function ensureAuthenticated(req: Request, res: Response, next: Function) {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.user) {
     return next();
   }
   res.status(401).json({ message: "You must be logged in to access this resource" });

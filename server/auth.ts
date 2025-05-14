@@ -24,7 +24,15 @@ import {
 
 declare global {
   namespace Express {
-    interface User extends Omit<User, "password"> {}
+    // Define as a separate type to avoid circular reference
+    interface User {
+      id: number;
+      username: string;
+      email: string;
+      name: string;
+      verified: boolean;
+      createdAt: Date;
+    }
   }
 }
 
@@ -181,7 +189,7 @@ export function setupAuth(app: Express) {
       }
       
       // Authenticate user
-      passport.authenticate('local', async (err, user, info) => {
+      passport.authenticate('local', async (err: Error | null, user: Express.User | false, info: { message: string } | undefined) => {
         if (err) {
           return next(err);
         }

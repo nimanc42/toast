@@ -52,52 +52,7 @@
     @apply border-border;
   }
 
-  html {
-    /* Disable pull-to-refresh on mobile */
-    overscroll-behavior-y: none;
-    touch-action: manipulation;
-  }
-
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Ensure full-height layouts on mobile */
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-  }
-
-  /* Improve tap target sizes for mobile */
-  button, a, input, select, textarea {
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary;
-  }
-
-  /* Better form elements on mobile */
-  input, select, textarea {
-    @apply appearance-none;
-    font-size: 16px; /* Prevents iOS zoom on focus */
-  }
-}
-
-/* Mobile-first container styles */
-.mobile-container {
-  @apply w-full max-w-md mx-auto px-4;
-}
-
-/* Mobile-specific utilities */
-@layer utilities {
-  .touch-scroll {
-    @apply overflow-auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .no-tap-highlight {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
   }
 }

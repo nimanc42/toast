@@ -5,7 +5,10 @@ import { setupAuth } from "./auth";
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
-  insertToastSchema
+  insertToastSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  verifyEmailSchema
 } from "@shared/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";

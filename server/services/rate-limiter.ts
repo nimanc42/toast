@@ -15,8 +15,11 @@ export async function checkLoginRateLimit(ip: string): Promise<{ blocked: boolea
   try {
     await loginRateLimiter.consume(ip);
     return { blocked: false };
-  } catch (rateLimiterRes) {
-    const remainingSeconds = Math.round(Number(rateLimiterRes.msBeforeNext) / 1000) || 1;
+  } catch (error) {
+    // Type check and safely extract msBeforeNext
+    const rateLimiterRes = error as { msBeforeNext?: number };
+    const remainingMs = rateLimiterRes.msBeforeNext || 1800000; // Default to 30 minutes if not available
+    const remainingSeconds = Math.round(remainingMs / 1000) || 1;
     const minutes = Math.ceil(remainingSeconds / 60);
     
     return {

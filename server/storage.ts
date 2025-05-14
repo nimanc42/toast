@@ -3,14 +3,17 @@ import {
   notes, 
   voicePreferences, 
   toasts,
+  tokens,
   type User, 
   type Note, 
   type VoicePreference, 
   type Toast,
+  type Token,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
-  type InsertToast 
+  type InsertToast,
+  type InsertToken
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -22,7 +25,10 @@ export interface IStorage {
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>; 
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, userData: Partial<User>): Promise<User>;
+  verifyUserEmail(id: number): Promise<User>;
   
   // Note methods
   getNoteById(id: number): Promise<Note | undefined>;
@@ -45,6 +51,13 @@ export interface IStorage {
   createToast(toast: InsertToast): Promise<Toast>;
   updateToast(id: number, toast: Partial<InsertToast>): Promise<Toast>;
   
+  // Token methods
+  createToken(token: InsertToken): Promise<Token>;
+  getTokenByValue(token: string): Promise<Token | undefined>;
+  getTokensByUserId(userId: number, type?: string): Promise<Token[]>;
+  markTokenAsUsed(token: string): Promise<Token>;
+  deleteExpiredTokens(): Promise<void>;
+  
   // Additional methods
   getUserStreak(userId: number): Promise<number>;
   
@@ -57,10 +70,12 @@ export class MemStorage implements IStorage {
   private notes: Map<number, Note>;
   private voicePreferences: Map<number, VoicePreference>;
   private toasts: Map<number, Toast>;
+  private tokens: Map<number, Token>;
   private userIdCounter: number;
   private noteIdCounter: number;
   private preferenceIdCounter: number;
   private toastIdCounter: number;
+  private tokenIdCounter: number;
   sessionStore: session.SessionStore;
 
   constructor() {
@@ -68,10 +83,12 @@ export class MemStorage implements IStorage {
     this.notes = new Map();
     this.voicePreferences = new Map();
     this.toasts = new Map();
+    this.tokens = new Map();
     this.userIdCounter = 1;
     this.noteIdCounter = 1;
     this.preferenceIdCounter = 1;
     this.toastIdCounter = 1;
+    this.tokenIdCounter = 1;
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24h
     });
@@ -87,6 +104,12 @@ export class MemStorage implements IStorage {
       (user) => user.username === username,
     );
   }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.email === email,
+    );
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
@@ -94,10 +117,33 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...insertUser, 
       id, 
+      verified: false,
       createdAt: now
     };
     this.users.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new Error(`User with id ${id} not found`);
+    }
+    
+    const updatedUser = { ...user, ...userData };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async verifyUserEmail(id: number): Promise<User> {
+    const user = this.users.get(id);
+    if (!user) {
+      throw new Error(`User with id ${id} not found`);
+    }
+    
+    const verifiedUser = { ...user, verified: true };
+    this.users.set(id, verifiedUser);
+    return verifiedUser;
   }
 
   // Note methods
@@ -229,6 +275,58 @@ export class MemStorage implements IStorage {
     const updatedToast = { ...toast, ...updateData };
     this.toasts.set(id, updatedToast);
     return updatedToast;
+  }
+
+  // Token methods
+  async createToken(insertToken: InsertToken): Promise<Token> {
+    const id = this.tokenIdCounter++;
+    const now = new Date();
+    const token: Token = {
+      ...insertToken,
+      id,
+      createdAt: now,
+      used: false
+    };
+    this.tokens.set(id, token);
+    return token;
+  }
+
+  async getTokenByValue(tokenValue: string): Promise<Token | undefined> {
+    return Array.from(this.tokens.values()).find(
+      (token) => token.token === tokenValue
+    );
+  }
+
+  async getTokensByUserId(userId: number, type?: string): Promise<Token[]> {
+    return Array.from(this.tokens.values())
+      .filter(token => {
+        if (type) {
+          return token.userId === userId && token.type === type;
+        }
+        return token.userId === userId;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async markTokenAsUsed(tokenValue: string): Promise<Token> {
+    const token = await this.getTokenByValue(tokenValue);
+    if (!token) {
+      throw new Error(`Token ${tokenValue} not found`);
+    }
+    
+    const updatedToken = { ...token, used: true };
+    this.tokens.set(token.id, updatedToken);
+    return updatedToken;
+  }
+
+  async deleteExpiredTokens(): Promise<void> {
+    const now = new Date();
+    const expiredTokens = Array.from(this.tokens.values())
+      .filter(token => new Date(token.expiresAt) < now);
+      
+    for (const token of expiredTokens) {
+      this.tokens.delete(token.id);
+    }
   }
 
   // Additional methods

@@ -4,11 +4,19 @@ import {
   type VoicePreference, 
   type Toast,
   type Token,
+  type Friendship,
+  type SharedToast,
+  type ToastReaction,
+  type ToastComment,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
   type InsertToast,
-  type InsertToken
+  type InsertToken,
+  type InsertFriendship,
+  type InsertSharedToast,
+  type InsertToastReaction,
+  type InsertToastComment
 } from "@shared/schema";
 import session from "express-session";
 
@@ -49,6 +57,39 @@ export interface IStorage {
   getTokensByUserId(userId: number, type?: string): Promise<Token[]>;
   markTokenAsUsed(token: string): Promise<Token>;
   deleteExpiredTokens(): Promise<void>;
+  
+  // Friendship methods
+  getFriendshipById(id: number): Promise<Friendship | undefined>;
+  getFriendshipsByUserId(userId: number): Promise<Friendship[]>;
+  getFriendshipByUserIds(userId: number, friendId: number): Promise<Friendship | undefined>;
+  getFriendsByUserId(userId: number, status?: string): Promise<User[]>;
+  createFriendship(friendship: InsertFriendship): Promise<Friendship>;
+  updateFriendshipStatus(id: number, status: string): Promise<Friendship>;
+  deleteFriendship(id: number): Promise<void>;
+  
+  // Shared toast methods
+  getSharedToastById(id: number): Promise<SharedToast | undefined>;
+  getSharedToastByShareCode(shareCode: string): Promise<SharedToast | undefined>;
+  getSharedToastsByToastId(toastId: number): Promise<SharedToast[]>;
+  createSharedToast(sharedToast: InsertSharedToast): Promise<SharedToast>;
+  updateSharedToast(id: number, updateData: Partial<InsertSharedToast>): Promise<SharedToast>;
+  deleteSharedToast(id: number): Promise<void>;
+  incrementSharedToastViewCount(id: number): Promise<SharedToast>;
+  
+  // Toast reaction methods
+  getToastReactionById(id: number): Promise<ToastReaction | undefined>;
+  getToastReactionsByToastId(toastId: number): Promise<ToastReaction[]>;
+  getToastReactionByUserAndToast(userId: number, toastId: number): Promise<ToastReaction | undefined>;
+  createToastReaction(reaction: InsertToastReaction): Promise<ToastReaction>;
+  updateToastReaction(id: number, reaction: string): Promise<ToastReaction>;
+  deleteToastReaction(id: number): Promise<void>;
+  
+  // Toast comment methods
+  getToastCommentById(id: number): Promise<ToastComment | undefined>;
+  getToastCommentsByToastId(toastId: number): Promise<ToastComment[]>;
+  createToastComment(comment: InsertToastComment): Promise<ToastComment>;
+  updateToastComment(id: number, comment: string): Promise<ToastComment>;
+  deleteToastComment(id: number): Promise<void>;
   
   // Additional methods
   getUserStreak(userId: number): Promise<number>;

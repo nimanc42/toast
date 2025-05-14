@@ -4,19 +4,31 @@ import {
   voicePreferences, 
   toasts,
   tokens,
+  friendships,
+  sharedToasts,
+  toastReactions,
+  toastComments,
   type User, 
   type Note, 
   type VoicePreference, 
   type Toast,
   type Token,
+  type Friendship,
+  type SharedToast,
+  type ToastReaction,
+  type ToastComment,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
   type InsertToast,
-  type InsertToken
+  type InsertToken,
+  type InsertFriendship,
+  type InsertSharedToast,
+  type InsertToastReaction,
+  type InsertToastComment
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, asc, or, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { IStorage } from "./storage";
@@ -326,5 +338,244 @@ export class DatabaseStorage implements IStorage {
     }
     
     return streak;
+  }
+
+  // Friendship methods
+  async getFriendshipById(id: number): Promise<Friendship | undefined> {
+    const [friendship] = await db.select().from(friendships).where(eq(friendships.id, id));
+    return friendship;
+  }
+
+  async getFriendshipsByUserId(userId: number): Promise<Friendship[]> {
+    // Get all friendships where the user is either the initiator or the recipient
+    const userFriendships = await db.select().from(friendships)
+      .where(eq(friendships.userId, userId));
+    
+    const friendUserFriendships = await db.select().from(friendships)
+      .where(eq(friendships.friendId, userId));
+    
+    return [...userFriendships, ...friendUserFriendships];
+  }
+
+  async getFriendshipByUserIds(userId: number, friendId: number): Promise<Friendship | undefined> {
+    // Check in both directions
+    const [friendship] = await db.select().from(friendships)
+      .where(
+        or(
+          and(
+            eq(friendships.userId, userId),
+            eq(friendships.friendId, friendId)
+          ),
+          and(
+            eq(friendships.userId, friendId),
+            eq(friendships.friendId, userId)
+          )
+        )
+      );
+    
+    return friendship;
+  }
+
+  async getFriendsByUserId(userId: number, status: string = 'accepted'): Promise<User[]> {
+    // Get IDs of users who are friends with this user
+    // First, get friendships where user is the initiator
+    const initiatedFriendships = await db.select({
+      friendId: friendships.friendId
+    }).from(friendships)
+      .where(
+        and(
+          eq(friendships.userId, userId),
+          eq(friendships.status, status)
+        )
+      );
+    
+    // Then, get friendships where user is the recipient
+    const receivedFriendships = await db.select({
+      friendId: friendships.userId
+    }).from(friendships)
+      .where(
+        and(
+          eq(friendships.friendId, userId),
+          eq(friendships.status, status)
+        )
+      );
+    
+    // Combine friend IDs
+    const friendIds = [
+      ...initiatedFriendships.map(f => f.friendId),
+      ...receivedFriendships.map(f => f.friendId)
+    ];
+    
+    // Get the actual user records
+    if (friendIds.length === 0) {
+      return [];
+    }
+    
+    const friends = await db.select().from(users)
+      .where(
+        inArray(users.id, friendIds)
+      );
+    
+    return friends;
+  }
+
+  async createFriendship(friendship: InsertFriendship): Promise<Friendship> {
+    const [newFriendship] = await db.insert(friendships)
+      .values(friendship)
+      .returning();
+    
+    return newFriendship;
+  }
+
+  async updateFriendshipStatus(id: number, status: string): Promise<Friendship> {
+    const [updatedFriendship] = await db.update(friendships)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(friendships.id, id))
+      .returning();
+    
+    return updatedFriendship;
+  }
+
+  async deleteFriendship(id: number): Promise<void> {
+    await db.delete(friendships)
+      .where(eq(friendships.id, id));
+  }
+
+  // Shared toast methods
+  async getSharedToastById(id: number): Promise<SharedToast | undefined> {
+    const [sharedToast] = await db.select().from(sharedToasts).where(eq(sharedToasts.id, id));
+    return sharedToast;
+  }
+
+  async getSharedToastByShareCode(shareCode: string): Promise<SharedToast | undefined> {
+    const [sharedToast] = await db.select().from(sharedToasts).where(eq(sharedToasts.shareCode, shareCode));
+    return sharedToast;
+  }
+
+  async getSharedToastsByToastId(toastId: number): Promise<SharedToast[]> {
+    return await db.select().from(sharedToasts).where(eq(sharedToasts.toastId, toastId));
+  }
+
+  async createSharedToast(sharedToast: InsertSharedToast): Promise<SharedToast> {
+    const [newSharedToast] = await db.insert(sharedToasts)
+      .values(sharedToast)
+      .returning();
+    
+    return newSharedToast;
+  }
+
+  async updateSharedToast(id: number, updateData: Partial<InsertSharedToast>): Promise<SharedToast> {
+    const [updatedSharedToast] = await db.update(sharedToasts)
+      .set(updateData)
+      .where(eq(sharedToasts.id, id))
+      .returning();
+    
+    return updatedSharedToast;
+  }
+
+  async deleteSharedToast(id: number): Promise<void> {
+    await db.delete(sharedToasts)
+      .where(eq(sharedToasts.id, id));
+  }
+
+  async incrementSharedToastViewCount(id: number): Promise<SharedToast> {
+    const [sharedToast] = await db.select().from(sharedToasts).where(eq(sharedToasts.id, id));
+    
+    if (!sharedToast) {
+      throw new Error('Shared toast not found');
+    }
+    
+    const [updatedSharedToast] = await db.update(sharedToasts)
+      .set({ 
+        viewCount: sharedToast.viewCount + 1
+      })
+      .where(eq(sharedToasts.id, id))
+      .returning();
+    
+    return updatedSharedToast;
+  }
+
+  // Toast reaction methods
+  async getToastReactionById(id: number): Promise<ToastReaction | undefined> {
+    const [reaction] = await db.select().from(toastReactions).where(eq(toastReactions.id, id));
+    return reaction;
+  }
+
+  async getToastReactionsByToastId(toastId: number): Promise<ToastReaction[]> {
+    return await db.select().from(toastReactions).where(eq(toastReactions.toastId, toastId));
+  }
+
+  async getToastReactionByUserAndToast(userId: number, toastId: number): Promise<ToastReaction | undefined> {
+    const [reaction] = await db.select().from(toastReactions)
+      .where(
+        and(
+          eq(toastReactions.userId, userId),
+          eq(toastReactions.toastId, toastId)
+        )
+      );
+    
+    return reaction;
+  }
+
+  async createToastReaction(reaction: InsertToastReaction): Promise<ToastReaction> {
+    const [newReaction] = await db.insert(toastReactions)
+      .values(reaction)
+      .returning();
+    
+    return newReaction;
+  }
+
+  async updateToastReaction(id: number, reaction: string): Promise<ToastReaction> {
+    const [updatedReaction] = await db.update(toastReactions)
+      .set({ reaction })
+      .where(eq(toastReactions.id, id))
+      .returning();
+    
+    return updatedReaction;
+  }
+
+  async deleteToastReaction(id: number): Promise<void> {
+    await db.delete(toastReactions)
+      .where(eq(toastReactions.id, id));
+  }
+
+  // Toast comment methods
+  async getToastCommentById(id: number): Promise<ToastComment | undefined> {
+    const [comment] = await db.select().from(toastComments).where(eq(toastComments.id, id));
+    return comment;
+  }
+
+  async getToastCommentsByToastId(toastId: number): Promise<ToastComment[]> {
+    return await db.select().from(toastComments)
+      .where(eq(toastComments.toastId, toastId))
+      .orderBy(asc(toastComments.createdAt));
+  }
+
+  async createToastComment(comment: InsertToastComment): Promise<ToastComment> {
+    const [newComment] = await db.insert(toastComments)
+      .values(comment)
+      .returning();
+    
+    return newComment;
+  }
+
+  async updateToastComment(id: number, comment: string): Promise<ToastComment> {
+    const [updatedComment] = await db.update(toastComments)
+      .set({ 
+        comment,
+        updatedAt: new Date()
+      })
+      .where(eq(toastComments.id, id))
+      .returning();
+    
+    return updatedComment;
+  }
+
+  async deleteToastComment(id: number): Promise<void> {
+    await db.delete(toastComments)
+      .where(eq(toastComments.id, id));
   }
 }

@@ -327,7 +327,15 @@ export default function WeeklyToastPage() {
               <Button
                 onClick={generateToast}
                 disabled={loading}
-                className="mx-auto mt-6 bg-white bg-opacity-20 text-white hover:bg-opacity-30 transition-all"
+                className="
+                  inline-flex items-center justify-center
+                  px-6 py-3
+                  rounded-md
+                  bg-blue-600 text-white
+                  hover:bg-blue-700
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  transition-colors
+                "
                 size="lg"
               >
                 {loading ? (
@@ -360,7 +368,15 @@ export default function WeeklyToastPage() {
                     <Button 
                       onClick={generateToast} 
                       disabled={loading} 
-                      className="bg-amber-500 text-white hover:bg-amber-600"
+                      className="
+                        inline-flex items-center justify-center
+                        px-6 py-3
+                        rounded-md
+                        bg-blue-600 text-white
+                        hover:bg-blue-700
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-colors
+                      "
                     >
                       {loading ? (
                         <>

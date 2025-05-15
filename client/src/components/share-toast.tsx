@@ -20,15 +20,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 
-interface ShareToastProps {
+export interface ShareToastProps {
   toast: {
     id: number;
-    shared: boolean;
+    content: string;
+    audioUrl: string | null;
+    shared?: boolean;
+    shareCode?: string;
     shareUrl?: string | null;
   };
+  onShareClick?: (platform: string) => void;
 }
 
-export default function ShareToast({ toast }: ShareToastProps) {
+export default function ShareToast({ toast, onShareClick }: ShareToastProps) {
   const { toast: showToast } = useToast();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);

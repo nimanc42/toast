@@ -191,6 +191,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/resend-verification", resendVerification);
   
   // Google OAuth authentication routes
+  // Endpoint to check if Google auth is configured
+  app.get('/api/auth/google/status', (req, res) => {
+    const isConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+    res.json({ configured: isConfigured });
+  });
+  
   // Check if Google OAuth is configured
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     app.get('/api/auth/google', 

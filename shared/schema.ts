@@ -110,6 +110,7 @@ export const badges = pgTable("badges", {
   description: text("description").notNull(),
   icon: text("icon").notNull(), // SVG or icon name
   category: text("category").notNull(), // streak, sharing, notes, etc.
+  requirement: text("requirement").notNull(), // key for looking up badges by specific requirements
   threshold: integer("threshold").notNull(), // e.g., 7 for "7-day streak"
   metadata: json("metadata").$type<Record<string, any>>(), // flexible data for badge requirements
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -209,7 +210,9 @@ export const insertBadgeSchema = createInsertSchema(badges).pick({
   description: true,
   icon: true,
   category: true,
+  requirement: true,
   threshold: true,
+  metadata: true,
 });
 
 export const insertUserBadgeSchema = createInsertSchema(userBadges).pick({

@@ -1,24 +1,27 @@
-import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs';
+import { db } from "../server/db";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 
-// Function to run drizzle-kit push command
-function pushSchema() {
-  console.log('Pushing schema to database...');
-  
+/**
+ * Push schema to database
+ */
+async function pushSchema() {
   try {
-    // Execute the drizzle-kit push command
-    execSync('npx drizzle-kit push:pg', { 
-      stdio: 'inherit',
-      env: process.env
-    });
+    console.log("Starting schema migration...");
     
-    console.log('Schema push completed successfully');
+    // Run the migration
+    await migrate(db, { migrationsFolder: "./drizzle" });
+    
+    console.log("Schema migration completed successfully!");
   } catch (error) {
-    console.error('Schema push failed:', error);
-    process.exit(1);
+    console.error("Error during schema migration:", error);
+  } finally {
+    await db.$pool.end();
   }
 }
 
-// Run the push
-pushSchema();
+// Run if called directly
+if (process.argv[1] === import.meta.url) {
+  pushSchema()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}

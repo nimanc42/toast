@@ -100,11 +100,16 @@ export interface IStorage {
   // Badge methods
   getBadgeById(id: number): Promise<Badge | undefined>;
   getBadgesByCategory(category: string): Promise<Badge[]>;
+  getBadgeByRequirement(requirement: string): Promise<Badge | undefined>;
+  createBadge(badge: InsertBadge): Promise<Badge>;
   getUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]>;
   getUserBadgeByIds(userId: number, badgeId: number): Promise<UserBadge | undefined>;
   createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge>;
+  awardBadge(userId: number, badgeId: number): Promise<UserBadge>;
   markUserBadgeSeen(id: number): Promise<UserBadge>;
   getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]>;
+  checkAndAwardBadges(userId: number): Promise<UserBadge[]>;
+  getUserNotesCount(userId: number): Promise<number>;
   
   // Activity and Analytics methods
   logUserActivity(activity: InsertUserActivity): Promise<UserActivity>;

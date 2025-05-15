@@ -7,7 +7,8 @@ import {
   UserBadge,
   UserActivity,
   InsertUserBadge,
-  InsertUserActivity
+  InsertUserActivity,
+  InsertBadge
 } from '@shared/schema';
 import { eq, and, sql, desc, gte } from 'drizzle-orm';
 import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -15,6 +16,35 @@ import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-
 /**
  * Badge-related storage methods
  */
+
+import { notes } from '@shared/schema';
+import { count } from 'drizzle-orm';
+
+/**
+ * Get count of notes for a user
+ */
+export async function getUserNotesCount(userId: number): Promise<number> {
+  const [result] = await db
+    .select({ count: count() })
+    .from(notes)
+    .where(eq(notes.userId, userId));
+  
+  return result?.count || 0;
+}
+
+/**
+ * Get a badge by its requirement field in metadata
+ */
+export async function getBadgeByRequirement(requirement: string): Promise<Badge | undefined> {
+  const [badge] = await db
+    .select()
+    .from(badges)
+    .where(
+      sql`${badges.metadata}->>'requirement' = ${requirement}`
+    );
+  
+  return badge;
+}
 export async function getBadgeById(id: number): Promise<Badge | undefined> {
   const [badge] = await db.select().from(badges).where(eq(badges.id, id));
   return badge;
@@ -22,6 +52,46 @@ export async function getBadgeById(id: number): Promise<Badge | undefined> {
 
 export async function getBadgesByCategory(category: string): Promise<Badge[]> {
   return db.select().from(badges).where(eq(badges.category, category));
+}
+
+export async function createBadge(insertBadge: InsertBadge): Promise<Badge> {
+  const [badge] = await db
+    .insert(badges)
+    .values(insertBadge)
+    .returning();
+  return badge;
+}
+
+export async function awardBadge(userId: number, badgeId: number): Promise<UserBadge> {
+  // Check if user already has this badge
+  const existingBadge = await getUserBadgeByIds(userId, badgeId);
+  
+  if (existingBadge) {
+    return existingBadge;
+  }
+
+  // Create new user badge
+  const userBadge = await createUserBadge({
+    userId,
+    badgeId,
+    seen: false,
+  });
+
+  // Log the achievement as activity
+  const badge = await getBadgeById(badgeId);
+  if (badge) {
+    await logUserActivity({
+      userId,
+      activityType: 'badge-earned',
+      metadata: {
+        badgeId: badge.id,
+        badgeName: badge.name,
+        badgeCategory: badge.category
+      } as Record<string, any>
+    });
+  }
+
+  return userBadge;
 }
 
 export async function getUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
@@ -202,7 +272,7 @@ export async function checkAndAwardBadges(userId: number): Promise<UserBadge[]> 
         await logUserActivity({
           userId,
           activityType: 'badge-earned',
-          metadata: { badgeId: badge.id, badgeName: badge.name }
+          metadata: { badgeId: badge.id, badgeName: badge.name } as Record<string, any>
         });
       }
     }

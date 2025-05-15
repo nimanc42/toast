@@ -172,4 +172,92 @@ router.post('/analytics/log', ensureAuthenticated, async (req, res) => {
   }
 });
 
+/**
+ * Admin route to create a badge (for testing purposes)
+ */
+router.post('/badges/seed', ensureAuthenticated, async (req, res) => {
+  try {
+    const badgeSchema = z.object({
+      name: z.string(),
+      description: z.string(),
+      icon: z.string(),
+      category: z.string(),
+      requirement: z.string(),
+      threshold: z.number(),
+      metadata: z.record(z.any()).optional()
+    });
+    
+    const result = badgeSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: 'Invalid badge data', details: result.error });
+    }
+    
+    const { name, description, icon, category, requirement, threshold, metadata } = result.data;
+    
+    const badge = await storage.createBadge({
+      name,
+      description, 
+      icon,
+      category,
+      requirement,
+      threshold,
+      metadata: metadata || {}
+    });
+    
+    res.status(201).json(badge);
+  } catch (error) {
+    log(`Error creating badge: ${error}`, 'routes:gamification');
+    res.status(500).json({ error: 'Failed to create badge' });
+  }
+});
+
+/**
+ * Admin route to award a badge to a user (for testing purposes)
+ */
+router.post('/badges/award', ensureAuthenticated, async (req, res) => {
+  try {
+    const awardSchema = z.object({
+      userId: z.number(),
+      badgeId: z.number()
+    });
+    
+    const result = awardSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({ error: 'Invalid request data', details: result.error });
+    }
+    
+    const { userId, badgeId } = result.data;
+    
+    const userBadge = await storage.awardBadge(userId, badgeId);
+    
+    res.status(201).json(userBadge);
+  } catch (error) {
+    log(`Error awarding badge: ${error}`, 'routes:gamification');
+    res.status(500).json({ error: 'Failed to award badge' });
+  }
+});
+
+/**
+ * Test route to check if the First Reflection badge exists
+ */
+router.get('/badges/test-first-badge', async (req, res) => {
+  try {
+    const badge = await storage.getBadgeByRequirement('first_note');
+    if (badge) {
+      res.json({ 
+        exists: true, 
+        badge 
+      });
+    } else {
+      res.json({ 
+        exists: false,
+        message: 'First Reflection badge not found' 
+      });
+    }
+  } catch (error) {
+    log(`Error testing first badge: ${error}`, 'routes:gamification');
+    res.status(500).json({ message: 'Failed to test first badge', error: String(error) });
+  }
+});
+
 export default router;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import AudioPlayer from "@/components/audio-player";
@@ -7,11 +7,13 @@ import ShareToast from "@/components/share-toast";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function WeeklyToastPage() {
   const [selectedVoice, setSelectedVoice] = useState("motivational");
+  const [regenerating, setRegenerating] = useState(false);
   const { toast } = useToast();
   
   // Fetch the latest toast
@@ -25,6 +27,50 @@ export default function WeeklyToastPage() {
       });
     }
   });
+
+  // Mutation to regenerate audio with a different voice
+  const regenerateAudioMutation = useMutation({
+    mutationFn: async ({ toastId, voiceStyle }: { toastId: number, voiceStyle: string }) => {
+      const res = await apiRequest(
+        "POST", 
+        `/api/toasts/${toastId}/regenerate-audio`,
+        { voiceStyle }
+      );
+      return await res.json();
+    },
+    onMutate: () => {
+      setRegenerating(true);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
+      toast({
+        title: "Audio regenerated",
+        description: "Your toast audio has been regenerated with the new voice.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to regenerate audio",
+        description: error.message || "Please try again later.",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      setRegenerating(false);
+    }
+  });
+
+  // Handle voice change and regenerate audio
+  const handleVoiceChange = (voiceStyle: string) => {
+    setSelectedVoice(voiceStyle);
+    
+    if (latestToast && latestToast.id) {
+      regenerateAudioMutation.mutate({ 
+        toastId: latestToast.id, 
+        voiceStyle 
+      });
+    }
+  };
 
   // Share toast handler
   const handleShare = (platform: string) => {
@@ -114,25 +160,35 @@ export default function WeeklyToastPage() {
             <AudioPlayer 
               audioUrl={latestToast.audioUrl} 
               title="Your Week in Review" 
-              duration="3:24" 
+              duration={latestToast.audioUrl ? "2:30" : "0:00"} 
             />
             
             {/* Voice Selection */}
-            <div className="mt-4 flex items-center">
-              <span className="text-xs text-gray-500 mr-2">Voice:</span>
-              <Select 
-                value={selectedVoice} 
-                onValueChange={setSelectedVoice}
-              >
-                <SelectTrigger className="h-8 text-xs w-64">
-                  <SelectValue placeholder="Select a voice" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="motivational">Motivational Coach (Morgan)</SelectItem>
-                  <SelectItem value="friendly">Friendly Conversationalist (Alex)</SelectItem>
-                  <SelectItem value="poetic">Poetic Narrator (Jordan)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-xs text-gray-500 mr-2">Voice:</span>
+                <Select 
+                  value={selectedVoice} 
+                  onValueChange={handleVoiceChange}
+                  disabled={regenerating}
+                >
+                  <SelectTrigger className="h-8 text-xs w-64">
+                    <SelectValue placeholder="Select a voice" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="motivational">Motivational Coach (Rachel)</SelectItem>
+                    <SelectItem value="friendly">Friendly Conversationalist (Adam)</SelectItem>
+                    <SelectItem value="poetic">Poetic Narrator (Domi)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {regenerating && (
+                <div className="flex items-center text-xs text-primary-600">
+                  <RefreshCcw className="h-3 w-3 mr-1 animate-spin" />
+                  <span>Regenerating audio...</span>
+                </div>
+              )}
             </div>
           </div>
           

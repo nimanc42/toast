@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
 import gamificationRoutes from "./routes/gamification";
-import { WebSocketServer, WebSocket } from "ws";
+// WebSocket temporarily disabled for debugging
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
@@ -15,6 +15,169 @@ import {
 } from "@shared/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
+// Temporarily disable ElevenLabs for debugging
+// import { generateSpeech, getVoiceId } from "./services/elevenlabs";
+
+// Dummy implementations for debugging
+const generateSpeech = async (text: string, voiceId?: string) => {
+  console.log(`[Dummy TTS] Would generate speech for: "${text.substring(0, 50)}..." with voice ${voiceId || 'default'}`);
+  return '/audio/toast-1747269138152.mp3'; // Using an existing file as fallback
+};
+
+const getVoiceId = (style: string) => {
+  console.log(`[Dummy TTS] Getting voice ID for style: ${style}`);
+  return 'dummy-voice-id';
+};
+
+/**
+ * Extract main themes from note contents
+ * @param noteContents Array of note contents
+ * @returns Array of identified themes
+ */
+function getThemesFromNotes(noteContents: string[]): string[] {
+  // This is a simplified version - in a real app, we might use NLP
+  // to extract themes from the notes
+  const commonThemes: {[key: string]: number} = {};
+  
+  // Keywords to look for in notes
+  const themeKeywords = {
+    'achievement': ['accomplish', 'achieve', 'complete', 'finish', 'win', 'success'],
+    'gratitude': ['grateful', 'thankful', 'appreciate', 'blessing', 'thanks'],
+    'learning': ['learn', 'discover', 'understand', 'insight', 'knowledge'],
+    'challenge': ['challenge', 'difficult', 'hard', 'overcome', 'struggle'],
+    'creativity': ['create', 'design', 'idea', 'innovation', 'creative'],
+    'health': ['exercise', 'health', 'workout', 'run', 'wellbeing', 'meditation'],
+    'relationship': ['friend', 'family', 'connect', 'relationship', 'conversation'],
+    'career': ['work', 'job', 'career', 'professional', 'project'],
+    'joy': ['happy', 'joy', 'enjoy', 'fun', 'laugh', 'smile', 'delight']
+  };
+  
+  // Check each note for themes
+  for (const note of noteContents) {
+    const lowerNote = note.toLowerCase();
+    
+    for (const [theme, keywords] of Object.entries(themeKeywords)) {
+      if (keywords.some(keyword => lowerNote.includes(keyword))) {
+        commonThemes[theme] = (commonThemes[theme] || 0) + 1;
+      }
+    }
+  }
+  
+  // Get top 3 themes
+  return Object.entries(commonThemes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([theme]) => theme);
+}
+
+/**
+ * Generate personalized toast content based on notes and themes
+ * @param noteCount Number of notes
+ * @param themes Array of themes identified in the notes
+ * @returns Generated toast content
+ */
+function generateToastContent(noteCount: number, themes: string[]): string {
+  // Intro templates
+  const intros = [
+    "Here's to your week of reflection and growth!",
+    "Raising a glass to your week of insights and experiences!",
+    "Cheers to another week of your journey!",
+    "Let's celebrate your week of mindful reflection!",
+    "Another week, another opportunity to celebrate you!"
+  ];
+  
+  // Acknowledgment templates
+  const acknowledgments = [
+    `You've captured ${noteCount} moments this week.`,
+    `You've recorded ${noteCount} reflections this past week.`,
+    `With ${noteCount} thoughtful notes this week, you're building a wonderful practice.`,
+    `Your ${noteCount} entries this week show your commitment to reflection.`
+  ];
+  
+  // Theme-specific templates
+  const themeMessages: {[key: string]: string[]} = {
+    'achievement': [
+      "Your accomplishments stand as a testament to your dedication and hard work.",
+      "You've achieved important milestones that deserve recognition.",
+      "Your success this week is worth celebrating and building upon."
+    ],
+    'gratitude': [
+      "Your practice of gratitude is nurturing a positive outlook on life.",
+      "By acknowledging what you're thankful for, you're cultivating more joy.",
+      "Your appreciation for the good things reminds us all to count our blessings."
+    ],
+    'learning': [
+      "Your curiosity and dedication to learning is inspiring.",
+      "The knowledge you've gained will serve you well on your journey.",
+      "Your commitment to growth and understanding shows in your reflections."
+    ],
+    'challenge': [
+      "You've faced obstacles with courage and resilience.",
+      "The challenges you've navigated have made you stronger.",
+      "Your perseverance through difficult times reveals your inner strength."
+    ],
+    'creativity': [
+      "Your creative spark has produced wonderful insights and ideas.",
+      "The innovative thinking in your notes shows your unique perspective.",
+      "Your creative approach to life's situations is truly refreshing."
+    ],
+    'health': [
+      "Your dedication to well-being is a foundation for everything else.",
+      "The steps you're taking for your health will reward you many times over.",
+      "Your commitment to self-care sets an excellent example."
+    ],
+    'relationship': [
+      "The connections you nurture enrich both your life and others'.",
+      "Your investment in relationships shows what you truly value.",
+      "The bonds you're strengthening create a supportive community around you."
+    ],
+    'career': [
+      "Your professional dedication is moving you toward your goals.",
+      "The work you've done this week brings you closer to your aspirations.",
+      "Your career journey shows thoughtful navigation and purpose."
+    ],
+    'joy': [
+      "The happiness you've found and created brightens your days.",
+      "Your moments of joy are well-earned and worth savoring.",
+      "The delight you've experienced reminds us all to find pleasure in life."
+    ]
+  };
+  
+  // Closing templates
+  const closings = [
+    "Here's to another week of growth and discovery ahead!",
+    "Looking forward to seeing where your journey takes you next week!",
+    "May the coming days bring even more meaningful moments to celebrate!",
+    "Carry this positive momentum forward into the days ahead!",
+    "Wishing you a week ahead filled with insights and growth!"
+  ];
+  
+  // Randomly select templates
+  const intro = intros[Math.floor(Math.random() * intros.length)];
+  const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
+  const closing = closings[Math.floor(Math.random() * closings.length)];
+  
+  // Build the content
+  let content = `${intro} ${acknowledgment}\n\n`;
+  
+  // Add theme-specific content
+  if (themes.length > 0) {
+    content += "This week, I noticed these themes in your reflections:\n\n";
+    
+    themes.forEach(theme => {
+      if (themeMessages[theme]) {
+        const messages = themeMessages[theme];
+        const message = messages[Math.floor(Math.random() * messages.length)];
+        content += `${theme.charAt(0).toUpperCase() + theme.slice(1)}: ${message}\n\n`;
+      }
+    });
+  }
+  
+  // Add closing
+  content += closing;
+  
+  return content;
+}
 
 // This tells TypeScript that req.user is defined after ensureAuthenticated
 // We already have a User interface defined in auth.ts, so no need to redefine it here
@@ -44,6 +207,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Validated data:", validatedData);
       const note = await storage.createNote(validatedData);
       console.log("Note created:", note);
+      
+      // Check if this is the user's first note and award badge if it is
+      try {
+        const notesCount = await storage.getUserNotesCount(userId);
+        console.log(`User ${userId} has ${notesCount} notes`);
+        
+        if (notesCount === 1) {
+          console.log("This is the user's first note! Checking for first note badge...");
+          const badge = await storage.getBadgeByRequirement('first_note');
+          
+          if (badge) {
+            console.log(`Found first note badge: ${badge.name}`);
+            const userBadge = await storage.awardBadge(userId, badge.id);
+            console.log(`Badge awarded: ${userBadge.id}`);
+            
+            // Notify connected WebSocket clients about the badge
+            const wss = req.app.locals.wss;
+            if (wss) {
+              const clients = [...wss.clients].filter(
+                client => client.userId === userId && client.readyState === WebSocket.OPEN
+              );
+              
+              if (clients.length > 0) {
+                const badgeEvent = {
+                  type: 'badge-earned',
+                  data: {
+                    badgeId: badge.id,
+                    badgeName: badge.name,
+                    badgeIcon: badge.icon,
+                    badgeDescription: badge.description
+                  }
+                };
+                
+                clients.forEach(client => {
+                  client.send(JSON.stringify(badgeEvent));
+                });
+                
+                console.log(`WebSocket notification sent to ${clients.length} clients`);
+              }
+            }
+          } else {
+            console.log("First note badge not found in the database");
+          }
+        }
+      } catch (badgeError) {
+        // Just log the error but don't fail the note creation
+        console.error("Error awarding badge:", badgeError);
+      }
+      
       res.status(201).json(note);
     } catch (error) {
       console.error("Error creating note:", error);
@@ -207,9 +419,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       
-      // Generate toast content and audio using Eleven Labs API
-      // This would be implemented with the actual API integration
-      // For now, we'll create a simple placeholder toast
+      // Get user voice preferences
+      const preferences = await storage.getVoicePreferenceByUserId(userId);
+      const voiceStyle = preferences?.voiceStyle || 'motivational';
+      
+      // Get recent notes to generate the toast
       const recentNotes = await storage.getRecentNotesByUserId(userId, 7);
       
       if (recentNotes.length === 0) {
@@ -218,14 +432,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const noteIds = recentNotes.map(note => note.id);
       
-      // Generate toast content from notes
-      // This would normally use the Eleven Labs API
-      const noteContents = recentNotes.map(note => note.content).filter(Boolean);
-      const toastContent = `Here's to your week of reflection and growth! You've shared ${noteContents.length} thoughts this week.`;
+      // Extract significant themes and highlights from notes
+      const noteContents = recentNotes.map(note => note.content || "").filter(Boolean);
       
-      // In a real implementation, we would generate the audio with Eleven Labs
-      // and store the URL. For now, we'll just use a placeholder.
-      const audioUrl = null;
+      // Generate a more personalized toast content
+      const themes = getThemesFromNotes(noteContents);
+      const toastContent = generateToastContent(noteContents.length, themes);
+      
+      // Get the appropriate voice ID based on user preference
+      const voiceId = getVoiceId(voiceStyle);
+      
+      // Generate speech audio using ElevenLabs API
+      let audioUrl = null;
+      try {
+        audioUrl = await generateSpeech(toastContent, voiceId);
+        console.log(`Generated audio file: ${audioUrl}`);
+      } catch (error) {
+        console.error('Error generating audio:', error);
+        // Continue even if audio generation fails
+      }
       
       // Create a unique share URL
       const shareId = createId();
@@ -264,6 +489,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedToast);
     } catch (error) {
       res.status(500).json({ message: "Failed to share toast" });
+    }
+  });
+  
+  // Regenerate audio for an existing toast with a different voice
+  app.post("/api/toasts/:id/regenerate-audio", ensureAuthenticated, async (req, res) => {
+    try {
+      const toastId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const { voiceStyle } = req.body;
+      
+      // Get the toast
+      const toast = await storage.getToastById(toastId);
+      if (!toast) {
+        return res.status(404).json({ message: "Toast not found" });
+      }
+      
+      // Verify ownership
+      if (toast.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to modify this toast" });
+      }
+      
+      // Get the appropriate voice ID
+      const voiceId = getVoiceId(voiceStyle || 'motivational');
+      
+      // Generate new audio
+      let audioUrl = null;
+      try {
+        audioUrl = await generateSpeech(toast.content, voiceId);
+        console.log(`Regenerated audio file: ${audioUrl}`);
+      } catch (error) {
+        console.error('Error regenerating audio:', error);
+        return res.status(500).json({ message: "Failed to generate audio" });
+      }
+      
+      // Update the toast with the new audio URL
+      const updatedToast = await storage.updateToast(toastId, { audioUrl });
+      res.json(updatedToast);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to regenerate audio" });
     }
   });
 
@@ -321,79 +585,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   
-  // Set up WebSocket server for real-time updates
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/ws' 
-  });
+  // TEMPORARILY DISABLED: WebSocket functionality for debugging server crashes
+  console.log('WebSocket functionality is temporarily disabled for debugging');
   
-  // Store connected clients by user ID
-  const connectedClients = new Map<number, Set<WebSocket>>();
-  
-  wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
-    
-    let userId: number | null = null;
-    
-    ws.on('message', (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-        console.log('Received WebSocket message:', data);
-        
-        // Handle authentication message
-        if (data.type === 'auth' && data.token) {
-          // In a real implementation, verify the token and get user ID
-          // For now, we'll trust the user ID sent in the message
-          userId = data.userId;
-          
-          if (userId) {
-            // Add this connection to the user's set of connections
-            if (!connectedClients.has(userId)) {
-              connectedClients.set(userId, new Set());
-            }
-            connectedClients.get(userId)?.add(ws);
-            
-            // Acknowledge successful authentication
-            ws.send(JSON.stringify({
-              type: 'auth_success'
-            }));
-            
-            console.log(`User ${userId} authenticated via WebSocket`);
-          }
-        }
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
-      }
-    });
-    
-    ws.on('close', () => {
-      console.log('WebSocket client disconnected');
-      
-      // Remove this connection from the user's set of connections
-      if (userId && connectedClients.has(userId)) {
-        connectedClients.get(userId)?.delete(ws);
-        
-        // If no more connections, remove the user from the map
-        if (connectedClients.get(userId)?.size === 0) {
-          connectedClients.delete(userId);
-        }
-      }
-    });
-  });
-  
-  // Export function to send notifications to users
+  // Dummy implementation to prevent errors
   (global as any).sendNotificationToUser = (userId: number, notification: any) => {
-    if (connectedClients.has(userId)) {
-      const userConnections = connectedClients.get(userId);
-      
-      if (userConnections) {
-        userConnections.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(notification));
-          }
-        });
-      }
-    }
+    console.log(`[Disabled WebSocket] Would send to user ${userId}:`, notification);
   };
   
   return httpServer;

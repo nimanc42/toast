@@ -604,31 +604,51 @@ export class DatabaseStorage implements IStorage {
 
   // Badge methods
   async getBadgeById(id: number): Promise<Badge | undefined> {
-    return getBadgeById(id);
+    return await import('./db-storage-gamification').then(mod => mod.getBadgeById(id));
   }
 
   async getBadgesByCategory(category: string): Promise<Badge[]> {
-    return getBadgesByCategory(category);
+    return await import('./db-storage-gamification').then(mod => mod.getBadgesByCategory(category));
+  }
+  
+  async getBadgeByRequirement(requirement: string): Promise<Badge | undefined> {
+    return await import('./db-storage-gamification').then(mod => mod.getBadgeByRequirement(requirement));
+  }
+  
+  async createBadge(badge: InsertBadge): Promise<Badge> {
+    return await import('./db-storage-gamification').then(mod => mod.createBadge(badge));
+  }
+  
+  async getUserNotesCount(userId: number): Promise<number> {
+    return await import('./db-storage-gamification').then(mod => mod.getUserNotesCount(userId));
   }
 
   async getUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
-    return getUserBadges(userId);
+    return await import('./db-storage-gamification').then(mod => mod.getUserBadges(userId));
   }
 
   async getUserBadgeByIds(userId: number, badgeId: number): Promise<UserBadge | undefined> {
-    return getUserBadgeByIds(userId, badgeId);
+    return await import('./db-storage-gamification').then(mod => mod.getUserBadgeByIds(userId, badgeId));
   }
 
   async createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
-    return createUserBadge(userBadge);
+    return await import('./db-storage-gamification').then(mod => mod.createUserBadge(userBadge));
+  }
+  
+  async awardBadge(userId: number, badgeId: number): Promise<UserBadge> {
+    return await import('./db-storage-gamification').then(mod => mod.awardBadge(userId, badgeId));
   }
 
   async markUserBadgeSeen(id: number): Promise<UserBadge> {
-    return markUserBadgeSeen(id);
+    return await import('./db-storage-gamification').then(mod => mod.markUserBadgeSeen(id));
   }
 
   async getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
-    return getUnseenUserBadges(userId);
+    return await import('./db-storage-gamification').then(mod => mod.getUnseenUserBadges(userId));
+  }
+  
+  async checkAndAwardBadges(userId: number): Promise<UserBadge[]> {
+    return await import('./db-storage-gamification').then(mod => mod.checkAndAwardBadges(userId));
   }
 
   // Activity and Analytics methods

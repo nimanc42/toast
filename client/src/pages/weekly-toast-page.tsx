@@ -17,9 +17,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export default function WeeklyToastPage() {
   const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
-  const [toast, setToast] = useState<{ content: string; audioUrl: string } | null>(null);
+  const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const { toast: showToast } = useToast();
+  const { toast } = useToast();
   
   // Voice options with descriptions
   const voiceOptions = [
@@ -54,16 +54,16 @@ export default function WeeklyToastPage() {
       const res = await fetch("/api/toasts/generate", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
-        setToast(data);
+        setGeneratedToast(data);
         // Refresh the latest toast data
         queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
-        showToast({
+        toast({
           title: "Toast Generated Successfully",
           description: "Your weekly toast has been created based on your recent notes.",
         });
       } else {
         const errorData = await res.json();
-        showToast({
+        toast({
           title: "Failed to generate toast",
           description: errorData.message || "Could not generate toast. Add more reflections or try later.",
           variant: "destructive"
@@ -71,7 +71,7 @@ export default function WeeklyToastPage() {
       }
     } catch (error) {
       console.error("Toast generation error:", error);
-      showToast({
+      toast({
         title: "Failed to generate toast",
         description: "Please ensure you have recent notes from the past week.",
         variant: "destructive"
@@ -200,11 +200,11 @@ export default function WeeklyToastPage() {
 
   if (!latestToast || error) {
     // If there's already a generated toast in this session, use that instead of the demo toast
-    if (toast) {
-      const generatedToast: Toast = {
+    if (generatedToast) {
+      const toastObj: Toast = {
         id: 0,
-        content: toast.content,
-        audioUrl: toast.audioUrl,
+        content: generatedToast.content,
+        audioUrl: generatedToast.audioUrl,
         createdAt: new Date().toISOString(),
         userId: 0,
         shared: false
@@ -236,7 +236,7 @@ export default function WeeklyToastPage() {
                 <div className="bg-gray-50 p-6 border-b border-gray-200">
                   <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>
                   <AudioPlayer 
-                    audioUrl={generatedToast.audioUrl} 
+                    audioUrl={toastObj.audioUrl} 
                     title="Your Weekly Toast" 
                     duration="" 
                   />
@@ -247,7 +247,7 @@ export default function WeeklyToastPage() {
                   <h3 className="font-medium text-lg mb-4">Your Toast Transcript</h3>
                   
                   <div className="space-y-4 text-gray-700">
-                    {generatedToast.content.split('\n').map((paragraph, index) => (
+                    {toastObj.content.split('\n').map((paragraph, index) => (
                       <p key={index}>{paragraph}</p>
                     ))}
                   </div>

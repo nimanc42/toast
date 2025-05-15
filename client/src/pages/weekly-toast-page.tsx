@@ -54,6 +54,12 @@ export default function WeeklyToastPage() {
       const res = await fetch("/api/toasts/generate", { method: "POST" });
       if (res.ok) {
         const data = await res.json();
+        console.log("Toast generation data:", data);
+        
+        if (!data.audioUrl) {
+          console.warn("No audio URL in response, likely an issue with ElevenLabs API or Supabase");
+        }
+        
         setGeneratedToast(data);
         // Refresh the latest toast data
         queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
@@ -63,6 +69,7 @@ export default function WeeklyToastPage() {
         });
       } else {
         const errorData = await res.json();
+        console.error("Toast generation API error:", errorData);
         toast({
           title: "Failed to generate toast",
           description: errorData.message || "Could not generate toast. Add more reflections or try later.",

@@ -409,8 +409,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       
+      console.log(`[Toast Generator] Generating toast for user ${userId}`);
+      
       // Use the dedicated toast generator service
       const result = await generateWeeklyToast(userId);
+      
+      console.log(`[Toast Generator] Result:`, {
+        content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
+        audioUrl: result.audioUrl || 'No audio URL'
+      });
       
       // Log analytics for toast generation
       if (storage.logUserActivity) {
@@ -419,7 +426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           activityType: 'toast-generate',
           metadata: { 
             automated: false,
-            source: 'manual-trigger'
+            source: 'manual-trigger',
+            hasAudio: !!result.audioUrl
           } as Record<string, any>
         });
       }

@@ -15,18 +15,24 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function WeeklyToastPage() {
+  // All hooks must be at the top level
   const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   
-  // Voice options with descriptions
-  const voiceOptions = [
-    { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
-    { id: "friendly", name: "Adam", description: "Warm and friendly" },
-    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" }
-  ];
+  // Demo toast state (moved from conditional section)
+  const [demoToast, setDemoToast] = useState<Toast>({
+    id: 0,
+    content: "Welcome to A Toast to You! This is a sample of what your personalized weekly toast will look like. You've been doing a great job with your daily reflections. Your commitment to growth and personal development is inspiring.\n\nThis week, we noticed themes of perseverance, creativity, and self-care in your notes. These qualities will serve you well as you continue on your journey.\n\nHere's to another week of growth and discovery ahead!",
+    audioUrl: null,
+    createdAt: new Date().toISOString(),
+    userId: 0,
+    shareCode: "demo",
+    shared: false,
+    shareUrl: "/shared/demo"
+  });
   
   // Define a Toast type to fix type errors
   interface Toast {
@@ -39,6 +45,13 @@ export default function WeeklyToastPage() {
     shared: boolean;
     shareUrl?: string;
   }
+  
+  // Voice options with descriptions
+  const voiceOptions = [
+    { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
+    { id: "friendly", name: "Adam", description: "Warm and friendly" },
+    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" }
+  ];
   
   // Fetch the latest toast
   const { data: latestToast, isLoading, error } = useQuery<Toast>({

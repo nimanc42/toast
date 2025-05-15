@@ -85,16 +85,22 @@ router.post('/social-login', async (req, res) => {
           password, // This is a secure random password
           name: validatedData.name,
           externalId: validatedData.supabaseId,
-          externalProvider: validatedData.provider,
-          verified: true // Social logins are pre-verified
+          externalProvider: validatedData.provider
         });
+        
+        // Mark user as verified (social logins are pre-verified)
+        user = await storage.verifyUserEmail(user.id);
       } else if (!user.externalId) {
         // Update existing user with external ID if they signed up with email before
         user = await storage.updateUser(user.id, {
           externalId: validatedData.supabaseId,
-          externalProvider: validatedData.provider,
-          verified: true
+          externalProvider: validatedData.provider
         });
+        
+        // Ensure user is verified
+        if (!user.verified) {
+          user = await storage.verifyUserEmail(user.id);
+        }
       }
       
       // Generate JWT token

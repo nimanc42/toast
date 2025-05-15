@@ -10,11 +10,15 @@ import {
   addCommentSchema
 } from "@shared/schema";
 import { z } from "zod";
+import authSocialRoutes from "../routes/auth-social";
 
 /**
  * Register social feature endpoints
  */
 export function registerSocialRoutes(app: Express) {
+  // Social authentication endpoints
+  app.use('/api/auth', authSocialRoutes);
+  
   // Friendship endpoints
   app.get("/api/friends", ensureAuthenticated, getFriends);
   app.post("/api/friends", ensureAuthenticated, addFriend);

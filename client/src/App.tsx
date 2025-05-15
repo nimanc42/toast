@@ -9,6 +9,7 @@ import { WebSocketProvider } from "@/hooks/websocket-provider";
 import { NewBadgeNotification } from "@/components/new-badge-notification";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
+import AuthCallback from "@/pages/auth-callback";
 import WeeklyToastPage from "@/pages/weekly-toast-page";
 import SettingsPage from "@/pages/settings-page";
 import SharedToastPage from "@/pages/shared-toast-page";
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/settings" component={SettingsPage} />
       <ProtectedRoute path="/analytics" component={AnalyticsPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/shared/:code" component={SharedToastPage} />
       <Route component={NotFound} />
     </Switch>

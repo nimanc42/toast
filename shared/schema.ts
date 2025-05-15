@@ -9,6 +9,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   verified: boolean("verified").notNull().default(false),
+  externalId: text("external_id").unique(), // ID from external auth provider (Supabase, Google, etc.)
+  externalProvider: text("external_provider"), // Name of the provider (google, apple, etc.)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -146,6 +148,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   name: true,
   email: true,
+  externalId: true,
+  externalProvider: true,
 });
 
 export const insertNoteSchema = createInsertSchema(notes).pick({

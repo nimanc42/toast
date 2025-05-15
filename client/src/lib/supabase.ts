@@ -9,11 +9,28 @@ import { createClient } from '@supabase/supabase-js';
  */
 
 // Validate environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Create supabase client
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Placeholder functions when credentials aren't available
+const createPlaceholderClient = () => {
+  console.warn('Supabase credentials not found. Social authentication will be unavailable.');
+  
+  // Return a mock client that doesn't make actual API calls
+  return {
+    auth: {
+      signInWithOAuth: () => Promise.resolve({ error: new Error('Supabase credentials not configured') }),
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signOut: () => Promise.resolve({ error: null })
+    }
+  };
+};
+
+// Create supabase client or use placeholder if credentials aren't available
+export const supabase = supabaseUrl && supabaseAnonKey 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createPlaceholderClient() as any; // Type cast to avoid TypeScript errors
 
 /**
  * Sign in with Google
@@ -21,6 +38,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  */
 export async function signInWithGoogle() {
   try {
+    // Check if supabase is properly configured
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      throw new Error('Supabase credentials not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
+    }
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -41,6 +63,11 @@ export async function signInWithGoogle() {
  */
 export async function signInWithApple() {
   try {
+    // Check if supabase is properly configured
+    if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+      throw new Error('Supabase credentials not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.');
+    }
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'apple',
       options: {

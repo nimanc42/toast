@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import { SocialAuthButtons } from "@/components/ui/social-auth-buttons";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -162,6 +163,11 @@ export default function AuthPage() {
                       "Sign in"
                     )}
                   </Button>
+                  
+                  <SocialAuthButtons 
+                    onAuthStart={() => loginForm.reset()}
+                    onAuthError={(error) => console.error('Auth error:', error)}
+                  />
                 </form>
               </Form>
             </TabsContent>
@@ -271,6 +277,11 @@ export default function AuthPage() {
                       "Create Account"
                     )}
                   </Button>
+                  
+                  <SocialAuthButtons 
+                    onAuthStart={() => registerForm.reset()}
+                    onAuthError={(error) => console.error('Auth error:', error)}
+                  />
                 </form>
               </Form>
             </TabsContent>

@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaGoogle, FaApple } from "react-icons/fa";
 import { signInWithGoogle, signInWithApple } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 interface SocialAuthButtonsProps {
   onAuthStart?: () => void;

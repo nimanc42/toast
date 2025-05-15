@@ -92,20 +92,33 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
   const voicePreference = await storage.getVoicePreferenceByUserId(userId);
   const voiceStyle = voicePreference ? voicePreference.voiceStyle : 'motivational';
   
+  console.log(`[Toast Generator] User ${userId} voice preference:`, { 
+    fromDb: voicePreference?.voiceStyle || 'none found', 
+    usingStyle: voiceStyle 
+  });
+  
   // Get the ElevenLabs voice ID based on the style
   let voiceId = '';
+  let voiceName = '';
+  
   switch (voiceStyle) {
     case 'friendly':
       voiceId = '21m00Tcm4TlvDq8ikWAM'; // Adam
+      voiceName = 'Adam (Friendly)';
       break;
     case 'poetic':
       voiceId = 'AZnzlk1XvdvUeBnXmlld'; // Domi
+      voiceName = 'Domi (Poetic)';
       break;
     case 'motivational':
     default:
       voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Rachel
+      voiceName = 'Rachel (Motivational)';
       break;
   }
+  
+  console.log(`[Toast Generator] Selected voice: ${voiceName} (ID: ${voiceId})`);
+  
 
   // 4️⃣ Call ElevenLabs to convert the toast to speech
   try {

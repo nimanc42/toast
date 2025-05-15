@@ -411,8 +411,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Toast Generator] Generating toast for user ${userId}`);
       
-      // Use the dedicated toast generator service
       try {
+        // Use the dedicated toast generator service
         const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Result:`, {

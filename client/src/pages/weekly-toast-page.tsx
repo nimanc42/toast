@@ -83,9 +83,26 @@ export default function WeeklyToastPage() {
       } else {
         const errorData = await res.json();
         console.error("Toast generation API error:", errorData);
+        
+        // Handle specific API errors
+        let errorTitle = "Failed to generate toast";
+        let errorMessage = errorData.error || errorData.message || "Could not generate toast. Add more reflections or try later.";
+        
+        // Handle specific error messages
+        if (errorMessage.includes('OpenAI API key')) {
+          errorTitle = "API Configuration Error";
+          errorMessage = "The OpenAI API key is invalid. Please contact support.";
+        } else if (errorMessage.includes('ElevenLabs API key')) {
+          errorTitle = "Text-to-Speech Error";
+          errorMessage = "The ElevenLabs API key is missing. Toast will be created without audio.";
+        } else if (errorMessage.includes('No notes found')) {
+          errorTitle = "No reflections available";
+          errorMessage = "You need to add daily reflections before generating a weekly toast.";
+        }
+        
         toast({
-          title: "Failed to generate toast",
-          description: errorData.error || errorData.message || "Could not generate toast. Add more reflections or try later.",
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive"
         });
       }

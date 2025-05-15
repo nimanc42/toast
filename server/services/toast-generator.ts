@@ -51,24 +51,18 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
 
   // 3️⃣ Call OpenAI to generate the toast text
   
-  // Check if OpenAI API key is provided and valid
+  // Check if OpenAI API key is valid
   if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('A Toast')) {
     throw new Error('Invalid OpenAI API key. Please provide a valid API key in the environment variables.');
   }
   
-  let toastContent;
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",  // Using the latest model
-      messages: [{ role: "user", content: prompt }]
-    });
-    
-    toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
-  } catch (error) {
-    console.error('[OpenAI] Error generating toast content:', error);
-    throw new Error('Failed to generate toast content: ' + (error.message || 'Unknown OpenAI error'));
-  }
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",  // Using the latest model
+    messages: [{ role: "user", content: prompt }]
+  });
+  
+  const toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
   
 
   // Get user's voice preference
@@ -97,17 +91,7 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
     // Important: Handle missing API key gracefully
     if (!process.env.ELEVENLABS_API_KEY) {
       console.error('[TTS] Missing ELEVENLABS_API_KEY');
-      // Fall back to creating toast without audio
-      const noteIds = notes.map(note => note.id);
-      const toast = await storage.createToast({
-        userId,
-        content: toastContent,
-        audioUrl: null,
-        noteIds,
-        shared: false,
-        shareUrl: null
-      });
-      return { content: toast.content, audioUrl: '' };
+      throw new Error('ElevenLabs API key is missing. Audio generation not possible.');
     }
     
     // Use Promise.race with a timeout to prevent hanging requests

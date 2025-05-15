@@ -16,6 +16,13 @@ export default function WeeklyToastPage() {
   const [regenerating, setRegenerating] = useState(false);
   const { toast } = useToast();
   
+  // Voice options with descriptions
+  const voiceOptions = [
+    { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
+    { id: "friendly", name: "Adam", description: "Warm and friendly" },
+    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" }
+  ];
+  
   // Define a Toast type to fix type errors
   interface Toast {
     id: number;

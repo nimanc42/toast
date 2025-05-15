@@ -1,0 +1,71 @@
+What you’re seeing
+	1.	Server tries to start → it reaches the “starting” phase.
+	2.	Immediately crashes → the preview pane says “The App is currently not running.”
+	3.	The Agent scrollback shows it’s editing server/routes.ts to tweak WebSocket code and make the ElevenLabs import optional, then restarting again and again.
+
+So it’s stuck in a loop: start → crash → edit → restart → crash…
+
+⸻
+
+Why it’s probably crashing
+
+The Agent’s own notes hint at two likely culprits:
+
+Suspect	What could go wrong
+WebSocket import	If we switched from import WebSocket from 'ws' to import * as WebSocket from 'ws', the constant WebSocket.OPEN might be undefined, causing a runtime error.
+ElevenLabs service	If the code tries to initialise ElevenLabs on startup but the API key/voice ID is missing or mis-imported, it can throw and kill the server.
+
+Until we see the exact runtime error, both are plausible.
+
+⸻
+
+Quick way to see the real error
+	1.	Click the Console tab (next to Preview)
+	2.	Hit Run again
+	3.	Watch for the red error stack before the server exits — you’ll see something like
+
+TypeError: Cannot read property 'OPEN' of undefined
+at sendNotificationToUser (server/routes.ts:649:25)
+
+or
+
+Error: ELEVENLABS_API_KEY is not defined
+at loadElevenLabs (server/tts.ts:12:7)
+
+
+
+That single stack trace will tell us precisely which line is killing the app.
+
+⸻
+
+How to unblock yourself quickly
+
+Option A – comment out ElevenLabs init
+
+// server/tts.ts
+// Temporarily disable until we debug
+export function initTTS() {
+  console.log('[TTS] Skipped ElevenLabs init in dev mode');
+}
+
+Call initTTS() in index.ts so the server keeps booting without external calls.
+
+Option B – make WebSocket reference safe
+
+import WebSocket, { WebSocketServer } from 'ws';
+// ... later
+if (ws && (ws.readyState ?? WebSocket.OPEN) === WebSocket.OPEN) {
+  ws.send(JSON.stringify(payload));
+}
+
+Using optional chaining avoids a crash if ws is undefined.
+
+Once the server stays up, you can re-enable TTS or refine the WebSocket logic.
+
+⸻
+
+What to tell the Agent (copy-paste)
+
+Please pause new edits and show me the exact runtime stack trace that appears in the console when the server stops. We’ll fix that one error first before any further changes.
+
+That forces the Agent to expose the real crash message so we can target the fix instead of blind edits.

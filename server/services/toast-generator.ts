@@ -5,7 +5,14 @@ import { storage } from '../storage';
 import { uploadAudioToSupabase } from './supabase-storage';
 
 // Initialize OpenAI client
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+console.log("[OpenAI] API key exists:", !!process.env.OPENAI_API_KEY);
+console.log("[OpenAI] API key length:", process.env.OPENAI_API_KEY?.length || 0);
+console.log("[OpenAI] API key prefix:", process.env.OPENAI_API_KEY?.substring(0, 7) || "N/A");
+
+// Create the OpenAI client
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY 
+});
 
 // Flag to determine if we should use Supabase or local storage
 const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);

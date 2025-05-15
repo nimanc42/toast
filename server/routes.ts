@@ -408,8 +408,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/toasts/generate", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      const voice = req.body.voice;
       
-      console.log(`[Toast Generator] Generating toast for user ${userId}`);
+      console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}`);
+      
+      // Update user voice preference if provided
+      if (voice) {
+        const existingPref = await storage.getVoicePreferenceByUserId(userId);
+        if (existingPref) {
+          await storage.updateVoicePreference(existingPref.id, {
+            voiceStyle: voice
+          });
+        } else {
+          await storage.createVoicePreference({
+            userId,
+            voiceStyle: voice
+          });
+        }
+      }
       
       try {
         // Use the dedicated toast generator service

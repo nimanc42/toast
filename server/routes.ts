@@ -4,6 +4,13 @@ import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
 import gamificationRoutes from "./routes/gamification";
+import { 
+  sendVerification, 
+  verifyEmail, 
+  forgotPassword, 
+  resetPassword, 
+  resendVerification 
+} from "./routes/auth-email";
 // WebSocket temporarily disabled for debugging
 import { 
   insertNoteSchema, 
@@ -174,6 +181,13 @@ function generateToastContent(noteCount: number, themes: string[]): string {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   setupAuth(app);
+  
+  // Email verification and password reset routes
+  app.post("/api/auth/send-verification", sendVerification);
+  app.post("/api/auth/verify-email", verifyEmail);
+  app.post("/api/auth/forgot-password", forgotPassword);
+  app.post("/api/auth/reset-password", resetPassword);
+  app.post("/api/auth/resend-verification", resendVerification);
   
   // Social features routes
   registerSocialRoutes(app);

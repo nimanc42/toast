@@ -36,7 +36,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   
   // Save note mutation
   const saveMutation = useMutation({
-    mutationFn: async (data: { content?: string; audioUrl?: string }) => {
+    mutationFn: async (data: { content?: string; audioUrl?: string; bundleTag?: string | null }) => {
       console.log("Saving note with data:", data);
       console.log("User authenticated:", !!user);
       console.log("Auth token:", localStorage.getItem('authToken') ? "Present" : "Missing");
@@ -109,14 +109,18 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     // In a real app, we would upload the audio blob to a storage service
     // and save the URL. For this prototype, we'll just save the content.
     if (inputType === "text") {
-      saveMutation.mutate({ content: textContent });
+      saveMutation.mutate({ 
+        content: textContent,
+        bundleTag: null // TODO (BundledAway): use actual bundle tag when feature is activated
+      });
     } else if (audioBlob) {
       // In a real implementation, we would upload the audio blob here
       // and get back a URL to store. For now, we'll just create a note
       // with placeholder text.
       saveMutation.mutate({ 
         content: "[Audio reflection]",
-        audioUrl: "audio-url-placeholder" 
+        audioUrl: "audio-url-placeholder",
+        bundleTag: null // TODO (BundledAway): use actual bundle tag when feature is activated
       });
     }
   };

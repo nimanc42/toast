@@ -191,6 +191,7 @@ export default function WeeklyToastPage() {
           <div className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
             {/* Audio Player */}
             <div className="bg-gray-50 p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>
               <AudioPlayer 
                 audioUrl={demoToast.audioUrl} 
                 title="Toast Preview" 
@@ -330,11 +331,41 @@ export default function WeeklyToastPage() {
         <div className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
           {/* Audio Player */}
           <div className="bg-gray-50 p-6 border-b border-gray-200">
-            <AudioPlayer 
-              audioUrl={latestToast.audioUrl} 
-              title="Your Week in Review" 
-              duration={latestToast.audioUrl ? "2:30" : "0:00"} 
-            />
+            <h3 className="text-lg font-semibold mb-3">Listen to your weekly toast</h3>
+            {latestToast.audioUrl ? (
+              <AudioPlayer 
+                audioUrl={latestToast.audioUrl} 
+                title="Your Week in Review" 
+                duration="2:30" 
+              />
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-4 mb-4">
+                <p className="text-amber-800 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  No audio has been generated for this toast yet. 
+                </p>
+                <Button 
+                  onClick={() => regenerateAudioMutation.mutate({ 
+                    toastId: latestToast.id, 
+                    voiceStyle: selectedVoice 
+                  })}
+                  className="mt-2 bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-300"
+                  size="sm"
+                  disabled={regenerating}
+                >
+                  {regenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                      Generating audio...
+                    </>
+                  ) : "Generate audio for this toast"}
+                </Button>
+              </div>
+            )}
             
             {/* Voice Selection */}
             <div className="mt-4 flex items-center justify-between">

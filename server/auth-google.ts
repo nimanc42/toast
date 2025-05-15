@@ -3,6 +3,7 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { storage } from './storage';
 import { hashPassword } from './auth';
 import crypto from 'crypto';
+import { User } from '@shared/schema';
 
 // Check if Google OAuth credentials are configured
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -25,7 +26,7 @@ if (isGoogleAuthConfigured) {
         clientSecret: googleClientSecret!,
         callbackURL: callbackURL,
       },
-      async (_accessToken, _refreshToken, profile, done) => {
+      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           // Extract user info from Google profile
           const email = profile.emails?.[0]?.value;
@@ -69,9 +70,13 @@ if (isGoogleAuthConfigured) {
               password,
               name,
               externalId: googleId,
-              externalProvider: 'google',
-              verified: true // Google OAuth users are pre-verified
+              externalProvider: 'google'
             });
+            
+            // Verify the user immediately since Google OAuth users are pre-verified
+            if (!user.verified) {
+              user = await storage.verifyUserEmail(user.id);
+            }
           }
           
           return done(null, user);
@@ -87,5 +92,7 @@ if (isGoogleAuthConfigured) {
 } else {
   console.warn('Google OAuth credentials not configured. Google Sign-In will be unavailable.');
 }
+
+// Passport serialization setup - these are handled in the main auth.ts file
 
 export default passport;

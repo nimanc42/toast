@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { FaGoogle, FaApple } from "react-icons/fa";
-import { signInWithGoogle, signInWithApple } from "@/lib/supabase";
+import { signInWithApple } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, AlertTriangle } from "lucide-react";
 
@@ -13,51 +13,56 @@ interface SocialAuthButtonsProps {
 export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButtonsProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(true);
+  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true);
+  const [isGoogleConfigured, setIsGoogleConfigured] = useState(false);
   const { toast } = useToast();
 
-  // Check if Supabase is configured with credentials
+  // Check if auth methods are configured
   useEffect(() => {
+    // Check Supabase for Apple Auth
     const hasSupabaseCredentials = !!(
       import.meta.env.VITE_SUPABASE_URL && 
       import.meta.env.VITE_SUPABASE_ANON_KEY
     );
     
-    setIsConfigured(hasSupabaseCredentials);
+    setIsSupabaseConfigured(hasSupabaseCredentials);
     
     if (!hasSupabaseCredentials) {
-      console.warn('Supabase credentials missing. Social authentication will be disabled.');
+      console.warn('Supabase credentials not found. Social authentication will be unavailable.');
     }
+    
+    // Check if Google OAuth is configured by making a lightweight request
+    fetch('/api/auth/google/status')
+      .then(response => response.json())
+      .then(data => {
+        setIsGoogleConfigured(data.configured);
+      })
+      .catch(error => {
+        console.warn('Failed to check Google auth status:', error);
+        // Default to true to allow attempts (the backend will handle error cases)
+        setIsGoogleConfigured(true);
+      });
   }, []);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     try {
       setIsGoogleLoading(true);
       if (onAuthStart) onAuthStart();
       
-      // Check configuration before attempting sign-in
-      if (!isConfigured) {
-        throw new Error('Supabase credentials not configured. Social authentication is unavailable.');
-      }
+      // This uses the server-side passport flow instead of client-side
+      window.location.href = '/api/auth/google';
       
-      await signInWithGoogle();
-      // No need to handle success here because the page will redirect
+      // No need to set isGoogleLoading to false as we're redirecting
     } catch (error) {
-      console.error('Google auth error:', error);
-      
-      // Provide a more specific error message for configuration issues
-      const errorMessage = !isConfigured
-        ? "Social authentication is not configured. Please contact the administrator."
-        : "Could not sign in with Google. Please try again.";
+      console.error('Google auth redirect error:', error);
       
       toast({
         title: "Authentication failed",
-        description: errorMessage,
+        description: "Could not redirect to Google login. Please try again.",
         variant: "destructive",
       });
       
       if (onAuthError && error instanceof Error) onAuthError(error);
-    } finally {
       setIsGoogleLoading(false);
     }
   };
@@ -68,8 +73,8 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
       if (onAuthStart) onAuthStart();
       
       // Check configuration before attempting sign-in
-      if (!isConfigured) {
-        throw new Error('Supabase credentials not configured. Social authentication is unavailable.');
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase credentials not configured. Apple authentication is unavailable.');
       }
       
       await signInWithApple();
@@ -78,8 +83,8 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
       console.error('Apple auth error:', error);
       
       // Provide a more specific error message for configuration issues
-      const errorMessage = !isConfigured
-        ? "Social authentication is not configured. Please contact the administrator."
+      const errorMessage = !isSupabaseConfigured
+        ? "Apple authentication is not configured. Please contact the administrator."
         : "Could not sign in with Apple. Please try again.";
       
       toast({
@@ -107,7 +112,7 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
         </div>
       </div>
       
-      {!isConfigured && (
+      {!isGoogleConfigured && !isSupabaseConfigured && (
         <div className="flex items-center p-3 mb-2 text-sm rounded-md bg-amber-50 text-amber-800 border border-amber-200">
           <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
           <span>Social login is not configured. Contact the administrator.</span>
@@ -117,7 +122,7 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isAppleLoading || !isConfigured}
+        disabled={isGoogleLoading || !isGoogleConfigured}
         onClick={handleGoogleSignIn}
         className="w-full bg-white text-black hover:bg-gray-100 border-gray-300"
       >
@@ -132,7 +137,7 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isAppleLoading || !isConfigured}
+        disabled={isAppleLoading || !isSupabaseConfigured}
         onClick={handleAppleSignIn}
         className="w-full bg-black text-white hover:bg-gray-900 border-black"
       >

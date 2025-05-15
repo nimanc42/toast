@@ -227,25 +227,28 @@ export default function ShareToast({ toast, onShareClick }: ShareToastProps) {
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 gap-2"
                   onClick={() => onShareClick && onShareClick('twitter')}
                 >
+                  <FaTwitter className="h-4 w-4 text-[#1DA1F2]" />
                   Twitter
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 gap-2"
                   onClick={() => onShareClick && onShareClick('facebook')}
                 >
+                  <FaFacebook className="h-4 w-4 text-[#4267B2]" />
                   Facebook
                 </Button>
                 <Button 
                   size="sm" 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 gap-2"
                   onClick={() => onShareClick && onShareClick('linkedin')}
                 >
+                  <FaLinkedin className="h-4 w-4 text-[#0A66C2]" />
                   LinkedIn
                 </Button>
               </div>

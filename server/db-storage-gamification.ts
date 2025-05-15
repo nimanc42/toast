@@ -100,13 +100,13 @@ export async function getUserBadges(userId: number): Promise<(UserBadge & { badg
     userId: userBadges.userId,
     badgeId: userBadges.badgeId,
     seen: userBadges.seen,
-    createdAt: userBadges.createdAt,
+    awardedAt: userBadges.awardedAt,
     badge: badges
   })
   .from(userBadges)
   .innerJoin(badges, eq(userBadges.badgeId, badges.id))
   .where(eq(userBadges.userId, userId))
-  .orderBy(desc(userBadges.createdAt));
+  .orderBy(desc(userBadges.awardedAt));
 }
 
 export async function getUserBadgeByIds(userId: number, badgeId: number): Promise<UserBadge | undefined> {
@@ -147,7 +147,7 @@ export async function getUnseenUserBadges(userId: number): Promise<(UserBadge & 
     userId: userBadges.userId,
     badgeId: userBadges.badgeId,
     seen: userBadges.seen,
-    createdAt: userBadges.createdAt,
+    awardedAt: userBadges.awardedAt,
     badge: badges
   })
   .from(userBadges)
@@ -158,7 +158,7 @@ export async function getUnseenUserBadges(userId: number): Promise<(UserBadge & 
       eq(userBadges.seen, false)
     )
   )
-  .orderBy(desc(userBadges.createdAt));
+  .orderBy(desc(userBadges.awardedAt));
 }
 
 /**

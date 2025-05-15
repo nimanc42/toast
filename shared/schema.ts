@@ -122,7 +122,7 @@ export const userBadges = pgTable("user_badges", {
   userId: integer("user_id").notNull().references(() => users.id),
   badgeId: integer("badge_id").notNull().references(() => badges.id),
   seen: boolean("seen").notNull().default(false), // for notification purposes
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  awardedAt: timestamp("awarded_at").defaultNow().notNull(),
 }, (table) => {
   return {
     // Each user can earn a specific badge only once

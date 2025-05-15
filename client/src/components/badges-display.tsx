@@ -12,7 +12,7 @@ type UserBadge = {
   userId: number;
   badgeId: number;
   seen: boolean;
-  createdAt: string;
+  awardedAt: string;
   badge: {
     id: number;
     name: string;

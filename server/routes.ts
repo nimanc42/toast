@@ -190,7 +190,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
         ...req.body,
-        userId
+        userId,
+        // TODO (BundledAway): activate bundleTag feature when UI is ready
+        bundleTag: req.body.bundleTag || null
       });
       
       console.log("Validated data:", validatedData);

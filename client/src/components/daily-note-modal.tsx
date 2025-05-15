@@ -131,6 +131,15 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </DialogDescription>
         </DialogHeader>
         
+        {/* TODO (BundledAway): enable bundle picker UI */}
+        <input
+          type="text"
+          name="bundleTag"
+          value=""
+          disabled
+          hidden
+        />
+        
         {/* Input Type Toggle */}
         <div className="flex justify-center mb-4">
           <div className="inline-flex rounded-md shadow-sm">

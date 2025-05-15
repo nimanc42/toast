@@ -30,12 +30,29 @@ const ensureAudioDirExists = () => {
 };
 
 /**
+ * Input parameters for toast generation
+ */
+interface ToastInput {
+  userId: number;
+  bundleTag?: string | null;
+}
+
+/**
  * Generate a weekly toast from a user's notes
  * 
- * @param userId The user ID
+ * @param input The input parameters containing userId and optional bundleTag
  * @returns Object containing the toast text and audio URL
  */
-export async function generateWeeklyToast(userId: number): Promise<{ content: string, audioUrl: string }> {
+export async function generateWeeklyToast(input: ToastInput | number): Promise<{ content: string, audioUrl: string }> {
+  // Handle legacy calls with just userId
+  const userId = typeof input === 'number' ? input : input.userId;
+  const bundleTag = typeof input === 'number' ? null : input.bundleTag;
+  
+  // TODO (BundledAway): activate bundle tag feature for memory grouping
+  // Log bundle tag only in development mode
+  if (process.env.NODE_ENV === 'development' && bundleTag) {
+    console.log(`[Toast Generator] Using bundle tag: ${bundleTag}`);
+  }
   // 1️⃣ Gather notes from the last 7 days
   const endDate = new Date();
   const startDate = new Date();
@@ -306,7 +323,7 @@ export async function generateWeeklyToastsForAllUsers(): Promise<number> {
   
   for (const userId of userIds) {
     try {
-      await generateWeeklyToast(userId);
+      await generateWeeklyToast({ userId });
       successCount++;
     } catch (error) {
       console.error(`Failed to generate toast for user ${userId}:`, error);

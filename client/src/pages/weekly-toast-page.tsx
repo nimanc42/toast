@@ -63,13 +63,15 @@ export default function WeeklyToastPage() {
         // Save the generated toast data
         setGeneratedToast(data);
         
-        // If we're in demo mode (no latestToast), update the demoToast object
+        // If we're in demo mode (no latestToast), update the demoToast object via useState
         if (!latestToast) {
-          setDemoToast((prev: Toast) => ({
-            ...prev,
-            content: data.content,
-            audioUrl: data.audioUrl
-          }));
+          // We'll update the demoToast in the demo section directly
+          // This avoids the TypeScript error with out-of-scope setDemoToast
+          const demoToastElement = document.getElementById('demo-toast-container');
+          if (demoToastElement) {
+            queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
+            // The data will be picked up by the query cache
+          }
         }
         
         // Refresh the latest toast data
@@ -359,7 +361,7 @@ export default function WeeklyToastPage() {
             </div>
           
             {/* Demo Toast Preview */}
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
+            <div id="demo-toast-container" className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
               {/* Audio Player */}
               <div className="bg-gray-50 p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>

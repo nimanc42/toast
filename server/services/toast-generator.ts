@@ -50,13 +50,26 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
   `;
 
   // 3️⃣ Call OpenAI to generate the toast text
-  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o",  // Using the latest model
-    messages: [{ role: "user", content: prompt }]
-  });
   
-  const toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
+  // Check if OpenAI API key is provided and valid
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('A Toast')) {
+    throw new Error('Invalid OpenAI API key. Please provide a valid API key in the environment variables.');
+  }
+  
+  let toastContent;
+  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",  // Using the latest model
+      messages: [{ role: "user", content: prompt }]
+    });
+    
+    toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
+  } catch (error) {
+    console.error('[OpenAI] Error generating toast content:', error);
+    throw new Error('Failed to generate toast content: ' + (error.message || 'Unknown OpenAI error'));
+  }
+  
 
   // Get user's voice preference
   const voicePreference = await storage.getVoicePreferenceByUserId(userId);

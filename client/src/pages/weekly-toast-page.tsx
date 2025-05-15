@@ -43,6 +43,28 @@ export default function WeeklyToastPage() {
     staleTime: 60000, // 1 minute
   });
 
+  // Mutation to generate a new toast
+  const generateToastMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/toasts/generate", {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
+      toast({
+        title: "Toast Generated",
+        description: "Your weekly toast has been created based on your recent notes.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to generate toast",
+        description: error.message || "Please ensure you have recent notes.",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Mutation to regenerate audio with a different voice
   const regenerateAudioMutation = useMutation({
     mutationFn: async ({ toastId, voiceStyle }: { toastId: number, voiceStyle: string }) => {

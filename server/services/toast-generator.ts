@@ -47,16 +47,16 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
 
   // 3️⃣ Call OpenAI to generate the toast text
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  const { choices } = await openai.chat.completions.create({
+  const completion = await openai.chat.completions.create({
     model: "gpt-4o",  // Using the latest model
     messages: [{ role: "user", content: prompt }]
   });
   
-  const toastContent = choices[0].message.content.trim();
+  const toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
 
   // Get user's voice preference
   const voicePreference = await storage.getVoicePreferenceByUserId(userId);
-  const voiceStyle = voicePreference?.voiceStyle || 'motivational';
+  const voiceStyle = voicePreference ? voicePreference.voiceStyle : 'motivational';
   
   // Get the ElevenLabs voice ID based on the style
   let voiceId = '';
@@ -109,32 +109,40 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
     
     await fs.promises.writeFile(filePath, buffer);
 
+    // Get note IDs for the toast
+    const noteIds = notes.map(note => note.id);
+    
     // 5️⃣ Create the toast in the database
     const toast = await storage.createToast({
       userId,
       content: toastContent,
       audioUrl: `/audio/${filename}`,
-      shareCode: timestamp.toString(36),
-      shared: false
+      noteIds,
+      shared: false,
+      shareUrl: null
     });
 
     return { 
       content: toast.content, 
-      audioUrl: toast.audioUrl 
+      audioUrl: toast.audioUrl || '' 
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating speech:', error);
+    
+    // Get note IDs for the toast
+    const noteIds = notes.map(note => note.id);
     
     // Still create a toast in the database, but without an audio URL
     const toast = await storage.createToast({
       userId,
       content: toastContent,
       audioUrl: null,
-      shareCode: Date.now().toString(36),
-      shared: false
+      noteIds,
+      shared: false,
+      shareUrl: null
     });
     
-    throw new Error(`Successfully generated toast text, but failed to create audio: ${error.message}`);
+    throw new Error(`Successfully generated toast text, but failed to create audio: ${error?.message || 'Unknown error'}`);
   }
 }
 

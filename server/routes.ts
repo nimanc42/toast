@@ -404,6 +404,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Modern API route using the new toast-generator service
+  app.post("/api/toasts/generate", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Use the dedicated toast generator service
+      const result = await generateWeeklyToast(userId);
+      
+      // Log analytics for toast generation
+      if (storage.logUserActivity) {
+        await storage.logUserActivity({
+          userId,
+          activityType: 'toast-generate',
+          metadata: { 
+            automated: false,
+            source: 'manual-trigger'
+          }
+        });
+      }
+      
+      res.status(201).json(result);
+    } catch (error) {
+      console.error('Error generating toast:', error);
+      
+      // Handle specific errors
+      if (error.message.includes('No notes found')) {
+        return res.status(400).json({ 
+          message: "You don't have any notes from the last week to generate a toast" 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to generate toast", 
+        error: error.message 
+      });
+    }
+  });
+
+  // Legacy route kept for backward compatibility
   app.post("/api/toasts", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;

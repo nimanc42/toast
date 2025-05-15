@@ -13,21 +13,49 @@ interface SocialAuthButtonsProps {
 export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButtonsProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(true);
   const { toast } = useToast();
+
+  // Check if Supabase is configured with credentials
+  useEffect(() => {
+    const hasSupabaseCredentials = !!(
+      import.meta.env.VITE_SUPABASE_URL && 
+      import.meta.env.VITE_SUPABASE_ANON_KEY
+    );
+    
+    setIsConfigured(hasSupabaseCredentials);
+    
+    if (!hasSupabaseCredentials) {
+      console.warn('Supabase credentials missing. Social authentication will be disabled.');
+    }
+  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
       if (onAuthStart) onAuthStart();
+      
+      // Check configuration before attempting sign-in
+      if (!isConfigured) {
+        throw new Error('Supabase credentials not configured. Social authentication is unavailable.');
+      }
+      
       await signInWithGoogle();
       // No need to handle success here because the page will redirect
     } catch (error) {
       console.error('Google auth error:', error);
+      
+      // Provide a more specific error message for configuration issues
+      const errorMessage = !isConfigured
+        ? "Social authentication is not configured. Please contact the administrator."
+        : "Could not sign in with Google. Please try again.";
+      
       toast({
         title: "Authentication failed",
-        description: "Could not sign in with Google. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       if (onAuthError && error instanceof Error) onAuthError(error);
     } finally {
       setIsGoogleLoading(false);
@@ -38,15 +66,28 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
     try {
       setIsAppleLoading(true);
       if (onAuthStart) onAuthStart();
+      
+      // Check configuration before attempting sign-in
+      if (!isConfigured) {
+        throw new Error('Supabase credentials not configured. Social authentication is unavailable.');
+      }
+      
       await signInWithApple();
       // No need to handle success here because the page will redirect
     } catch (error) {
       console.error('Apple auth error:', error);
+      
+      // Provide a more specific error message for configuration issues
+      const errorMessage = !isConfigured
+        ? "Social authentication is not configured. Please contact the administrator."
+        : "Could not sign in with Apple. Please try again.";
+      
       toast({
         title: "Authentication failed",
-        description: "Could not sign in with Apple. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       if (onAuthError && error instanceof Error) onAuthError(error);
     } finally {
       setIsAppleLoading(false);
@@ -66,10 +107,17 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
         </div>
       </div>
       
+      {!isConfigured && (
+        <div className="flex items-center p-3 mb-2 text-sm rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+          <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span>Social login is not configured. Contact the administrator.</span>
+        </div>
+      )}
+      
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isAppleLoading}
+        disabled={isGoogleLoading || isAppleLoading || !isConfigured}
         onClick={handleGoogleSignIn}
         className="w-full bg-white text-black hover:bg-gray-100 border-gray-300"
       >
@@ -84,7 +132,7 @@ export function SocialAuthButtons({ onAuthStart, onAuthError }: SocialAuthButton
       <Button
         variant="outline"
         type="button"
-        disabled={isGoogleLoading || isAppleLoading}
+        disabled={isGoogleLoading || isAppleLoading || !isConfigured}
         onClick={handleAppleSignIn}
         className="w-full bg-black text-white hover:bg-gray-900 border-black"
       >

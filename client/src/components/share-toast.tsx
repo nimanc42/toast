@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Share2, Copy, Check } from "lucide-react";
+import { FaTwitter, FaFacebook, FaLinkedin } from "react-icons/fa";
 import { 
   Dialog, 
   DialogContent, 
@@ -218,6 +219,36 @@ export default function ShareToast({ toast, onShareClick }: ShareToastProps) {
                   }.
                 </p>
               )}
+            </div>
+            
+            <div className="mt-4">
+              <p className="text-sm font-medium mb-2">Share on social media:</p>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => onShareClick && onShareClick('twitter')}
+                >
+                  Twitter
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => onShareClick && onShareClick('facebook')}
+                >
+                  Facebook
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => onShareClick && onShareClick('linkedin')}
+                >
+                  LinkedIn
+                </Button>
+              </div>
             </div>
           </div>
         ) : (

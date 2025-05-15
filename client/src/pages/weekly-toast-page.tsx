@@ -122,11 +122,42 @@ export default function WeeklyToastPage() {
   const handleShare = (platform: string) => {
     if (!latestToast) return;
     
-    // In a real implementation, we would handle the sharing functionality
-    // For now, we'll just show a toast message
+    // Create the sharing URL - either the existing share URL or a direct URL to the app
+    const shareUrl = latestToast.shareUrl || `${window.location.origin}/toasts/${latestToast.id}`;
+    const text = "Check out my weekly reflection toast!";
+    const encodedText = encodeURIComponent(text);
+    const encodedUrl = encodeURIComponent(shareUrl);
+    
+    // Open the appropriate social media sharing URL
+    let shareLink = '';
+    
+    switch (platform) {
+      case 'twitter':
+        shareLink = `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`;
+        break;
+      case 'facebook':
+        shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+        break;
+      case 'linkedin':
+        shareLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
+        break;
+      default:
+        toast({
+          title: "Sharing platform not supported",
+          description: `Sharing on ${platform} is not implemented yet.`,
+        });
+        return;
+    }
+    
+    // Open the sharing link in a new window
+    if (shareLink) {
+      window.open(shareLink, '_blank', 'noopener,noreferrer');
+    }
+    
+    // Track the sharing activity
     toast({
-      title: "Sharing is not implemented yet",
-      description: `Your toast would be shared on ${platform}.`,
+      title: "Sharing on " + platform,
+      description: "Opening share dialog...",
     });
   };
   

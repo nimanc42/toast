@@ -16,16 +16,23 @@ export default function WeeklyToastPage() {
   const [regenerating, setRegenerating] = useState(false);
   const { toast } = useToast();
   
+  // Define a Toast type to fix type errors
+  interface Toast {
+    id: number;
+    content: string;
+    audioUrl: string | null;
+    createdAt: string;
+    userId: number;
+    shareCode?: string;
+    shared: boolean;
+    shareUrl?: string;
+  }
+  
   // Fetch the latest toast
-  const { data: latestToast, isLoading } = useQuery({
+  const { data: latestToast, isLoading, error } = useQuery<Toast>({
     queryKey: ["/api/toasts/latest"],
-    onError: () => {
-      toast({
-        title: "No weekly toast found",
-        description: "It looks like you don't have any weekly toasts yet. Continue adding daily reflections to receive your first toast!",
-        variant: "destructive"
-      });
-    }
+    retry: false, // Don't retry on error (like 404)
+    staleTime: 60000, // 1 minute
   });
 
   // Mutation to regenerate audio with a different voice
@@ -95,7 +102,19 @@ export default function WeeklyToastPage() {
     );
   }
 
-  if (!latestToast) {
+  if (!latestToast || error) {
+    // Demo toast content for UI testing
+    const demoToast: Toast = {
+      id: 0,
+      content: "Welcome to A Toast to You! This is a sample of what your personalized weekly toast will look like. You've been doing a great job with your daily reflections. Your commitment to growth and personal development is inspiring.\n\nThis week, we noticed themes of perseverance, creativity, and self-care in your notes. These qualities will serve you well as you continue on your journey.\n\nHere's to another week of growth and discovery ahead!",
+      audioUrl: "/audio/toast-1747269138152.mp3", // Use one of our test audio files
+      createdAt: new Date().toISOString(),
+      userId: 0,
+      shareCode: "demo",
+      shared: false,
+      shareUrl: "/shared/demo"
+    };
+    
     return (
       <div className="bg-gradient-to-b from-secondary-600 to-primary-700 min-h-screen">
         <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 lg:px-8 text-white">
@@ -109,24 +128,102 @@ export default function WeeklyToastPage() {
                 <line x1="14" y1="1" x2="14" y2="4"></line>
               </svg>
             </div>
-            <h1 className="text-3xl font-bold font-accent mb-4">No Toast Yet</h1>
+            <h1 className="text-3xl font-bold font-accent mb-4">Your Personalized Toast</h1>
             <p className="text-xl font-light max-w-xl mx-auto mb-8">
-              Keep adding your daily reflections to get your first weekly toast!
+              You don't have any real toasts yet, but here's a preview of what they'll look like! 
+              Keep adding your daily reflections, and soon you'll get your first genuine weekly toast.
             </p>
+          </div>
+          
+          {/* Demo Toast Preview */}
+          <div className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
+            {/* Audio Player */}
+            <div className="bg-gray-50 p-6 border-b border-gray-200">
+              <AudioPlayer 
+                audioUrl={demoToast.audioUrl} 
+                title="Toast Preview" 
+                duration="2:30" 
+              />
+              
+              {/* Voice Selection */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center">
+                  <span className="text-xs text-gray-500 mr-2">Voice:</span>
+                  <Select 
+                    value={selectedVoice} 
+                    onValueChange={setSelectedVoice}
+                    disabled={true}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-64">
+                      <SelectValue placeholder="Select a voice" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="motivational">Motivational Coach (Rachel)</SelectItem>
+                      <SelectItem value="friendly">Friendly Conversationalist (Adam)</SelectItem>
+                      <SelectItem value="poetic">Poetic Narrator (Domi)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center text-xs text-primary-600">
+                  <span>Demo mode</span>
+                </div>
+              </div>
+            </div>
             
+            {/* Toast Transcript */}
+            <div className="p-6">
+              <h3 className="font-medium text-lg mb-4">Your Toast Transcript</h3>
+              
+              <div className="space-y-4 text-gray-700">
+                {demoToast.content.split('\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
+              </div>
+            </div>
+            
+            {/* Demo Share Toast Options */}
+            <div className="bg-gray-50 p-6 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium">Share Your Toast</h3>
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => {
+                      toast({
+                        title: "Demo Mode",
+                        description: "Sharing functionality is available when you have real toasts."
+                      });
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                      <polyline points="16 6 12 2 8 6"></polyline>
+                      <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    Share Toast
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Return to Dashboard */}
+          <div className="text-center mt-8">
             <Button 
-                variant="secondary" 
-                className="bg-white text-primary-700 hover:bg-white/90"
-                asChild
-              >
-                <Link href="/">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                  </svg>
-                  Return to Dashboard
-                </Link>
-              </Button>
+              variant="secondary" 
+              className="bg-white text-primary-700 hover:bg-white/90"
+              asChild
+            >
+              <Link href="/">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Return to Dashboard
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

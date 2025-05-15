@@ -470,6 +470,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint to regenerate a toast with updated voice preference
+  app.post("/api/toasts/regenerate", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const voice = req.body.voice;
+      
+      console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}`);
+      
+      // Always update user voice preference if provided
+      if (voice) {
+        const existingPref = await storage.getVoicePreferenceByUserId(userId);
+        if (existingPref) {
+          await storage.updateVoicePreference(existingPref.id, {
+            voiceStyle: voice
+          });
+          console.log(`[Toast Generator] Updated voice preference to: ${voice}`);
+        } else {
+          await storage.createVoicePreference({
+            userId,
+            voiceStyle: voice
+          });
+          console.log(`[Toast Generator] Created new voice preference: ${voice}`);
+        }
+      } else {
+        console.log(`[Toast Generator] No voice preference provided, using user's saved preference`);
+      }
+      
+      try {
+        // Use the dedicated toast generator service to create a new toast
+        // The generator should automatically use the updated voice preference
+        const result = await generateWeeklyToast(userId);
+        
+        console.log(`[Toast Generator] Regenerated toast:`, {
+          content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
+          audioUrl: result.audioUrl || 'No audio URL'
+        });
+        
+        // Log analytics for toast regeneration
+        if (storage.logUserActivity) {
+          await storage.logUserActivity({
+            userId,
+            activityType: 'toast-regenerate',
+            metadata: { 
+              voiceChanged: !!voice,
+              source: 'manual-trigger',
+              hasAudio: !!result.audioUrl
+            } as Record<string, any>
+          });
+        }
+        
+        res.status(200).json(result);
+      } catch (err: any) {
+        console.error('[Toast regeneration]', err);
+        return res.status(400).json({ error: err.message });
+      }
+    } catch (error: any) {
+      console.error('Error regenerating toast:', error);
+      
+      // Handle specific errors
+      if (error?.message?.includes('No notes found')) {
+        return res.status(400).json({ 
+          message: "You don't have any notes from the last week to regenerate a toast" 
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to regenerate toast", 
+        error: error?.message || "Unknown error"
+      });
+    }
+  });
 
   // Legacy route kept for backward compatibility
   app.post("/api/toasts", ensureAuthenticated, async (req, res) => {

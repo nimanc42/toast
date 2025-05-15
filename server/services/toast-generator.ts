@@ -56,14 +56,30 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
     throw new Error('Missing OpenAI API key. Please provide a valid API key in the environment variables.');
   }
   
-  // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o",  // Using the latest model
-    messages: [{ role: "user", content: prompt }]
-  });
+  let toastContent: string;
   
-  const toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
-  
+  try {
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",  // Using the latest model
+      messages: [{ role: "user", content: prompt }]
+    });
+    
+    toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
+  } catch (error: any) {
+    console.error("[Toast gen]", error);
+    
+    // Provide more helpful error messages
+    if (error.status === 401) {
+      throw new Error('OpenAI API key authentication failed. Please check your API key.');
+    } else if (error.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+    } else if (error.status === 500) {
+      throw new Error('OpenAI API server error. Please try again later.');
+    } else {
+      throw new Error(`OpenAI API error: ${error.message || 'Unknown error'}`);
+    }
+  }
 
   // Get user's voice preference
   const voicePreference = await storage.getVoicePreferenceByUserId(userId);
@@ -108,7 +124,7 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
           {
             method: "POST",
             headers: {
-              "xi-api-key": process.env.ELEVENLABS_API_KEY,
+              "xi-api-key": process.env.ELEVENLABS_API_KEY || "",
               "Content-Type": "application/json",
               "Accept": "audio/mpeg"
             },
@@ -158,7 +174,7 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
 
     // Process response and save audio file with error handling
     try {
-      const arrayBuffer = await response.arrayBuffer().catch(err => {
+      const arrayBuffer = await response.arrayBuffer().catch((err: Error) => {
         console.error('[TTS] Failed to read response buffer:', err);
         return null;
       });
@@ -198,7 +214,7 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
         try {
           await fs.promises.writeFile(filePath, buffer);
           audioUrl = `/audio/${filename}`;
-        } catch (err) {
+        } catch (err: any) {
           console.error('[TTS] Failed to write audio file:', err);
           throw err;
         }

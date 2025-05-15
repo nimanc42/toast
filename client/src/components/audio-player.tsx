@@ -117,16 +117,16 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
   };
   
   return (
-    <div className="audio-player border rounded-md p-4 shadow-sm bg-white">
-      <div className="flex items-center">
+    <div className="audio-player border rounded-md p-6 shadow-md bg-white relative">
+      <div className="flex items-center space-x-4">
         <Button
           onClick={togglePlayPause}
-          className="w-12 h-12 rounded-full bg-primary-600 text-white mr-4 hover:bg-primary-700 transition duration-200 flex-shrink-0"
+          className="w-14 h-14 rounded-full bg-primary-600 text-white hover:bg-primary-700 transition duration-200 flex-shrink-0 border-2 border-primary-300 shadow-lg"
           size="icon"
           disabled={!audioUrl}
           aria-label={isPlaying ? "Pause audio" : "Play audio"}
         >
-          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+          {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 ml-0.5" />}
         </Button>
         <div className="flex-grow">
           <div className="flex justify-between text-sm mb-2">

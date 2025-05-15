@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
 import gamificationRoutes from "./routes/gamification";
+import googleAuth from './auth-google';
 import { 
   sendVerification, 
   verifyEmail, 
@@ -188,6 +189,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/forgot-password", forgotPassword);
   app.post("/api/auth/reset-password", resetPassword);
   app.post("/api/auth/resend-verification", resendVerification);
+  
+  // Google OAuth authentication routes
+  // Check if Google OAuth is configured
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    app.get('/api/auth/google', 
+      googleAuth.authenticate('google', { 
+        scope: ['email', 'profile'],
+        prompt: 'select_account'
+      })
+    );
+    
+    app.get('/api/auth/google/callback', 
+      googleAuth.authenticate('google', { 
+        failureRedirect: '/auth?error=google_auth_failed' 
+      }),
+      (req, res) => {
+        // Successful authentication, redirect to home page
+        res.redirect('/');
+      }
+    );
+  }
   
   // Social features routes
   registerSocialRoutes(app);

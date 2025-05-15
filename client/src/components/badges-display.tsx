@@ -95,7 +95,7 @@ export function BadgesDisplay() {
                         </Badge>
                         <div className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          Earned {new Date(selectedBadge.createdAt).toLocaleDateString()}
+                          Earned {new Date(selectedBadge.awardedAt).toLocaleDateString()}
                         </div>
                       </div>
                     </DialogContent>

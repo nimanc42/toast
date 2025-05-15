@@ -117,15 +117,16 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
   };
   
   return (
-    <div className="audio-player">
+    <div className="audio-player border rounded-md p-4 shadow-sm bg-white">
       <div className="flex items-center">
         <Button
           onClick={togglePlayPause}
-          className="w-12 h-12 rounded-full bg-primary-600 text-white mr-4 hover:bg-primary-700 transition duration-200"
+          className="w-12 h-12 rounded-full bg-primary-600 text-white mr-4 hover:bg-primary-700 transition duration-200 flex-shrink-0"
           size="icon"
           disabled={!audioUrl}
+          aria-label={isPlaying ? "Pause audio" : "Play audio"}
         >
-          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
         </Button>
         <div className="flex-grow">
           <div className="flex justify-between text-sm mb-2">
@@ -134,8 +135,8 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
               {audioRef.current?.duration ? formatTime(currentTime) : "0:00"} / {duration}
             </span>
           </div>
-          <div className="relative">
-            <div className="absolute top-0 left-0 right-0 bottom-0">
+          <div className="relative h-6">
+            <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-2">
               {/* Buffered progress */}
               <div 
                 className="absolute top-0 left-0 h-full bg-gray-300 rounded-full" 
@@ -160,6 +161,11 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
           </div>
         </div>
       </div>
+      {!audioUrl && (
+        <div className="text-center text-sm text-gray-500 mt-2">
+          No audio available. Generate a toast first.
+        </div>
+      )}
     </div>
   );
 }

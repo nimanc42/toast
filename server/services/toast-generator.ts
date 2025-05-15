@@ -77,57 +77,139 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
   try {
     ensureAudioDirExists();
     
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": process.env.ELEVENLABS_API_KEY!,
-          "Content-Type": "application/json",
-          "Accept": "audio/mpeg"
-        },
-        body: JSON.stringify({ 
-          text: toastContent, 
-          voice_settings: { 
-            stability: 0.4, 
-            similarity_boost: 0.75 
-          } 
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ElevenLabs API error: ${response.status} ${errorText}`);
+    // Important: Handle missing API key gracefully
+    if (!process.env.ELEVENLABS_API_KEY) {
+      console.error('[TTS] Missing ELEVENLABS_API_KEY');
+      // Fall back to creating toast without audio
+      const noteIds = notes.map(note => note.id);
+      const toast = await storage.createToast({
+        userId,
+        content: toastContent,
+        audioUrl: null,
+        noteIds,
+        shared: false,
+        shareUrl: null
+      });
+      return { content: toast.content, audioUrl: '' };
+    }
+    
+    // Use Promise.race with a timeout to prevent hanging requests
+    const timeoutPromise = new Promise<Response | null>((_, reject) => {
+      setTimeout(() => reject(new Error('TTS request timeout after 15 seconds')), 15000);
+    });
+    
+    // Attempt to make the ElevenLabs API call with timeout protection
+    let response;
+    try {
+      response = await Promise.race([
+        fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
+          {
+            method: "POST",
+            headers: {
+              "xi-api-key": process.env.ELEVENLABS_API_KEY,
+              "Content-Type": "application/json",
+              "Accept": "audio/mpeg"
+            },
+            body: JSON.stringify({ 
+              text: toastContent, 
+              voice_settings: { 
+                stability: 0.4, 
+                similarity_boost: 0.75 
+              } 
+            })
+          }
+        ),
+        timeoutPromise
+      ]);
+    } catch (fetchError) {
+      console.error('[TTS] Fetch error:', fetchError);
+      // Create toast without audio on fetch failure
+      const noteIds = notes.map(note => note.id);
+      const toast = await storage.createToast({
+        userId,
+        content: toastContent,
+        audioUrl: null,
+        noteIds,
+        shared: false,
+        shareUrl: null
+      });
+      return { content: toast.content, audioUrl: '' };
     }
 
-    // Save the audio file
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const timestamp = Date.now();
-    const filename = `toast-${userId}-${timestamp}.mp3`;
-    const filePath = path.join(process.cwd(), 'public', 'audio', filename);
-    
-    await fs.promises.writeFile(filePath, buffer);
+    // Handle non-OK response
+    if (!response || !response.ok) {
+      const errorText = response ? await response.text().catch(() => 'Unable to read error response') : 'No response';
+      console.error(`[TTS] ElevenLabs API error: ${response?.status || 'unknown'} - ${errorText}`);
+      
+      // Create toast without audio
+      const noteIds = notes.map(note => note.id);
+      const toast = await storage.createToast({
+        userId,
+        content: toastContent,
+        audioUrl: null,
+        noteIds,
+        shared: false,
+        shareUrl: null
+      });
+      return { content: toast.content, audioUrl: '' };
+    }
 
-    // Get note IDs for the toast
-    const noteIds = notes.map(note => note.id);
-    
-    // 5️⃣ Create the toast in the database
-    const toast = await storage.createToast({
-      userId,
-      content: toastContent,
-      audioUrl: `/audio/${filename}`,
-      noteIds,
-      shared: false,
-      shareUrl: null
-    });
+    // Process response and save audio file with error handling
+    try {
+      const arrayBuffer = await response.arrayBuffer().catch(err => {
+        console.error('[TTS] Failed to read response buffer:', err);
+        return null;
+      });
+      
+      if (!arrayBuffer) {
+        throw new Error('Failed to read audio response buffer');
+      }
+      
+      const buffer = Buffer.from(arrayBuffer);
+      const timestamp = Date.now();
+      const filename = `toast-${userId}-${timestamp}.mp3`;
+      const filePath = path.join(process.cwd(), 'public', 'audio', filename);
+      
+      // Use async file operations
+      await fs.promises.writeFile(filePath, buffer).catch(err => {
+        console.error('[TTS] Failed to write audio file:', err);
+        throw err;
+      });
 
-    return { 
-      content: toast.content, 
-      audioUrl: toast.audioUrl || '' 
-    };
+      // Get note IDs for the toast
+      const noteIds = notes.map(note => note.id);
+      
+      // 5️⃣ Create the toast in the database
+      const toast = await storage.createToast({
+        userId,
+        content: toastContent,
+        audioUrl: `/audio/${filename}`,
+        noteIds,
+        shared: false,
+        shareUrl: null
+      });
+
+      return { 
+        content: toast.content, 
+        audioUrl: toast.audioUrl || '' 
+      };
+    } catch (fileError) {
+      console.error('[TTS] File processing error:', fileError);
+      // Create toast without audio on file processing error
+      const noteIds = notes.map(note => note.id);
+      const toast = await storage.createToast({
+        userId,
+        content: toastContent,
+        audioUrl: null,
+        noteIds,
+        shared: false,
+        shareUrl: null
+      });
+      return { content: toast.content, audioUrl: '' };
+    }
   } catch (error: any) {
-    console.error('Error generating speech:', error);
+    console.error('[TTS] Unhandled error in speech generation:', error);
     
     // Get note IDs for the toast
     const noteIds = notes.map(note => note.id);
@@ -142,7 +224,8 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
       shareUrl: null
     });
     
-    throw new Error(`Successfully generated toast text, but failed to create audio: ${error?.message || 'Unknown error'}`);
+    // Instead of throwing, return a valid result but without audio
+    return { content: toast.content, audioUrl: '' };
   }
 }
 

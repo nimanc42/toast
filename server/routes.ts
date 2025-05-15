@@ -15,19 +15,8 @@ import {
 } from "@shared/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
-// Temporarily disable ElevenLabs for debugging
-// import { generateSpeech, getVoiceId } from "./services/elevenlabs";
-
-// Dummy implementations for debugging
-const generateSpeech = async (text: string, voiceId?: string) => {
-  console.log(`[Dummy TTS] Would generate speech for: "${text.substring(0, 50)}..." with voice ${voiceId || 'default'}`);
-  return '/audio/toast-1747269138152.mp3'; // Using an existing file as fallback
-};
-
-const getVoiceId = (style: string) => {
-  console.log(`[Dummy TTS] Getting voice ID for style: ${style}`);
-  return 'dummy-voice-id';
-};
+import { generateSpeech, getVoiceId } from "./services/elevenlabs";
+import { generateWeeklyToast } from "./services/toast-generator";
 
 /**
  * Extract main themes from note contents

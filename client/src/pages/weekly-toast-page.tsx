@@ -17,7 +17,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export default function WeeklyToastPage() {
   const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
-  const { toast } = useToast();
+  const [toast, setToast] = useState<{ content: string; audioUrl: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast: showToast } = useToast();
   
   // Voice options with descriptions
   const voiceOptions = [
@@ -45,32 +47,44 @@ export default function WeeklyToastPage() {
     staleTime: 60000, // 1 minute
   });
 
-  // Mutation to generate a new weekly toast
-  const generateToastMutation = useMutation({
-    mutationFn: async () => {
-      // Use the /api/toasts/generate endpoint as specified in the server routes
-      // (using /generate instead of /generate-weekly since that's the existing endpoint)
-      const res = await apiRequest("POST", "/api/toasts/generate", {});
-      if (!res.ok) {
+  // Generate toast handler
+  const generateToast = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/toasts/generate", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setToast(data);
+        // Refresh the latest toast data
+        queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
+        showToast({
+          title: "Toast Generated Successfully",
+          description: "Your weekly toast has been created based on your recent notes.",
+        });
+      } else {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to generate toast");
+        showToast({
+          title: "Failed to generate toast",
+          description: errorData.message || "Could not generate toast. Add more reflections or try later.",
+          variant: "destructive"
+        });
       }
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
-      toast({
-        title: "Toast Generated Successfully",
-        description: "Your weekly toast has been created based on your recent notes.",
-      });
-    },
-    onError: (error: any) => {
+    } catch (error) {
       console.error("Toast generation error:", error);
-      toast({
+      showToast({
         title: "Failed to generate toast",
-        description: error.message || "Please ensure you have recent notes from the past week.",
+        description: "Please ensure you have recent notes from the past week.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // For backward compatibility
+  const generateToastMutation = useMutation({
+    mutationFn: async () => {
+      return generateToast();
     }
   });
 
@@ -185,7 +199,85 @@ export default function WeeklyToastPage() {
   }
 
   if (!latestToast || error) {
-    // Demo toast content for UI testing
+    // If there's already a generated toast in this session, use that instead of the demo toast
+    if (toast) {
+      const generatedToast: Toast = {
+        id: 0,
+        content: toast.content,
+        audioUrl: toast.audioUrl,
+        createdAt: new Date().toISOString(),
+        userId: 0,
+        shared: false
+      };
+      return (
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex-grow bg-gradient-to-b from-secondary-600 to-primary-700">
+            <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 lg:px-8 text-white">
+              <div className="text-center mb-12">
+                <div className="inline-block p-3 rounded-full bg-white bg-opacity-10 mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                    <line x1="6" y1="1" x2="6" y2="4"></line>
+                    <line x1="10" y1="1" x2="10" y2="4"></line>
+                    <line x1="14" y1="1" x2="14" y2="4"></line>
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold font-accent mb-4">Your Personalized Toast</h1>
+                <p className="text-xl font-light max-w-xl mx-auto mb-4">
+                  Here's your freshly generated toast celebrating your progress this week!
+                </p>
+              </div>
+            
+              {/* Generated Toast Preview */}
+              <div className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" style={{ animationDelay: "0.2s" }}>
+                {/* Audio Player */}
+                <div className="bg-gray-50 p-6 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>
+                  <AudioPlayer 
+                    audioUrl={generatedToast.audioUrl} 
+                    title="Your Weekly Toast" 
+                    duration="" 
+                  />
+                </div>
+                
+                {/* Toast Transcript */}
+                <div className="p-6">
+                  <h3 className="font-medium text-lg mb-4">Your Toast Transcript</h3>
+                  
+                  <div className="space-y-4 text-gray-700">
+                    {generatedToast.content.split('\n').map((paragraph, index) => (
+                      <p key={index}>{paragraph}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            
+              {/* Return to Dashboard */}
+              <div className="text-center mt-8">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-primary-700 hover:bg-white/90"
+                  asChild
+                >
+                  <Link href="/">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Return to Dashboard
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
+    // Demo toast content for UI testing when no toast has been generated
     const demoToast: Toast = {
       id: 0,
       content: "Welcome to A Toast to You! This is a sample of what your personalized weekly toast will look like. You've been doing a great job with your daily reflections. Your commitment to growth and personal development is inspiring.\n\nThis week, we noticed themes of perseverance, creativity, and self-care in your notes. These qualities will serve you well as you continue on your journey.\n\nHere's to another week of growth and discovery ahead!",
@@ -218,12 +310,12 @@ export default function WeeklyToastPage() {
               </p>
               
               <Button
-                onClick={() => generateToastMutation.mutate()}
-                disabled={generateToastMutation.isPending}
+                onClick={generateToast}
+                disabled={loading}
                 className="mx-auto mt-6 bg-white bg-opacity-20 text-white hover:bg-opacity-30 transition-all"
                 size="lg"
               >
-                {generateToastMutation.isPending ? (
+                {loading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Generating This Week's Toast...

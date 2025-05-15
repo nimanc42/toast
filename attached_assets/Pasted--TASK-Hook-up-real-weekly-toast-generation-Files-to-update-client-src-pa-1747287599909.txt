@@ -1,0 +1,71 @@
+🚀  TASK – Hook up real weekly-toast generation
+
+Files to update
+---------------
+• client/src/pages/weekly-toast-page.tsx
+• server/routes/toasts.ts  (verify endpoint names)
+
+Frontend changes (React)
+------------------------
+1.  Replace the hard-coded audio source:
+    ```tsx
+    // OLD demo
+    const demoUrl = "/audio/demo-test.mp3";
+    ```
+    with state:
+    ```tsx
+    const [toast, setToast] = useState<{ text: string; audioUrl: string } | null>(null);
+    const [loading, setLoading] = useState(false);
+    ```
+
+2.  Add a handler for **Generate Toast**:
+    ```ts
+    const generateToast = async () => {
+      setLoading(true);
+      const res = await fetch("/api/toasts/generate-weekly", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();        // { text, audioUrl }
+        setToast(data);
+      } else {
+        toastError("Could not generate toast. Add more reflections or try later.");
+      }
+      setLoading(false);
+    };
+    ```
+
+3.  Render logic:
+    ```tsx
+    {toast ? (
+      <>
+        <p className="mb-4 text-gray-800">{toast.text}</p>
+        <audio controls src={toast.audioUrl} className="w-full" />
+      </>
+    ) : (
+      <div className="flex flex-col items-center gap-4">
+        <button
+          onClick={generateToast}
+          disabled={loading}
+          className="btn-primary"
+        >
+          {loading ? "Generating..." : "Generate This Week’s Toast"}
+        </button>
+      </div>
+    )}
+    ```
+
+Backend check
+-------------
+Ensure `POST /api/toasts/generate-weekly` already exists in **server/routes/toasts.ts** and:
+1. Reads user’s reflections for the last 7 days.
+2. Calls `generateWeeklyToast(userId)` (OpenAI → ElevenLabs).
+3. Returns `{ text, audioUrl }` with status `200`.
+
+Smoke test
+----------
+1. Add a few reflections.
+2. Go to **Weekly Toast** → click “Generate This Week’s Toast”.
+3. Expect:
+   • Spinner → toast text appears → audio player loads your voice.  
+   • No more demo sentence.
+
+When this works, reply **“Live weekly toast working”**.

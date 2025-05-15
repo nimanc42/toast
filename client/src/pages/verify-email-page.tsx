@@ -29,7 +29,7 @@ export default function VerifyEmailPage() {
 
     const verifyEmail = async () => {
       try {
-        // Send verification request
+        // Send verification request to the correct API route
         const response = await apiRequest('POST', '/api/auth/verify-email', { token });
         
         if (response.ok) {

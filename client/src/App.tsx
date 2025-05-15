@@ -15,6 +15,10 @@ import SettingsPage from "@/pages/settings-page";
 import SharedToastPage from "@/pages/shared-toast-page";
 import AnalyticsPage from "@/pages/analytics-page";
 import NotFound from "@/pages/not-found";
+import VerifyEmailPage from "@/pages/verify-email-page";
+import ResetPasswordPage from "@/pages/reset-password-page";
+import ForgotPasswordPage from "@/pages/forgot-password-page";
+import ResendVerificationPage from "@/pages/resend-verification-page";
 
 function Router() {
   return (
@@ -25,6 +29,10 @@ function Router() {
       <ProtectedRoute path="/analytics" component={AnalyticsPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/auth/callback" component={AuthCallback} />
+      <Route path="/verify-email" component={VerifyEmailPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/resend-verification" component={ResendVerificationPage} />
       <Route path="/shared/:code" component={SharedToastPage} />
       <Route component={NotFound} />
     </Switch>

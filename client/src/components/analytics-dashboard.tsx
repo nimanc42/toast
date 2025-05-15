@@ -50,11 +50,16 @@ function StatCard({
         </div>
         <p className="text-xs text-muted-foreground">{description}</p>
         {progress !== undefined && (
-          <Progress 
-            value={progress} 
-            className={`h-2 mt-2 ${title.includes("Streak") ? "bg-amber-100 dark:bg-amber-950" : "bg-violet-100 dark:bg-violet-950"}`}
-            progressColor={title.includes("Streak") ? "bg-amber-500" : "bg-violet-600"}
-          />
+          <div className="mt-3 relative">
+            <div className="text-xs font-medium mb-1">
+              {Math.round(progress)}% Complete
+            </div>
+            <Progress 
+              value={progress} 
+              className={`h-3 ${title.includes("Streak") ? "bg-amber-200 dark:bg-amber-900" : "bg-purple-200 dark:bg-purple-900"}`}
+              progressColor={title.includes("Streak") ? "bg-amber-500 dark:bg-amber-400" : "bg-purple-600 dark:bg-purple-400"}
+            />
+          </div>
         )}
       </CardContent>
     </Card>

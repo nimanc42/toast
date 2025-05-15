@@ -215,26 +215,36 @@ export default function WeeklyToastPage() {
                 />
                 
                 {/* Voice Selection */}
-                <div className="mt-4 flex items-center justify-between">
+                <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
                   <div className="flex items-center">
-                    <span className="text-xs text-gray-500 mr-2">Voice:</span>
+                    <span className="text-sm text-gray-700 mr-3 font-medium">Voice:</span>
                     <Select 
                       value={selectedVoice} 
-                      onValueChange={setSelectedVoice}
-                      disabled={true}
+                      onValueChange={(voice) => {
+                        setSelectedVoice(voice);
+                        toast({
+                          title: "Voice changed",
+                          description: `Voice changed to ${voice === "motivational" ? "Rachel" : voice === "friendly" ? "Adam" : "Domi"}.`,
+                        });
+                      }}
                     >
-                      <SelectTrigger className="h-8 text-xs w-64">
+                      <SelectTrigger className="h-9 text-sm w-64 bg-white border-gray-300">
                         <SelectValue placeholder="Select a voice" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="motivational">Motivational Coach (Rachel)</SelectItem>
-                        <SelectItem value="friendly">Friendly Conversationalist (Adam)</SelectItem>
-                        <SelectItem value="poetic">Poetic Narrator (Domi)</SelectItem>
+                        {voiceOptions.map(voice => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            <span className="font-medium">{voice.name}</span>
+                            <span className="text-xs text-muted-foreground ml-2">
+                              - {voice.description}
+                            </span>
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   
-                  <div className="flex items-center text-xs text-primary-600">
+                  <div className="flex items-center text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md">
                     <span>Demo mode</span>
                   </div>
                 </div>

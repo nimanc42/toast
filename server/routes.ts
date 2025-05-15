@@ -420,16 +420,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           metadata: { 
             automated: false,
             source: 'manual-trigger'
-          }
+          } as Record<string, any>
         });
       }
       
       res.status(201).json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating toast:', error);
       
       // Handle specific errors
-      if (error.message.includes('No notes found')) {
+      if (error?.message?.includes('No notes found')) {
         return res.status(400).json({ 
           message: "You don't have any notes from the last week to generate a toast" 
         });
@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(500).json({ 
         message: "Failed to generate toast", 
-        error: error.message 
+        error: error?.message || "Unknown error"
       });
     }
   });

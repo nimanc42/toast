@@ -17,6 +17,7 @@ export const notes = pgTable("notes", {
   userId: integer("user_id").notNull().references(() => users.id),
   content: text("content"),
   audioUrl: text("audio_url"),
+  bundleTag: text("bundle_tag"), // TODO (BundledAway): activate bundle tag feature for memory grouping
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -151,6 +152,7 @@ export const insertNoteSchema = createInsertSchema(notes).pick({
   userId: true,
   content: true,
   audioUrl: true,
+  bundleTag: true,
 });
 
 export const insertVoicePreferenceSchema = createInsertSchema(voicePreferences).pick({

@@ -56,3 +56,9 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer components {
+  .card {
+    @apply bg-white rounded-lg shadow-sm text-gray-900;
+  }
+}

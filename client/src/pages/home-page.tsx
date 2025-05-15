@@ -13,19 +13,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 
+// Define the Stats type to fix TypeScript errors
+interface Stats {
+  streak: number;
+  weeklyNotesCount: number;
+  totalNotesNeeded: number;
+  nextToastDate: string;
+}
+
 export default function HomePage() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
   // Fetch user stats
-  const { data: stats, isLoading: isLoadingStats } = useQuery({
+  const { data: stats, isLoading: isLoadingStats } = useQuery<Stats>({
     queryKey: ["/api/stats"],
     refetchOnWindowFocus: true
   });
 
   // Fetch today's note to check if user has added a note today
-  const { data: todayNotes, isLoading: isLoadingTodayNote } = useQuery({
+  const { data: todayNotes, isLoading: isLoadingTodayNote } = useQuery<any[]>({
     queryKey: ["/api/notes/today"],
     refetchOnWindowFocus: true
   });
@@ -109,12 +117,12 @@ export default function HomePage() {
             </Card>
 
             {/* Weekly Toast Preview */}
-            <div className="bg-gradient-to-r from-secondary-500 to-primary-600 overflow-hidden shadow rounded-lg mb-6 text-white">
+            <div className="card bg-white overflow-hidden shadow rounded-lg mb-6 text-gray-900 border border-gray-100">
               <div className="px-4 py-8 sm:p-8">
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">
-                    <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-white bg-opacity-20">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-amber-100">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
                         <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
                         <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -123,8 +131,8 @@ export default function HomePage() {
                       </svg>
                     </span>
                   </div>
-                  <h2 className="text-2xl font-bold font-accent mb-2">Your Weekly Toast</h2>
-                  <p className="mb-6 max-w-md">
+                  <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your Weekly Toast</h2>
+                  <p className="mb-6 max-w-md text-gray-700">
                     {isLoadingStats ? (
                       <Loader2 className="h-6 w-6 mx-auto animate-spin" />
                     ) : (
@@ -139,28 +147,28 @@ export default function HomePage() {
                   <div className="relative h-24 w-24 mb-6">
                     <svg className="h-full w-full" viewBox="0 0 100 100">
                       {/* Background circle */}
-                      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="8" />
+                      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth="8" />
                       {/* Progress circle */}
                       <circle 
                         cx="50" 
                         cy="50" 
                         r="45" 
                         fill="none" 
-                        stroke="white" 
+                        stroke="rgba(245, 158, 11, 0.9)" 
                         strokeWidth="8" 
                         strokeDasharray={2 * Math.PI * 45} 
                         strokeDashoffset={calculateStrokeDashoffset(progressPercentage)} 
                         transform="rotate(-90 50 50)" 
                       />
-                      <text x="50" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="white">
+                      <text x="50" y="55" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#000">
                         {stats?.weeklyNotesCount || 0}/{stats?.totalNotesNeeded || 7}
                       </text>
                     </svg>
                   </div>
                   
                   <Button 
-                      variant="secondary" 
-                      className="bg-white text-primary-700 hover:bg-white/90"
+                      variant="default" 
+                      className="bg-amber-500 text-white hover:bg-amber-600"
                       asChild
                     >
                       <Link href="/weekly-toast">

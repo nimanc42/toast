@@ -52,7 +52,8 @@ function StatCard({
         {progress !== undefined && (
           <Progress 
             value={progress} 
-            className="h-1 mt-2" 
+            className={`h-2 mt-2 ${title.includes("Streak") ? "bg-amber-100 dark:bg-amber-950" : "bg-violet-100 dark:bg-violet-950"}`}
+            progressColor={title.includes("Streak") ? "bg-amber-500" : "bg-violet-600"}
           />
         )}
       </CardContent>

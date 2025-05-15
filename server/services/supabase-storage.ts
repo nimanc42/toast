@@ -10,7 +10,12 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 // Create a single instance of the storage client
-const storageClient = new StorageClient(supabaseUrl, {
+// Initialize with the correct URL format
+const storageUrl = supabaseUrl.endsWith('/') 
+  ? `${supabaseUrl}storage/v1` 
+  : `${supabaseUrl}/storage/v1`;
+
+const storageClient = new StorageClient(storageUrl, {
   apikey: supabaseKey,
   Authorization: `Bearer ${supabaseKey}`,
 });
@@ -30,20 +35,34 @@ export async function uploadAudioToSupabase(
       throw new Error('Missing Supabase configuration');
     }
 
+    console.log(`Attempting to upload to bucket: ${bucketName}`);
+    
+    // Ensure the bucket name is lowercase (Supabase requirement)
+    const sanitizedBucketName = bucketName.toLowerCase();
+    
     // Check if the bucket exists, create it if not
     try {
-      await storageClient.getBucket(bucketName);
+      await storageClient.getBucket(sanitizedBucketName);
+      console.log(`Bucket ${sanitizedBucketName} exists`);
     } catch (error) {
-      console.log(`Creating bucket ${bucketName}...`);
-      await storageClient.createBucket(bucketName, {
-        public: true,
-        fileSizeLimit: 52428800, // 50MB
-      });
+      console.log(`Creating bucket ${sanitizedBucketName}...`);
+      try {
+        await storageClient.createBucket(sanitizedBucketName, {
+          public: true,
+          fileSizeLimit: 52428800, // 50MB
+        });
+        console.log(`Bucket ${sanitizedBucketName} created successfully`);
+      } catch (bucketError: any) {
+        console.error(`Failed to create bucket: ${bucketError?.message || bucketError}`);
+        // If we can't create the bucket, we might not have the right permissions
+        // Just continue and try to upload anyway
+      }
     }
 
     // Upload the file
+    console.log(`Uploading file: ${filename}`);
     const { data, error } = await storageClient
-      .from(bucketName)
+      .from(sanitizedBucketName)
       .upload(filename, buffer, {
         contentType: 'audio/mpeg',
         cacheControl: '3600',
@@ -60,8 +79,13 @@ export async function uploadAudioToSupabase(
       return null;
     }
 
-    // Get the public URL
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucketName}/${data.path}`;
+    console.log(`File uploaded successfully: ${data.path}`);
+
+    // Get the public URL - ensure we use the correct format
+    // Fix double-slash issue
+    const baseUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
+    const publicUrl = `${baseUrl}/storage/v1/object/public/${sanitizedBucketName}/${data.path}`;
+    console.log(`Public URL: ${publicUrl}`);
     return publicUrl;
   } catch (error) {
     console.error('Failed to upload audio to Supabase:', error);

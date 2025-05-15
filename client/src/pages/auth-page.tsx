@@ -133,21 +133,31 @@ export default function AuthPage() {
                     )}
                   />
 
-                  <FormField
-                    control={loginForm.control}
-                    name="rememberMe"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <Checkbox 
-                            checked={field.value} 
-                            onCheckedChange={field.onChange} 
-                          />
-                        </FormControl>
-                        <FormLabel className="text-sm font-normal">Remember me</FormLabel>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="flex justify-between items-center">
+                    <FormField
+                      control={loginForm.control}
+                      name="rememberMe"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox 
+                              checked={field.value} 
+                              onCheckedChange={field.onChange} 
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">Remember me</FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                    <Button 
+                      variant="link" 
+                      className="p-0 text-sm" 
+                      type="button"
+                      onClick={() => setLocation('/forgot-password')}
+                    >
+                      Forgot password?
+                    </Button>
+                  </div>
 
                   <Button 
                     type="submit" 

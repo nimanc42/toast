@@ -1,24 +1,26 @@
 import { StorageClient } from '@supabase/storage-js';
 
 // Initialize Supabase storage client
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const bucketName = process.env.SUPABASE_BUCKET || 'audio';
+let storageClient: StorageClient | null = null;
 
+// Only initialize storage client if all required variables are available
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase configuration. Make sure SUPABASE_URL and SUPABASE_SERVICE_KEY are set.');
+  console.warn('Missing Supabase configuration. Audio storage in Supabase will be unavailable. Make sure SUPABASE_URL and SUPABASE_SERVICE_KEY are set if you want to use Supabase storage.');
+} else {
+  // Create a single instance of the storage client
+  // Initialize with the correct URL format
+  const storageUrl = supabaseUrl.endsWith('/') 
+    ? `${supabaseUrl}storage/v1` 
+    : `${supabaseUrl}/storage/v1`;
+
+  storageClient = new StorageClient(storageUrl, {
+    apikey: supabaseKey,
+    Authorization: `Bearer ${supabaseKey}`,
+  });
 }
-
-// Create a single instance of the storage client
-// Initialize with the correct URL format
-const storageUrl = supabaseUrl.endsWith('/') 
-  ? `${supabaseUrl}storage/v1` 
-  : `${supabaseUrl}/storage/v1`;
-
-const storageClient = new StorageClient(storageUrl, {
-  apikey: supabaseKey,
-  Authorization: `Bearer ${supabaseKey}`,
-});
 
 /**
  * Uploads an audio buffer to Supabase Storage
@@ -31,8 +33,9 @@ export async function uploadAudioToSupabase(
   filename: string
 ): Promise<string | null> {
   try {
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
+    if (!storageClient || !supabaseUrl || !supabaseKey) {
+      console.warn('Supabase storage not configured. Using fallback storage method.');
+      return null;
     }
 
     console.log(`Attempting to upload to bucket: ${bucketName}`);
@@ -100,8 +103,9 @@ export async function uploadAudioToSupabase(
  */
 export async function deleteAudioFromSupabase(filename: string): Promise<boolean> {
   try {
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Missing Supabase configuration');
+    if (!storageClient || !supabaseUrl || !supabaseKey) {
+      console.warn('Supabase storage not configured. Cannot delete file.');
+      return false;
     }
 
     const { error } = await storageClient

@@ -7,10 +7,19 @@ import crypto from 'crypto';
 
 const router = Router();
 
-// Create Supabase client for verifying tokens
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Check if Supabase credentials are available
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+// Only create the client if credentials are available
+const supabase = supabaseUrl && supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
+
+// Log status of social auth integration
+if (!supabase) {
+  console.warn('Supabase credentials not configured. Social authentication will be unavailable.');
+}
 
 // Create validation schema for request
 const socialLoginSchema = z.object({
@@ -35,6 +44,14 @@ function generateUsername(name: string): string {
 // Handler for social login
 router.post('/social-login', async (req, res) => {
   try {
+    // Check if social auth is configured
+    if (!supabase) {
+      return res.status(501).json({ 
+        message: 'Social authentication is not configured on the server',
+        error: 'SOCIAL_AUTH_DISABLED'
+      });
+    }
+
     // Validate incoming request
     const token = req.headers['x-supabase-auth'] as string;
     
@@ -42,8 +59,8 @@ router.post('/social-login', async (req, res) => {
       return res.status(401).json({ message: 'Authentication token required' });
     }
     
-    // Verify token with Supabase
-    const { data: tokenData, error: tokenError } = await supabase.auth.getUser(token);
+    // Verify token with Supabase (we've already checked supabase isn't null)
+    const { data: tokenData, error: tokenError } = await supabase!.auth.getUser(token);
     
     if (tokenError || !tokenData.user) {
       console.error('Token verification failed:', tokenError);

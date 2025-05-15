@@ -4,6 +4,12 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection } from "./db";
 
+// Check for Supabase credentials
+const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = process.env;
+if (!VITE_SUPABASE_URL || !VITE_SUPABASE_ANON_KEY) {
+  console.warn('[auth] Supabase credentials missing → social login disabled');
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

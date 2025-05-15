@@ -121,18 +121,18 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
       <div className="flex items-center space-x-4">
         <Button
           onClick={togglePlayPause}
-          className="w-14 h-14 rounded-full bg-primary-600 hover:bg-primary-700 transition duration-200 flex-shrink-0 border-2 border-primary-300 shadow-lg flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-blue-600 hover:bg-blue-700 transition duration-200 flex-shrink-0 border-2 border-blue-300 shadow-xl flex items-center justify-center"
           variant="default"
           disabled={!audioUrl}
           aria-label={isPlaying ? "Pause audio" : "Play audio"}
         >
           {isPlaying ? 
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
               <rect x="6" y="4" width="4" height="16"></rect>
               <rect x="14" y="4" width="4" height="16"></rect>
             </svg> 
             : 
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="white" stroke="none" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="5 3 19 12 5 21 5 3" fill="white"></polygon>
             </svg>
           }

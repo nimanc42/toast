@@ -52,8 +52,8 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
   // 3️⃣ Call OpenAI to generate the toast text
   
   // Check if OpenAI API key is valid
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('A Toast')) {
-    throw new Error('Invalid OpenAI API key. Please provide a valid API key in the environment variables.');
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('Missing OpenAI API key. Please provide a valid API key in the environment variables.');
   }
   
   // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user

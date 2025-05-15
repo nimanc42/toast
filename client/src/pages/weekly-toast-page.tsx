@@ -379,8 +379,8 @@ export default function WeeklyToastPage() {
                 <div className="p-6 bg-gray-50 border-t border-gray-200">
                   <h3 className="font-medium text-lg mb-4">Share Your Toast</h3>
                   <ShareToast 
-                    toastId={latestToast.id} 
-                    onShareExternal={handleShare}
+                    toast={latestToast} 
+                    onShareClick={(platform) => handleShare(platform, latestToast.shareUrl || window.location.href, latestToast.content)}
                   />
                 </div>
               )}

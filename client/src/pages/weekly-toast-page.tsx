@@ -7,7 +7,8 @@ import ShareToast from "@/components/share-toast";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Loader2, RefreshCcw, InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -269,30 +270,71 @@ export default function WeeklyToastPage() {
             
             {/* Voice Selection */}
             <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-xs text-gray-500 mr-2">Voice:</span>
-                <Select 
-                  value={selectedVoice} 
-                  onValueChange={handleVoiceChange}
+              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4 sm:items-center">
+                <div className="flex items-center">
+                  <span className="text-xs text-gray-500 mr-2">Voice:</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help mr-1">
+                          <InfoIcon className="h-3 w-3 text-muted-foreground" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Select different voices powered by ElevenLabs AI to narrate your weekly toast</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <Select 
+                    value={selectedVoice} 
+                    onValueChange={setSelectedVoice}
+                    disabled={regenerating}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-64">
+                      <SelectValue>
+                        {voiceOptions.find(v => v.id === selectedVoice)?.name || "Select a voice"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {voiceOptions.map(voice => (
+                        <SelectItem key={voice.id} value={voice.id}>
+                          <div className="flex flex-col">
+                            <span>{voice.name}</span>
+                            <span className="text-xs text-muted-foreground">{voice.description}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                  onClick={() => {
+                    if (latestToast && latestToast.id) {
+                      regenerateAudioMutation.mutate({ 
+                        toastId: latestToast.id, 
+                        voiceStyle: selectedVoice 
+                      });
+                    }
+                  }}
                   disabled={regenerating}
                 >
-                  <SelectTrigger className="h-8 text-xs w-64">
-                    <SelectValue placeholder="Select a voice" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="motivational">Motivational Coach (Rachel)</SelectItem>
-                    <SelectItem value="friendly">Friendly Conversationalist (Adam)</SelectItem>
-                    <SelectItem value="poetic">Poetic Narrator (Domi)</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {regenerating ? (
+                    <>
+                      <RefreshCcw className="h-3 w-3 animate-spin" />
+                      <span>Regenerating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-3 w-3" />
+                      <span>Apply Voice</span>
+                    </>
+                  )}
+                </Button>
               </div>
-              
-              {regenerating && (
-                <div className="flex items-center text-xs text-primary-600">
-                  <RefreshCcw className="h-3 w-3 mr-1 animate-spin" />
-                  <span>Regenerating audio...</span>
-                </div>
-              )}
             </div>
           </div>
           

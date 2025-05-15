@@ -2,13 +2,17 @@ import fs from 'fs';
 import path from 'path';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
+import { uploadAudioToSupabase } from './supabase-storage';
 
 // Default voice settings
 const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Rachel voice
 const DEFAULT_STABILITY = 0.5;
 const DEFAULT_SIMILARITY_BOOST = 0.75;
 
-// Ensure audio directory exists
+// Flag to determine if we should use Supabase or local storage
+const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+
+// Ensure audio directory exists (for fallback to local storage)
 const ensureAudioDirExists = () => {
   const audioDir = path.join(process.cwd(), 'public', 'audio');
   if (!fs.existsSync(audioDir)) {
@@ -79,11 +83,6 @@ export async function generateSpeech(text: string, voiceId: string = DEFAULT_VOI
       const timestamp = Date.now();
       const filename = `toast-${timestamp}.mp3`;
       
-      // Ensure directory exists
-      const audioDir = ensureAudioDirExists();
-      const filePath = path.join(audioDir, filename);
-      
-      // Save the audio file
       const arrayBuffer = await response.arrayBuffer().catch(err => {
         console.error('[TTS] Failed to read response buffer:', err);
         return null;
@@ -92,6 +91,24 @@ export async function generateSpeech(text: string, voiceId: string = DEFAULT_VOI
       if (!arrayBuffer) return null;
       
       const buffer = Buffer.from(arrayBuffer);
+      
+      // Decide whether to use Supabase or local storage
+      if (useSupabase) {
+        console.log('[TTS] Using Supabase Storage for audio file');
+        const supabaseUrl = await uploadAudioToSupabase(buffer, filename);
+        
+        if (supabaseUrl) {
+          console.log(`[TTS] Audio uploaded to Supabase: ${supabaseUrl}`);
+          return supabaseUrl;
+        } else {
+          console.error('[TTS] Failed to upload to Supabase, falling back to local storage');
+        }
+      }
+      
+      // Fallback to local storage if Supabase failed or not configured
+      console.log('[TTS] Using local storage for audio file');
+      const audioDir = ensureAudioDirExists();
+      const filePath = path.join(audioDir, filename);
       
       // Use promises for async file operations
       await fs.promises.writeFile(filePath, buffer).catch(err => {

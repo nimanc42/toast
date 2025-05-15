@@ -2,9 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import OpenAI from 'openai';
 import { storage } from '../storage';
+import { uploadAudioToSupabase } from './supabase-storage';
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Flag to determine if we should use Supabase or local storage
+const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
 
 /**
  * Ensures the audio directory exists
@@ -169,22 +173,45 @@ export async function generateWeeklyToast(userId: number): Promise<{ content: st
       const buffer = Buffer.from(arrayBuffer);
       const timestamp = Date.now();
       const filename = `toast-${userId}-${timestamp}.mp3`;
-      const filePath = path.join(process.cwd(), 'public', 'audio', filename);
       
-      // Use async file operations
-      await fs.promises.writeFile(filePath, buffer).catch(err => {
-        console.error('[TTS] Failed to write audio file:', err);
-        throw err;
-      });
-
       // Get note IDs for the toast
       const noteIds = notes.map(note => note.id);
+      
+      let audioUrl: string | null = null;
+      
+      // Decide whether to use Supabase or local storage
+      if (useSupabase) {
+        console.log('[TTS] Using Supabase Storage for audio file');
+        audioUrl = await uploadAudioToSupabase(buffer, filename);
+        
+        if (audioUrl) {
+          console.log(`[TTS] Audio uploaded to Supabase: ${audioUrl}`);
+        } else {
+          console.error('[TTS] Failed to upload to Supabase, falling back to local storage');
+        }
+      }
+      
+      // Fallback to local storage if Supabase failed or not configured
+      if (!audioUrl) {
+        console.log('[TTS] Using local storage for audio file');
+        const filePath = path.join(process.cwd(), 'public', 'audio', filename);
+        ensureAudioDirExists();
+        
+        // Use async file operations
+        try {
+          await fs.promises.writeFile(filePath, buffer);
+          audioUrl = `/audio/${filename}`;
+        } catch (err) {
+          console.error('[TTS] Failed to write audio file:', err);
+          throw err;
+        }
+      }
       
       // 5️⃣ Create the toast in the database
       const toast = await storage.createToast({
         userId,
         content: toastContent,
-        audioUrl: `/audio/${filename}`,
+        audioUrl,
         noteIds,
         shared: false,
         shareUrl: null

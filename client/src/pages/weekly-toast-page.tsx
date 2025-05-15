@@ -65,8 +65,11 @@ export default function WeeklyToastPage() {
         
         // If we're in demo mode (no latestToast), update the demoToast object
         if (!latestToast) {
-          demoToast.content = data.content;
-          demoToast.audioUrl = data.audioUrl;
+          setDemoToast((prev: Toast) => ({
+            ...prev,
+            content: data.content,
+            audioUrl: data.audioUrl
+          }));
         }
         
         // Refresh the latest toast data
@@ -80,7 +83,7 @@ export default function WeeklyToastPage() {
         console.error("Toast generation API error:", errorData);
         toast({
           title: "Failed to generate toast",
-          description: errorData.message || "Could not generate toast. Add more reflections or try later.",
+          description: errorData.error || errorData.message || "Could not generate toast. Add more reflections or try later.",
           variant: "destructive"
         });
       }
@@ -293,7 +296,7 @@ export default function WeeklyToastPage() {
     }
 
     // Demo toast content for UI testing when no toast has been generated
-    const demoToast: Toast = {
+    const [demoToast, setDemoToast] = useState<Toast>({
       id: 0,
       content: "Welcome to A Toast to You! This is a sample of what your personalized weekly toast will look like. You've been doing a great job with your daily reflections. Your commitment to growth and personal development is inspiring.\n\nThis week, we noticed themes of perseverance, creativity, and self-care in your notes. These qualities will serve you well as you continue on your journey.\n\nHere's to another week of growth and discovery ahead!",
       audioUrl: null, // We won't use test audio - we'll generate real audio
@@ -302,7 +305,7 @@ export default function WeeklyToastPage() {
       shareCode: "demo",
       shared: false,
       shareUrl: "/shared/demo"
-    };
+    });
     
     return (
       <div className="flex flex-col min-h-screen">

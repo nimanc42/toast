@@ -412,27 +412,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Toast Generator] Generating toast for user ${userId}`);
       
       // Use the dedicated toast generator service
-      const result = await generateWeeklyToast(userId);
-      
-      console.log(`[Toast Generator] Result:`, {
-        content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
-        audioUrl: result.audioUrl || 'No audio URL'
-      });
-      
-      // Log analytics for toast generation
-      if (storage.logUserActivity) {
-        await storage.logUserActivity({
-          userId,
-          activityType: 'toast-generate',
-          metadata: { 
-            automated: false,
-            source: 'manual-trigger',
-            hasAudio: !!result.audioUrl
-          } as Record<string, any>
+      try {
+        const result = await generateWeeklyToast(userId);
+        
+        console.log(`[Toast Generator] Result:`, {
+          content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
+          audioUrl: result.audioUrl || 'No audio URL'
         });
+        
+        // Log analytics for toast generation
+        if (storage.logUserActivity) {
+          await storage.logUserActivity({
+            userId,
+            activityType: 'toast-generate',
+            metadata: { 
+              automated: false,
+              source: 'manual-trigger',
+              hasAudio: !!result.audioUrl
+            } as Record<string, any>
+          });
+        }
+        
+        res.status(201).json(result);
+      } catch (err: any) {
+        console.error('[Toast gen]', err);
+        return res.status(400).json({ error: err.message });
       }
-      
-      res.status(201).json(result);
     } catch (error: any) {
       console.error('Error generating toast:', error);
       

@@ -45,23 +45,30 @@ export default function WeeklyToastPage() {
     staleTime: 60000, // 1 minute
   });
 
-  // Mutation to generate a new toast
+  // Mutation to generate a new weekly toast
   const generateToastMutation = useMutation({
     mutationFn: async () => {
+      // Use the /api/toasts/generate endpoint as specified in the server routes
+      // (using /generate instead of /generate-weekly since that's the existing endpoint)
       const res = await apiRequest("POST", "/api/toasts/generate", {});
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to generate toast");
+      }
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
       toast({
-        title: "Toast Generated",
+        title: "Toast Generated Successfully",
         description: "Your weekly toast has been created based on your recent notes.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Toast generation error:", error);
       toast({
         title: "Failed to generate toast",
-        description: error.message || "Please ensure you have recent notes.",
+        description: error.message || "Please ensure you have recent notes from the past week.",
         variant: "destructive"
       });
     }
@@ -176,8 +183,7 @@ export default function WeeklyToastPage() {
               </div>
               <h1 className="text-3xl font-bold font-accent mb-4">Your Personalized Toast</h1>
               <p className="text-xl font-light max-w-xl mx-auto mb-4">
-                You don't have any real toasts yet, but here's a preview of what they'll look like! 
-                Create a few daily reflections and then generate your weekly toast.
+                Ready to celebrate your progress this week? Generate your personalized weekly toast based on your daily reflections.
               </p>
               
               <Button
@@ -188,8 +194,8 @@ export default function WeeklyToastPage() {
               >
                 {generateToastMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating Toast...
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Generating This Week's Toast...
                   </>
                 ) : (
                   <>
@@ -197,7 +203,7 @@ export default function WeeklyToastPage() {
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                       <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                     </svg>
-                    Generate My Weekly Toast
+                    Generate This Week's Toast
                   </>
                 )}
               </Button>
@@ -333,27 +339,41 @@ export default function WeeklyToastPage() {
             </p>
             
             <div className="flex justify-center mt-4">
-              <Button
-                onClick={() => generateToastMutation.mutate()}
-                disabled={generateToastMutation.isPending}
-                variant="outline"
-                className="bg-white bg-opacity-20 text-white hover:bg-opacity-30 transition-all"
-              >
-                {generateToastMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating New Toast...
-                  </>
-                ) : (
-                  <>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    Generate New Toast
-                  </>
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <Button
+                        onClick={() => generateToastMutation.mutate()}
+                        disabled={generateToastMutation.isPending || !!latestToast}
+                        variant="outline"
+                        className="bg-white bg-opacity-20 text-white hover:bg-opacity-30 transition-all"
+                        size="lg"
+                      >
+                        {generateToastMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            Generating This Week's Toast...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            Generate This Week's Toast
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {!!latestToast ? 
+                      "You already have a toast for this week" : 
+                      "Generate a new toast based on your notes from the past week"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           
@@ -376,7 +396,7 @@ export default function WeeklyToastPage() {
                       <line x1="12" y1="8" x2="12" y2="12"></line>
                       <line x1="12" y1="16" x2="12.01" y2="16"></line>
                     </svg>
-                    No audio has been generated for this toast yet. 
+                    Voice generation is unavailable. Try again later.
                   </p>
                   <Button 
                     onClick={() => regenerateAudioMutation.mutate({ 

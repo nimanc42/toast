@@ -60,7 +60,15 @@ export default function WeeklyToastPage() {
           console.warn("No audio URL in response, likely an issue with ElevenLabs API or Supabase");
         }
         
+        // Save the generated toast data
         setGeneratedToast(data);
+        
+        // If we're in demo mode (no latestToast), update the demoToast object
+        if (!latestToast) {
+          demoToast.content = data.content;
+          demoToast.audioUrl = data.audioUrl;
+        }
+        
         // Refresh the latest toast data
         queryClient.invalidateQueries({ queryKey: ["/api/toasts/latest"] });
         toast({
@@ -288,7 +296,7 @@ export default function WeeklyToastPage() {
     const demoToast: Toast = {
       id: 0,
       content: "Welcome to A Toast to You! This is a sample of what your personalized weekly toast will look like. You've been doing a great job with your daily reflections. Your commitment to growth and personal development is inspiring.\n\nThis week, we noticed themes of perseverance, creativity, and self-care in your notes. These qualities will serve you well as you continue on your journey.\n\nHere's to another week of growth and discovery ahead!",
-      audioUrl: "/audio/toast-1747269138152.mp3", // Use one of our test audio files
+      audioUrl: null, // We won't use test audio - we'll generate real audio
       createdAt: new Date().toISOString(),
       userId: 0,
       shareCode: "demo",
@@ -344,11 +352,33 @@ export default function WeeklyToastPage() {
               {/* Audio Player */}
               <div className="bg-gray-50 p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>
-                <AudioPlayer 
-                  audioUrl={demoToast.audioUrl} 
-                  title="Toast Preview" 
-                  duration="2:30" 
-                />
+                
+                {/* If no audio exists, show Generate button */}
+                {!demoToast.audioUrl ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-4">No audio available yet. Generate your toast to hear it spoken.</p>
+                    <Button 
+                      onClick={generateToast} 
+                      disabled={loading} 
+                      className="bg-amber-500 text-white hover:bg-amber-600"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating Audio...
+                        </>
+                      ) : (
+                        "Generate Toast Audio"
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <AudioPlayer 
+                    audioUrl={demoToast.audioUrl} 
+                    title="Toast Preview" 
+                    duration="2:30" 
+                  />
+                )}
                 
                 {/* Voice Selection */}
                 <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
@@ -378,10 +408,6 @@ export default function WeeklyToastPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  
-                  <div className="flex items-center text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-md">
-                    <span>Demo mode</span>
                   </div>
                 </div>
               </div>

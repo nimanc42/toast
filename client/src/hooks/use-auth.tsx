@@ -53,21 +53,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (token) {
       console.log('Auth token found in localStorage');
       
-      // Check if token is expired
+      // Check if token is expired based on client-side expiry date
       if (tokenExpiry) {
         const expiryDate = new Date(tokenExpiry);
         const now = new Date();
         
         if (now > expiryDate) {
-          console.warn('Auth token expired, clearing token');
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('authTokenExpiry');
-          queryClient.setQueryData(["/api/user"], null);
-          return;
+          console.warn('Auth token client-side expiry date reached');
+          // Don't immediately clear - let the server decide if it's still valid
+          // Just trigger a revalidation
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
         }
       }
       
-      // If there's a valid token but no user, attempt to validate and refresh the auth state
+      // If there's a token but no user, attempt to validate and refresh the auth state
       if (!user && !isLoading) {
         console.log('No user in state, validating token and refreshing auth');
         queryClient.invalidateQueries({ queryKey: ["/api/user"] });

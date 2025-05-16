@@ -2,12 +2,12 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    // Special handling for auth errors
-    if (res.status === 401) {
-      // Clear token if it exists but is no longer valid
+    // Special handling for auth errors - but only for specific endpoints
+    if (res.status === 401 && res.url.includes('/api/auth/verify')) {
+      // Only clear token if explicitly told by auth verification endpoint
       const token = localStorage.getItem('authToken');
       if (token) {
-        console.warn('Auth token expired or invalid, clearing...');
+        console.warn('Auth token explicitly rejected by server, clearing...');
         localStorage.removeItem('authToken');
       }
     }
@@ -65,10 +65,9 @@ export const getQueryFn: <T>(options: {
 
     // Special handling for 401 based on configuration
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      // If we got a 401 with a token, the token might be invalid - clear it
+      // Only log the 401 but don't clear the token - let the session cookie handle authentication
       if (token) {
-        console.warn('Auth token expired or invalid during query, clearing...');
-        localStorage.removeItem('authToken');
+        console.log('Got 401 on a query with auth token, but keeping token for next attempt');
       }
       return null;
     }

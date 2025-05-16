@@ -74,12 +74,12 @@ export function setupAuth(app: Express) {
   // Configure session
   const sessionSettings: session.SessionOptions = {
     secret: SESSION_SECRET,
-    resave: true,
+    resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for better persistence
       sameSite: 'lax'
     },
     store: storage.sessionStore,
@@ -117,13 +117,16 @@ export function setupAuth(app: Express) {
 
   // Serialization and deserialization
   passport.serializeUser((user, done) => {
+    console.log("Serializing user:", user.id);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log("Deserializing user:", id);
       const user = await storage.getUser(id);
       if (!user) {
+        console.log("User not found during deserialization:", id);
         return done(null, false);
       }
       

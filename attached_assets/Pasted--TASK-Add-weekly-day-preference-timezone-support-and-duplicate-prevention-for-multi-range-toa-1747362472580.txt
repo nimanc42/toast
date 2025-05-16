@@ -1,0 +1,87 @@
+🚀  TASK – Add weekly-day preference, timezone support, and duplicate-prevention for multi-range toasts
+
+────────────────────────────────────────
+1. DATABASE – shared/schema.ts
+────────────────────────────────────────
+• USERS table → add:
+  weekly_toast_day   integer  DEFAULT 0   // 0 = Sunday … 6 = Saturday
+  timezone           text     DEFAULT 'UTC'
+
+• TOASTS table → add/rename columns:
+  type            text                        // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  interval_start  timestamp with time zone
+  interval_end    timestamp with time zone
+  CONSTRAINT toast_unique UNIQUE (user_id, type, interval_start)
+
+Run migration:
+  npx drizzle-kit push --yes
+
+────────────────────────────────────────
+2. BACKEND – server/toast-generator.ts
+────────────────────────────────────────
+// new helper
+import { DateTime } from 'luxon';   // install: npm i luxon
+
+export function getDateWindow(range: 'daily'|'weekly'|'monthly'|'yearly', user: User) {
+  const now = DateTime.now().setZone(user.timezone || 'UTC');
+
+  switch (range) {
+    case 'daily':
+      return { start: now.startOf('day'), end: now.endOf('day') };
+
+    case 'weekly': {
+      const targetDow = user.weekly_toast_day ?? 0;          // 0-6
+      const start = now.set({ weekday: targetDow || 7 }).startOf('day');
+      const end   = start.plus({ days: 6 }).endOf('day');
+      return { start, end };
+    }
+
+    case 'monthly':
+      return { start: now.startOf('month'), end: now.endOf('month') };
+
+    case 'yearly':
+      return { start: now.set({ month: 1, day: 1 }).startOf('day'),
+               end:   now.set({ month: 12, day: 30 }).endOf('day') };
+  }
+}
+
+export async function generateToast(user: User, range: Range) {
+  const { start, end } = getDateWindow(range, user);
+
+  // DUPLICATE PREVENTION
+  const existing = await db.query.toasts.findFirst({
+    where: { user_id: user.id, type: range, interval_start: start.toJSDate() }
+  });
+  if (existing) throw new ApiError(409, 'Toast already exists for this period');
+
+  // fetch reflections in window
+  const reflections = await db.query.reflections.findMany({
+    where: { user_id: user.id, created_at: { between: [start.toJSDate(), end.toJSDate()] } }
+  });
+
+  // ...AI generation stays unchanged...
+}
+────────────────────────────────────────
+3. ROUTE – server/routes/toasts.ts
+────────────────────────────────────────
+router.post('/api/toasts/generate', async (req, res) => {
+  const range = req.body.range as 'daily'|'weekly'|'monthly'|'yearly';
+  const toast = await generateToast(req.user!, range);   // throws 409 if duplicate
+  res.json(toast);
+});
+
+────────────────────────────────────────
+4. FRONTEND – Weekly Toast settings
+────────────────────────────────────────
+• Add “Settings > Toast Preferences” page (or extend existing Settings):
+  ```tsx
+  const dowOptions = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  <label>Day of week:</label>
+  <select value={weekly_toast_day} onChange={savePref}>
+    {dowOptions.map((d,i)=><option value={i}>{d}</option>)}
+  </select>
+
+  <label>Timezone:</label>
+  <select value={timezone} onChange={savePref}>
+    {Intl.supportedValuesOf('timeZone').map(z=><option value={z}>{z}</option>)}
+  </select>

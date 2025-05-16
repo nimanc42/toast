@@ -1,334 +1,236 @@
-import fs from 'fs';
-import path from 'path';
+import { DateTime } from 'luxon';
+import { User, Toast, InsertToast } from '@shared/schema';
+import { db } from '../db';
+import { eq, and, between } from 'drizzle-orm';
+import { notes, toasts } from '@shared/schema';
 import OpenAI from 'openai';
-import { storage } from '../storage';
-import { uploadAudioToSupabase } from './supabase-storage';
+// Define custom API error class
+export class ApiError extends Error {
+  statusCode: number;
+  
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.name = 'ApiError';
+  }
+}
 
 // Initialize OpenAI client
-console.log("[OpenAI] API key exists:", !!process.env.OPENAI_API_KEY);
-console.log("[OpenAI] API key length:", process.env.OPENAI_API_KEY?.length || 0);
-console.log("[OpenAI] API key prefix:", process.env.OPENAI_API_KEY?.substring(0, 7) || "N/A");
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Create the OpenAI client
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
-});
-
-// Flag to determine if we should use Supabase or local storage
-const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+// Toast types
+export type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 /**
- * Ensures the audio directory exists
- * @returns Path to the audio directory
+ * Get the date window for a specific range type based on user preferences
+ * @param range The range type (daily, weekly, monthly, yearly)
+ * @param user The user with their timezone and preferences
+ * @returns Start and end DateTime objects for the range
  */
-const ensureAudioDirExists = () => {
-  const audioDir = path.join(process.cwd(), 'public', 'audio');
-  if (!fs.existsSync(audioDir)) {
-    fs.mkdirSync(audioDir, { recursive: true });
+export function getDateWindow(range: ToastRange, user: User) {
+  const now = DateTime.now().setZone(user.timezone || 'UTC');
+  
+  switch (range) {
+    case 'daily':
+      return { 
+        start: now.startOf('day'), 
+        end: now.endOf('day') 
+      };
+      
+    case 'weekly': {
+      // Get preferred day of week (0 = Sunday, 6 = Saturday)
+      const targetDow = user.weeklyToastDay ?? 0;          
+      // Get the most recent occurrence of that day (or today if it's the target day)
+      // Luxon uses 1-7 for weekdays where 1 is Monday, so we need to convert from 0-6 where 0 is Sunday
+      const luxonDay = targetDow === 0 ? 7 : targetDow;
+      const start = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 }).startOf('day');
+      // The window is 7 days from the start
+      const end = start.plus({ days: 6 }).endOf('day');
+      return { start, end };
+    }
+      
+    case 'monthly':
+      return { 
+        start: now.startOf('month'), 
+        end: now.endOf('month') 
+      };
+      
+    case 'yearly':
+      return { 
+        start: now.set({ month: 1, day: 1 }).startOf('day'),
+        end: now.set({ month: 12, day: 31 }).endOf('day') 
+      };
+      
+    default:
+      throw new Error(`Unsupported range type: ${range}`);
   }
-  return audioDir;
-};
-
-/**
- * Input parameters for toast generation
- */
-interface ToastInput {
-  userId: number;
-  bundleTag?: string | null;
 }
 
 /**
- * Generate a weekly toast from a user's notes
- * 
- * @param input The input parameters containing userId and optional bundleTag
- * @returns Object containing the toast text and audio URL
+ * Extract themes from note contents
+ * @param noteContents Array of note contents
+ * @returns Array of identified themes
  */
-export async function generateWeeklyToast(input: ToastInput | number): Promise<{ content: string, audioUrl: string }> {
-  // Handle legacy calls with just userId
-  const userId = typeof input === 'number' ? input : input.userId;
-  const bundleTag = typeof input === 'number' ? null : input.bundleTag;
+function getThemesFromNotes(noteContents: string[]): string[] {
+  // Simple theme extraction logic - in production this would use NLP
+  const allContent = noteContents.join(' ').toLowerCase();
+  const themes = [];
   
-  // TODO (BundledAway): activate bundle tag feature for memory grouping
-  // Log bundle tag only in development mode
-  if (process.env.NODE_ENV === 'development' && bundleTag) {
-    console.log(`[Toast Generator] Using bundle tag: ${bundleTag}`);
-  }
-  // 1️⃣ Gather notes from the last 7 days
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 7);
-  
-  const notes = await storage.getNotesByUserIdAndDateRange(userId, startDate, endDate);
-  if (!notes.length) {
-    throw new Error('No notes found for the last week');
-  }
-
-  // 2️⃣ Compose prompt with the notes content
-  const noteContent = notes.map(n => `• ${n.content}`).join('\n');
-  const prompt = `
-    Summarize these reflections into a short celebratory toast (2-3 paragraphs).
-    Format: positive, second-person ("you"), motivational, no emojis.
+  if (allContent.includes('work') || allContent.includes('project') || allContent.includes('job'))
+    themes.push('work');
     
-    Reflections:
-    ${noteContent}
-  `;
+  if (allContent.includes('family') || allContent.includes('kids') || allContent.includes('parent'))
+    themes.push('family');
+    
+  if (allContent.includes('exercise') || allContent.includes('workout') || allContent.includes('fitness'))
+    themes.push('health');
+    
+  if (allContent.includes('learn') || allContent.includes('study') || allContent.includes('read'))
+    themes.push('learning');
+    
+  if (allContent.includes('friend') || allContent.includes('social') || allContent.includes('hangout'))
+    themes.push('social');
+    
+  if (themes.length === 0)
+    themes.push('personal growth');
+    
+  return themes;
+}
 
-  // 3️⃣ Call OpenAI to generate the toast text
-  
-  // Check if OpenAI API key is valid
+/**
+ * Generate personalized toast content using OpenAI
+ * @param noteContents Array of note contents
+ * @returns Generated toast content
+ */
+async function generateToastContentWithAI(noteContents: string[]): Promise<string> {
   if (!process.env.OPENAI_API_KEY) {
-    throw new Error('Missing OpenAI API key. Please provide a valid API key in the environment variables.');
+    // Fallback if no API key is available
+    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
   }
-  
-  let toastContent: string;
-  
+
   try {
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",  // Using the latest model
-      messages: [{ role: "user", content: prompt }]
-    });
-    
-    toastContent = completion.choices[0]?.message.content?.trim() || "Your weekly toast is ready.";
-  } catch (error: any) {
-    console.error("[Toast gen]", error);
-    
-    // Provide more helpful error messages
-    if (error.status === 401) {
-      throw new Error('OpenAI API key authentication failed. Please check your API key.');
-    } else if (error.status === 429) {
-      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
-    } else if (error.status === 500) {
-      throw new Error('OpenAI API server error. Please try again later.');
-    } else {
-      throw new Error(`OpenAI API error: ${error.message || 'Unknown error'}`);
-    }
-  }
-
-  // Get user's voice preference
-  const voicePreference = await storage.getVoicePreferenceByUserId(userId);
-  const voiceStyle = voicePreference ? voicePreference.voiceStyle : 'motivational';
-  
-  console.log(`[Toast Generator] User ${userId} voice preference:`, { 
-    fromDb: voicePreference?.voiceStyle || 'none found', 
-    usingStyle: voiceStyle 
-  });
-  
-  // Get the ElevenLabs voice ID based on the style
-  let voiceId = '';
-  let voiceName = '';
-  
-  switch (voiceStyle) {
-    case 'friendly':
-      voiceId = '21m00Tcm4TlvDq8ikWAM'; // Adam
-      voiceName = 'Adam (Friendly)';
-      break;
-    case 'poetic':
-      voiceId = 'AZnzlk1XvdvUeBnXmlld'; // Domi
-      voiceName = 'Domi (Poetic)';
-      break;
-    case 'motivational':
-    default:
-      voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Rachel
-      voiceName = 'Rachel (Motivational)';
-      break;
-  }
-  
-  console.log(`[Toast Generator] Selected voice: ${voiceName} (ID: ${voiceId})`);
-  
-
-  // 4️⃣ Call ElevenLabs to convert the toast to speech
-  try {
-    ensureAudioDirExists();
-    
-    // Important: Handle missing API key gracefully
-    if (!process.env.ELEVENLABS_API_KEY) {
-      console.error('[TTS] Missing ELEVENLABS_API_KEY');
-      throw new Error('ElevenLabs API key is missing. Audio generation not possible.');
-    }
-    
-    // Use Promise.race with a timeout to prevent hanging requests
-    const timeoutPromise = new Promise<Response | null>((_, reject) => {
-      setTimeout(() => reject(new Error('TTS request timeout after 15 seconds')), 15000);
-    });
-    
-    // Attempt to make the ElevenLabs API call with timeout protection
-    let response;
-    try {
-      response = await Promise.race([
-        fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-          {
-            method: "POST",
-            headers: {
-              "xi-api-key": process.env.ELEVENLABS_API_KEY || "",
-              "Content-Type": "application/json",
-              "Accept": "audio/mpeg"
-            },
-            body: JSON.stringify({ 
-              text: toastContent, 
-              voice_settings: { 
-                stability: 0.4, 
-                similarity_boost: 0.75 
-              } 
-            })
-          }
-        ),
-        timeoutPromise
-      ]);
-    } catch (fetchError) {
-      console.error('[TTS] Fetch error:', fetchError);
-      // Create toast without audio on fetch failure
-      const noteIds = notes.map(note => note.id);
-      const toast = await storage.createToast({
-        userId,
-        content: toastContent,
-        audioUrl: null,
-        noteIds,
-        shared: false,
-        shareUrl: null
-      });
-      return { content: toast.content, audioUrl: '' };
-    }
-
-    // Handle non-OK response
-    if (!response || !response.ok) {
-      const errorText = response ? await response.text().catch(() => 'Unable to read error response') : 'No response';
-      console.error(`[TTS] ElevenLabs API error: ${response?.status || 'unknown'} - ${errorText}`);
-      
-      // Create toast without audio
-      const noteIds = notes.map(note => note.id);
-      const toast = await storage.createToast({
-        userId,
-        content: toastContent,
-        audioUrl: null,
-        noteIds,
-        shared: false,
-        shareUrl: null
-      });
-      return { content: toast.content, audioUrl: '' };
-    }
-
-    // Process response and save audio file with error handling
-    try {
-      const arrayBuffer = await response.arrayBuffer().catch((err: Error) => {
-        console.error('[TTS] Failed to read response buffer:', err);
-        return null;
-      });
-      
-      if (!arrayBuffer) {
-        throw new Error('Failed to read audio response buffer');
-      }
-      
-      const buffer = Buffer.from(arrayBuffer);
-      const timestamp = Date.now();
-      const filename = `toast-${userId}-${timestamp}.mp3`;
-      
-      // Get note IDs for the toast
-      const noteIds = notes.map(note => note.id);
-      
-      let audioUrl: string | null = null;
-      
-      // Decide whether to use Supabase or local storage
-      if (useSupabase) {
-        console.log('[TTS] Using Supabase Storage for audio file');
-        audioUrl = await uploadAudioToSupabase(buffer, filename);
-        
-        if (audioUrl) {
-          console.log(`[TTS] Audio uploaded to Supabase: ${audioUrl}`);
-        } else {
-          console.error('[TTS] Failed to upload to Supabase, falling back to local storage');
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are a motivational coach who creates personalized weekly celebrations based on reflection notes. Keep the tone warm, encouraging, and celebratory. Highlight patterns, progress, and growth. Keep responses under 200 words."
+        },
+        {
+          role: "user",
+          content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
         }
-      }
-      
-      // Fallback to local storage if Supabase failed or not configured
-      if (!audioUrl) {
-        console.log('[TTS] Using local storage for audio file');
-        const filePath = path.join(process.cwd(), 'public', 'audio', filename);
-        ensureAudioDirExists();
-        
-        // Use async file operations
-        try {
-          await fs.promises.writeFile(filePath, buffer);
-          audioUrl = `/audio/${filename}`;
-        } catch (err: any) {
-          console.error('[TTS] Failed to write audio file:', err);
-          throw err;
-        }
-      }
-      
-      // 5️⃣ Create the toast in the database
-      const toast = await storage.createToast({
-        userId,
-        content: toastContent,
-        audioUrl,
-        noteIds,
-        shared: false,
-        shareUrl: null
-      });
-
-      return { 
-        content: toast.content, 
-        audioUrl: toast.audioUrl || '' 
-      };
-    } catch (fileError) {
-      console.error('[TTS] File processing error:', fileError);
-      // Create toast without audio on file processing error
-      const noteIds = notes.map(note => note.id);
-      const toast = await storage.createToast({
-        userId,
-        content: toastContent,
-        audioUrl: null,
-        noteIds,
-        shared: false,
-        shareUrl: null
-      });
-      return { content: toast.content, audioUrl: '' };
-    }
-  } catch (error: any) {
-    console.error('[TTS] Unhandled error in speech generation:', error);
-    
-    // Get note IDs for the toast
-    const noteIds = notes.map(note => note.id);
-    
-    // Still create a toast in the database, but without an audio URL
-    const toast = await storage.createToast({
-      userId,
-      content: toastContent,
-      audioUrl: null,
-      noteIds,
-      shared: false,
-      shareUrl: null
+      ],
+      max_tokens: 400,
+      temperature: 0.7,
     });
-    
-    // Instead of throwing, return a valid result but without audio
-    return { content: toast.content, audioUrl: '' };
+
+    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
+  } catch (error) {
+    console.error("Error generating toast with OpenAI:", error);
+    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
   }
 }
 
 /**
- * Generate a weekly toast for all users who have notes in the last week
- * @returns Number of toasts generated
+ * Generate fallback toast content without using OpenAI
+ * @param noteCount Number of notes
+ * @param themes Array of themes identified in the notes
+ * @returns Generated toast content
  */
-export async function generateWeeklyToastsForAllUsers(): Promise<number> {
-  // Get all users
-  // This implementation would need to be added to the storage interface
-  // const users = await storage.getAllUsers();
+function generateFallbackToastContent(noteCount: number, themes: string[]): string {
+  const themeText = themes.length > 0 
+    ? `focusing on ${themes.join(', ')}`
+    : 'focusing on your personal growth';
   
-  // For demo purposes, let's assume we have a way to get all user IDs
-  // This would be replaced with actual implementation
-  const userIds: number[] = []; // await storage.getAllUserIds();
+  const templates = [
+    `Here's to a week of reflection and growth! You took time to document ${noteCount} moments, ${themeText}. Each note represents a step in your journey - keep building on this momentum!`,
+    `Celebrating your consistency this week! With ${noteCount} reflections ${themeText}, you're creating a valuable record of your journey. These moments of awareness are powerful tools for growth.`,
+    `A toast to your mindfulness! Your ${noteCount} reflections this week show your commitment to self-awareness. I notice you've been ${themeText} - these insights will serve you well as you continue forward.`
+  ];
   
-  let successCount = 0;
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+/**
+ * Generate a toast for a user within a specific date range
+ * @param user The user to generate a toast for
+ * @param range The type of toast to generate (daily, weekly, monthly, yearly)
+ * @returns The generated toast
+ */
+export async function generateToast(user: User, range: ToastRange): Promise<Toast> {
+  // Get date window based on range and user preferences
+  const { start, end } = getDateWindow(range, user);
   
-  for (const userId of userIds) {
-    try {
-      await generateWeeklyToast({ userId });
-      successCount++;
-    } catch (error) {
-      console.error(`Failed to generate toast for user ${userId}:`, error);
-    }
+  // Check for existing toast to prevent duplicates
+  const existingToast = await db.query.toasts.findFirst({
+    where: and(
+      eq(toasts.userId, user.id),
+      eq(toasts.type, range),
+      eq(toasts.intervalStart, start.toJSDate())
+    )
+  });
+  
+  if (existingToast) {
+    throw new ApiError(409, `A ${range} toast already exists for this period`);
   }
   
-  return successCount;
+  // Get user's notes within the date range
+  const userNotes = await db.query.notes.findMany({
+    where: and(
+      eq(notes.userId, user.id),
+      between(notes.createdAt, start.toJSDate(), end.toJSDate())
+    )
+  });
+  
+  if (userNotes.length === 0) {
+    throw new ApiError(400, `No notes found for the ${range} period. Add some reflections first!`);
+  }
+  
+  // Extract note contents and IDs
+  const noteContents = userNotes.map(note => note.content || '').filter(Boolean);
+  const noteIds = userNotes.map(note => note.id);
+  
+  // Generate toast content
+  const content = await generateToastContentWithAI(noteContents);
+  
+  // Create new toast
+  const [newToast] = await db.insert(toasts)
+    .values({
+      userId: user.id,
+      content,
+      noteIds: noteIds,
+      type: range,
+      intervalStart: start.toJSDate(),
+      intervalEnd: end.toJSDate(),
+    })
+    .returning();
+  
+  return newToast;
+}
+
+/**
+ * Get the next toast date for a user based on their preferences
+ * @param user The user to get the next toast date for
+ * @returns The next toast date
+ */
+export function getNextToastDate(user: User): Date {
+  // For weekly toasts, get the user's preferred day
+  const preferredDay = user.weeklyToastDay ?? 0; // Default to Sunday (0)
+  const now = DateTime.now().setZone(user.timezone || 'UTC');
+  
+  // Get the next occurrence of the preferred day
+  // Luxon uses 1-7 for weekdays where 1 is Monday and 7 is Sunday
+  // Convert from our 0-6 where 0 is Sunday
+  const luxonDay = preferredDay === 0 ? 7 : preferredDay; 
+  let nextToastDate = now.set({ weekday: luxonDay });
+  
+  // If today is the preferred day but it's already past a certain time (e.g., 6 PM),
+  // or if the next occurrence would be in the past, move to next week
+  if (nextToastDate <= now) {
+    nextToastDate = nextToastDate.plus({ weeks: 1 });
+  }
+  
+  return nextToastDate.startOf('day').toJSDate();
 }

@@ -11,6 +11,8 @@ export const users = pgTable("users", {
   verified: boolean("verified").notNull().default(false),
   externalId: text("external_id").unique(), // ID from external auth provider (Supabase, Google, etc.)
   externalProvider: text("external_provider"), // Name of the provider (google, apple, etc.)
+  weeklyToastDay: integer("weekly_toast_day").default(0), // 0 = Sunday, 6 = Saturday
+  timezone: text("timezone").default("UTC"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -40,9 +42,17 @@ export const toasts = pgTable("toasts", {
   content: text("content").notNull(),
   audioUrl: text("audio_url"),
   noteIds: json("note_ids").$type<number[]>().notNull(),
+  type: text("type").notNull().default("weekly"), // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  intervalStart: timestamp("interval_start", { withTimezone: true }),
+  intervalEnd: timestamp("interval_end", { withTimezone: true }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   shared: boolean("shared").notNull().default(false),
   shareUrl: text("share_url"),
+}, (table) => {
+  return {
+    // Enforce uniqueness to prevent duplicate toasts for the same time period
+    toastUnique: uniqueIndex("toast_unique_idx").on(table.userId, table.type, table.intervalStart),
+  };
 });
 
 export const tokens = pgTable("tokens", {
@@ -150,6 +160,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   externalId: true,
   externalProvider: true,
+  weeklyToastDay: true,
+  timezone: true,
 });
 
 export const insertNoteSchema = createInsertSchema(notes).pick({
@@ -174,6 +186,9 @@ export const insertToastSchema = createInsertSchema(toasts).pick({
   content: true,
   audioUrl: true,
   noteIds: true,
+  type: true,
+  intervalStart: true,
+  intervalEnd: true,
   shared: true,
   shareUrl: true,
 });

@@ -257,21 +257,26 @@ export default function WeeklyToastPage() {
               {/* Generate or Regenerate button */}
               {latestToast ? (
                 <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-                    <SelectTrigger className="w-[200px] bg-white bg-opacity-10 border-none text-white">
-                      <SelectValue placeholder="Select voice" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {voiceOptions.map(voice => (
-                        <SelectItem key={voice.id} value={voice.id}>
-                          <div className="flex flex-col">
-                            <span>{voice.name}</span>
-                            <span className="text-xs text-gray-500">{voice.description}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col">
+                    <label htmlFor="voice-select" className="block text-sm font-medium text-white mb-1">
+                      Voice:
+                    </label>
+                    <Select value={selectedVoice} onValueChange={handleVoiceChange} id="voice-select">
+                      <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
+                        <SelectValue placeholder="Select voice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {voiceOptions.map(voice => (
+                          <SelectItem key={voice.id} value={voice.id} className="text-gray-900">
+                            <div className="flex flex-col">
+                              <span>{voice.name}</span>
+                              <span className="text-xs text-gray-500">{voice.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   <TooltipProvider>
                     <Tooltip>
@@ -302,21 +307,26 @@ export default function WeeklyToastPage() {
                 </div>
               ) : (
                 <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-                    <SelectTrigger className="w-[200px] bg-white bg-opacity-10 border-none text-white">
-                      <SelectValue placeholder="Select voice" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {voiceOptions.map(voice => (
-                        <SelectItem key={voice.id} value={voice.id}>
-                          <div className="flex flex-col">
-                            <span>{voice.name}</span>
-                            <span className="text-xs text-gray-500">{voice.description}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-col">
+                    <label htmlFor="voice-generate" className="block text-sm font-medium text-white mb-1">
+                      Voice:
+                    </label>
+                    <Select value={selectedVoice} onValueChange={handleVoiceChange} id="voice-generate">
+                      <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
+                        <SelectValue placeholder="Select voice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {voiceOptions.map(voice => (
+                          <SelectItem key={voice.id} value={voice.id} className="text-gray-900">
+                            <div className="flex flex-col">
+                              <span>{voice.name}</span>
+                              <span className="text-xs text-gray-500">{voice.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   <TooltipProvider>
                     <Tooltip>

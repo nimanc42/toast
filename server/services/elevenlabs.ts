@@ -39,27 +39,38 @@ export async function generateSpeech(text: string, voiceId: string = DEFAULT_VOI
     // Prepare request to ElevenLabs API
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
     
-    // Use Promise.race with a timeout to prevent hanging requests
+    console.log(`[TTS] Starting request to ElevenLabs API with voice: ${voiceId}`);
+    // Use Promise.race with a longer timeout to prevent hanging requests
     const timeoutPromise = new Promise<Response | null>((_, reject) => {
-      setTimeout(() => reject(new Error('TTS request timeout after 10 seconds')), 10000);
+      setTimeout(() => reject(new Error('TTS request timeout after 30 seconds')), 30000);
     });
     
+    const fetchPromise = fetch(url, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text,
+        voice_settings: {
+          stability: DEFAULT_STABILITY,
+          similarity_boost: DEFAULT_SIMILARITY_BOOST
+        }
+      })
+    });
+    
+    console.log(`[TTS] Request body: ${JSON.stringify({
+      text: text.substring(0, 50) + '...',
+      voice_settings: {
+        stability: DEFAULT_STABILITY,
+        similarity_boost: DEFAULT_SIMILARITY_BOOST
+      }
+    })}`);
+    
     const response = await Promise.race([
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg'
-        },
-        body: JSON.stringify({
-          text,
-          voice_settings: {
-            stability: DEFAULT_STABILITY,
-            similarity_boost: DEFAULT_SIMILARITY_BOOST
-          }
-        })
-      }),
+      fetchPromise,
       timeoutPromise
     ]).catch(err => {
       console.error('[TTS] Fetch error or timeout:', err);

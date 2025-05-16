@@ -143,12 +143,27 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
       ? voicePrefs.rows[0].voice_style 
       : 'friendly';
       
+    console.log(`[Toast Generator] Updated voice preference to: ${voiceStyle}`);
     const voiceId = getVoiceId(voiceStyle);
     
-    // Generate audio for the toast
-    const audioUrl = await generateSpeech(content, voiceId);
+    // Try to generate audio for the toast with multiple attempts
+    let audioUrl = null;
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (!audioUrl && attempts < maxAttempts) {
+      attempts++;
+      console.log(`[Toast Generator] Attempt ${attempts}/${maxAttempts} to generate audio`);
+      audioUrl = await generateSpeech(content, voiceId);
+      
+      if (!audioUrl && attempts < maxAttempts) {
+        // Wait a moment before retrying
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
     
     if (audioUrl) {
+      console.log(`[Toast Generator] Audio generated successfully: ${audioUrl}`);
       // Update toast with the audio URL
       const [updatedToast] = await db.update(toasts)
         .set({ audioUrl })
@@ -156,6 +171,8 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
         .returning();
       
       return updatedToast;
+    } else {
+      console.log('[Toast Generator] Failed to generate audio after multiple attempts');
     }
   } catch (error) {
     console.error('Error generating audio for toast:', error);

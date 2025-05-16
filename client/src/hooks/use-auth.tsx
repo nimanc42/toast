@@ -91,8 +91,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set the user data in the query cache
       queryClient.setQueryData(["/api/user"], response.user);
       
-      // Invalidate all queries to refresh them with new authentication
-      queryClient.invalidateQueries();
+      // Force clear 401 errors in cache
+      queryClient.clear();
+      
+      // Wait a moment for the session to be established
+      setTimeout(() => {
+        console.log("Refreshing queries after login");
+        // Invalidate all queries to refresh them with new authentication
+        queryClient.invalidateQueries();
+      }, 500);
       
       toast({
         title: "Welcome back!",

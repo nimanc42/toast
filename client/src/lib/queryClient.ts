@@ -31,6 +31,7 @@ export async function apiRequest(
     headers["Content-Type"] = "application/json";
   }
   if (token) {
+    console.log(`Including auth token in ${method} request to ${url}`);
     headers["Authorization"] = `Bearer ${token}`;
   }
   
@@ -38,9 +39,18 @@ export async function apiRequest(
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Always include credentials for cookies
   });
 
+  // For login, don't throw error since we want to handle the response specially
+  if (url === '/api/login' && method.toUpperCase() === 'POST') {
+    if (!res.ok) {
+      console.error(`Login request failed: ${res.status} ${res.statusText}`);
+    }
+    return res;
+  }
+
+  // For all other requests, handle errors normally
   await throwIfResNotOk(res);
   return res;
 }

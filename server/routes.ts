@@ -474,18 +474,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     console.log("[DEV MODE] Using test mode for toast generation");
     
-    // Use a test user for development
+    // Use Kate's user account for development testing
     const testUser = { 
-      id: 1, 
-      username: 'testuser', 
-      email: 'test@example.com', 
-      name: 'Test User', 
+      id: 5, 
+      username: 'kate', 
+      email: 'kate@k', 
+      name: 'Kate', 
       verified: true, 
-      createdAt: new Date(),
+      createdAt: new Date('2025-05-16'),
       externalId: null,
       externalProvider: null,
-      weeklyToastDay: null,
-      timezone: null,
+      weeklyToastDay: 0,
+      timezone: 'UTC',
       password: 'dummy-not-used'  // Required by type but not used in generate function
     };
     

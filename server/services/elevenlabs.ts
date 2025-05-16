@@ -137,7 +137,8 @@ export function getVoiceId(voiceStyle: string): string {
   const voiceMap: Record<string, string> = {
     'motivational': 'EXAVITQu4vr4xnSDxMaL', // Rachel
     'friendly': '21m00Tcm4TlvDq8ikWAM',     // Adam
-    'poetic': 'AZnzlk1XvdvUeBnXmlld'        // Domi
+    'poetic': 'AZnzlk1XvdvUeBnXmlld',       // Domi
+    'custom': 'Dnd9VXpAjEGXiRGBf1O6'        // Custom voice added by user
   };
   
   return voiceMap[voiceStyle] || DEFAULT_VOICE_ID;

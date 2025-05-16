@@ -25,7 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId } from "./services/elevenlabs";
-import { generateToast } from "./services/toast-generator";
+import { generateWeeklyToast, getNextToastDate } from "./services/toast-service";
 
 /**
  * Extract main themes from note contents
@@ -476,13 +476,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Use the dedicated toast generator service with weekly range
-        // Get complete user data including timezone and weekly toast day preferences
-        const user = await storage.getUser(req.user!.id);
-        if (!user) {
-          throw new Error("User not found");
-        }
-        const result = await generateToast(user, 'weekly');
+        // Use the dedicated toast generator service for weekly toasts
+        const userId = req.user!.id;
+        const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

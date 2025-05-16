@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 import { db } from '../db';
 import { toasts, notes, users } from '@shared/schema';
-import { eq, and, between, desc } from 'drizzle-orm';
+import { eq, and, between, desc, sql } from 'drizzle-orm';
 import { Toast, User } from '@shared/schema';
 import OpenAI from 'openai';
 
@@ -42,9 +42,39 @@ async function getUserTimezone(user: User): Promise<string> {
  * Get preferred day of week for weekly toasts (defaults to Sunday - 0)
  */
 async function getPreferredWeeklyDay(user: User): Promise<number> {
-  // If weeklyToastDay is available directly on user object
-  if (user && 'weeklyToastDay' in user && user.weeklyToastDay !== null) {
-    return user.weeklyToastDay;
+  try {
+    // Check if weeklyToastDay property exists on user
+    if ('weeklyToastDay' in user && user.weeklyToastDay !== null) {
+      return user.weeklyToastDay;
+    }
+    
+    // Check voice preferences table for day setting
+    const result = await db.execute(sql`
+      SELECT toast_day FROM voice_preferences 
+      WHERE user_id = ${user.id}
+    `);
+    
+    // Check if we got a result
+    if (result.rows && result.rows.length > 0 && result.rows[0].toast_day) {
+      // Convert day name to number if needed
+      const dayName = result.rows[0].toast_day;
+      if (typeof dayName === 'string') {
+        const dayMapping: Record<string, number> = {
+          'Sunday': 0, 
+          'Monday': 1, 
+          'Tuesday': 2, 
+          'Wednesday': 3, 
+          'Thursday': 4, 
+          'Friday': 5, 
+          'Saturday': 6
+        };
+        return dayMapping[dayName] || 0;
+      } else if (typeof dayName === 'number') {
+        return dayName;
+      }
+    }
+  } catch (error) {
+    console.error("Error getting preferred weekly day:", error);
   }
   
   // Default to Sunday (0) if not found
@@ -115,35 +145,96 @@ async function getDateRange(user: User, toastType: ToastRange) {
  */
 async function checkToastExists(userId: number, toastType: ToastRange, startDate: Date, endDate: Date): Promise<boolean> {
   try {
-    // First try using toast type and interval columns if they exist
-    try {
-      const typeResult = await db.select({ id: toasts.id })
-        .from(toasts)
-        .where(and(
-          eq(toasts.userId, userId),
-          eq(toasts.type, toastType),
-          between(toasts.createdAt, startDate, endDate)
-        ))
-        .limit(1);
-      
-      return typeResult.length > 0;
-    } catch (e) {
-      // If the query fails (likely because columns don't exist), fall back to creation date
-      console.log("Falling back to creation date for toast existence check");
+    // Check if type column exists
+    const hasTypeColumn = await checkColumnExists('toasts', 'type');
+    
+    if (hasTypeColumn) {
+      // Use type field for the check if it exists
+      try {
+        const result = await db.execute(sql`
+          SELECT id FROM toasts
+          WHERE user_id = ${userId}
+          AND type = ${toastType}
+          AND created_at BETWEEN ${startDate} AND ${endDate}
+          LIMIT 1
+        `);
+        
+        return result.rows && result.rows.length > 0;
+      } catch (e) {
+        console.error("Error checking toast with type column:", e);
+      }
     }
     
-    // Fall back to checking by creation date
-    const result = await db.select({ id: toasts.id })
-      .from(toasts)
-      .where(and(
-        eq(toasts.userId, userId),
-        between(toasts.createdAt, startDate, endDate)
-      ))
-      .limit(1);
+    // Fall back to checking by creation date with time period limits
+    // The logic here implements the frequency limits:
+    // - Daily: one per calendar day
+    // - Weekly: one per 7-day period
+    // - Monthly: one per calendar month
+    // - Yearly: one per calendar year
     
-    return result.length > 0;
+    let timeConstraint;
+    
+    if (toastType === 'daily') {
+      // For daily, check if any toast was created on this calendar day
+      const todayStart = new Date(startDate);
+      todayStart.setHours(0, 0, 0, 0);
+      
+      const todayEnd = new Date(startDate);
+      todayEnd.setHours(23, 59, 59, 999);
+      
+      timeConstraint = sql`created_at BETWEEN ${todayStart} AND ${todayEnd}`;
+    } else if (toastType === 'weekly') {
+      // For weekly, check if any toast was created in the last 7 days
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      
+      timeConstraint = sql`created_at > ${weekAgo}`;
+    } else if (toastType === 'monthly') {
+      // For monthly, check if any toast was created in the current month
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      
+      timeConstraint = sql`created_at >= ${monthStart}`;
+    } else if (toastType === 'yearly') {
+      // For yearly, check if any toast was created in the current year
+      const yearStart = new Date(new Date().getFullYear(), 0, 1);
+      
+      timeConstraint = sql`created_at >= ${yearStart}`;
+    } else {
+      // Default fallback - just check the date range
+      timeConstraint = sql`created_at BETWEEN ${startDate} AND ${endDate}`;
+    }
+    
+    const result = await db.execute(sql`
+      SELECT id FROM toasts
+      WHERE user_id = ${userId}
+      AND ${timeConstraint}
+      LIMIT 1
+    `);
+    
+    return result.rows && result.rows.length > 0;
   } catch (error) {
     console.error('Error checking for existing toast:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if a column exists in a table
+ */
+async function checkColumnExists(tableName: string, columnName: string): Promise<boolean> {
+  try {
+    const result = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = ${tableName} 
+      AND column_name = ${columnName}
+    `);
+    
+    return result.rows && result.rows.length > 0;
+  } catch (error) {
+    console.error(`Error checking if column ${columnName} exists in table ${tableName}:`, error);
     return false;
   }
 }

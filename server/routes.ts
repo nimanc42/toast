@@ -504,6 +504,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(result);
       } catch (err: any) {
         console.error('[Toast gen]', err);
+        
+        // Handle specific frequency limit errors
+        if (err.message && err.message.includes('toast has already been generated')) {
+          return res.status(409).json({ 
+            error: err.message || "A weekly toast has already been generated for this period"
+          });
+        } else if (err.message && err.message.includes('No notes found')) {
+          return res.status(400).json({ 
+            error: err.message || "No notes found for this week. Add some reflections first!"
+          });
+        }
+        
         return res.status(400).json({ error: err.message });
       }
     } catch (error: any) {

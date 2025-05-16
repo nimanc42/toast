@@ -233,6 +233,14 @@ export function setupAuth(app: Express) {
           // Generate JWT token
           const token = generateToken(user);
           
+          // Set token as HTTP-only cookie for better security and persistence
+          res.cookie('at', token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          });
+          
           // Force session save before continuing
           req.session.save((err) => {
             if (err) {
@@ -377,7 +385,33 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
     return next();
   }
   
-  // If not authenticated via session, check for JWT bearer token
+  // Check for JWT in HTTP-only cookie
+  const cookieToken = req.cookies?.at;
+  if (cookieToken) {
+    try {
+      // Verify the token from cookie
+      const { valid, userId } = verifyJwtToken(cookieToken);
+      if (valid && userId) {
+        return storage.getUser(userId)
+          .then(user => {
+            if (user) {
+              // Attach user to request and continue
+              req.user = user;
+              return next();
+            }
+            res.status(401).json({ message: "Authentication required" });
+          })
+          .catch(err => {
+            console.error("Error fetching user from cookie token:", err);
+            res.status(500).json({ message: "Internal server error" });
+          });
+      }
+    } catch (error) {
+      console.error("JWT cookie verification error:", error);
+    }
+  }
+  
+  // If not authenticated via cookie, check for JWT bearer token
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix

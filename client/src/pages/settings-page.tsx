@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -23,6 +23,8 @@ const settingsFormSchema = z.object({
   dailyReminder: z.boolean().default(true),
   toastNotification: z.boolean().default(true),
   emailNotifications: z.boolean().default(false),
+  timezone: z.string().default("UTC"),
+  weeklyToastDay: z.number().min(0).max(6).default(0),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -30,9 +32,14 @@ type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 export default function SettingsPage() {
   const { toast } = useToast();
   
-  // Fetch user preferences
-  const { data: preferences, isLoading } = useQuery({
+  // Fetch user voice preferences
+  const { data: voicePreferences, isLoading: isLoadingVoicePrefs } = useQuery({
     queryKey: ["/api/preferences"],
+  });
+  
+  // Fetch user settings (timezone and weekly toast day)
+  const { data: userSettings, isLoading: isLoadingSettings } = useQuery({
+    queryKey: ["/api/user/settings"],
   });
   
   // Setup form with default values from fetched preferences
@@ -45,22 +52,30 @@ export default function SettingsPage() {
       dailyReminder: true,
       toastNotification: true,
       emailNotifications: false,
+      timezone: "UTC",
+      weeklyToastDay: 0, // Sunday
     },
   });
   
   // Update form values when preferences are loaded
-  useState(() => {
-    if (preferences) {
+  useEffect(() => {
+    // Only update when both sets of data are available
+    if (voicePreferences && userSettings) {
       form.reset({
-        voiceStyle: preferences.voiceStyle,
-        toastDay: preferences.toastDay,
-        toastTone: preferences.toastTone,
-        dailyReminder: preferences.dailyReminder,
-        toastNotification: preferences.toastNotification,
-        emailNotifications: preferences.emailNotifications,
+        // Voice preferences
+        voiceStyle: voicePreferences.voiceStyle || "motivational",
+        toastDay: voicePreferences.toastDay || "Sunday",
+        toastTone: voicePreferences.toastTone || "auto",
+        dailyReminder: voicePreferences.dailyReminder ?? true,
+        toastNotification: voicePreferences.toastNotification ?? true,
+        emailNotifications: voicePreferences.emailNotifications ?? false,
+        
+        // User settings (timezone and weekly toast day)
+        timezone: userSettings.timezone || "UTC",
+        weeklyToastDay: userSettings.weeklyToastDay ?? 0,
       });
     }
-  });
+  }, [voicePreferences, userSettings, form]);
   
   // Update preferences mutation
   const updateMutation = useMutation({
@@ -239,34 +254,78 @@ export default function SettingsPage() {
                         )}
                       />
                       
-                      {/* Toast Delivery Day */}
+                      {/* Weekly Toast Day Preference */}
                       <FormField
                         control={form.control}
-                        name="toastDay"
+                        name="weeklyToastDay"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Weekly Toast Day</FormLabel>
                             <FormControl>
                               <Select 
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                value={field.value.toString()}
                               >
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select a day" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="Sunday">Sunday</SelectItem>
-                                  <SelectItem value="Monday">Monday</SelectItem>
-                                  <SelectItem value="Tuesday">Tuesday</SelectItem>
-                                  <SelectItem value="Wednesday">Wednesday</SelectItem>
-                                  <SelectItem value="Thursday">Thursday</SelectItem>
-                                  <SelectItem value="Friday">Friday</SelectItem>
-                                  <SelectItem value="Saturday">Saturday</SelectItem>
+                                  <SelectItem value="0">Sunday</SelectItem>
+                                  <SelectItem value="1">Monday</SelectItem>
+                                  <SelectItem value="2">Tuesday</SelectItem>
+                                  <SelectItem value="3">Wednesday</SelectItem>
+                                  <SelectItem value="4">Thursday</SelectItem>
+                                  <SelectItem value="5">Friday</SelectItem>
+                                  <SelectItem value="6">Saturday</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
                             <FormDescription>
-                              Choose which day of the week you'd like to receive your toast
+                              Choose which day of the week you'd like to receive your weekly toast
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Timezone Selection */}
+                      <FormField
+                        control={form.control}
+                        name="timezone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Timezone</FormLabel>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select your timezone" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                  {(() => {
+                                    // Get timezones available in the browser
+                                    try {
+                                      return Intl.supportedValuesOf('timeZone').map(tz => (
+                                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                      ));
+                                    } catch (e) {
+                                      // Fallback for browsers that don't support Intl.supportedValuesOf
+                                      return [
+                                        "UTC", "America/New_York", "America/Chicago", 
+                                        "America/Denver", "America/Los_Angeles", "Europe/London",
+                                        "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
+                                      ].map(tz => (
+                                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                      ));
+                                    }
+                                  })()}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              Your timezone is used to calculate when your weekly toast is generated
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

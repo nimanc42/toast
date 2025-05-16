@@ -1,250 +1,111 @@
 import { DateTime } from 'luxon';
+import { User, Toast, InsertToast } from '@shared/schema';
 import { db } from '../db';
-import { toasts, notes, users } from '@shared/schema';
-import { eq, and, between, desc, sql } from 'drizzle-orm';
-import { Toast, User } from '@shared/schema';
+import { eq, and, between } from 'drizzle-orm';
+import { notes, toasts } from '@shared/schema';
 import OpenAI from 'openai';
+// Define custom API error class
+export class ApiError extends Error {
+  statusCode: number;
+  
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.name = 'ApiError';
+  }
+}
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Toast types
 export type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 /**
- * Get the user's timezone (defaults to UTC)
+ * Get the date window for a specific range type based on user preferences
+ * @param range The range type (daily, weekly, monthly, yearly)
+ * @param user The user with their timezone and preferences
+ * @returns Start and end DateTime objects for the range
  */
-async function getUserTimezone(user: User): Promise<string> {
-  try {
-    // Check if timezone property exists on user
-    if ('timezone' in user && user.timezone) {
-      return user.timezone;
-    }
-    
-    // Check voice preferences table for timezone settings
-    const [preference] = await db.execute(sql`
-      SELECT timezone FROM voice_preferences 
-      WHERE user_id = ${user.id} 
-      AND timezone IS NOT NULL
-    `);
-    
-    if (preference && preference.timezone) {
-      return preference.timezone;
-    }
-  } catch (error) {
-    console.error("Error getting user timezone:", error);
-  }
+export function getDateWindow(range: ToastRange, user: User) {
+  const now = DateTime.now().setZone(user.timezone || 'UTC');
   
-  // Default to UTC if not found
-  return 'UTC';
-}
-
-/**
- * Get preferred day of week for weekly toasts (defaults to Sunday - 0)
- */
-async function getPreferredWeeklyDay(user: User): Promise<number> {
-  try {
-    // Check if weeklyToastDay property exists on user
-    if ('weeklyToastDay' in user && user.weeklyToastDay !== null) {
-      return user.weeklyToastDay;
-    }
-    
-    // Check voice preferences table for day setting
-    const result = await db.execute(sql`
-      SELECT toast_day FROM voice_preferences 
-      WHERE user_id = ${user.id}
-    `);
-    
-    // Check if we got a result
-    if (result.rows && result.rows.length > 0 && result.rows[0].toast_day) {
-      // Convert day name to number if needed
-      const dayName = result.rows[0].toast_day;
-      if (typeof dayName === 'string') {
-        const dayMapping: Record<string, number> = {
-          'Sunday': 0, 
-          'Monday': 1, 
-          'Tuesday': 2, 
-          'Wednesday': 3, 
-          'Thursday': 4, 
-          'Friday': 5, 
-          'Saturday': 6
-        };
-        return dayMapping[dayName] || 0;
-      } else if (typeof dayName === 'number') {
-        return dayName;
-      }
-    }
-  } catch (error) {
-    console.error("Error getting preferred weekly day:", error);
-  }
-  
-  // Default to Sunday (0) if not found
-  return 0;
-}
-
-/**
- * Get date range for a toast type based on user preferences
- */
-async function getDateRange(user: User, toastType: ToastRange) {
-  const userId = user.id;
-  const timezone = await getUserTimezone(user);
-  const now = DateTime.now().setZone(timezone);
-  
-  let start: DateTime;
-  let end: DateTime;
-  
-  switch (toastType) {
+  switch (range) {
     case 'daily':
-      // Daily toast is for current day
-      start = now.startOf('day');
-      end = now.endOf('day');
-      break;
+      return { 
+        start: now.startOf('day'), 
+        end: now.endOf('day') 
+      };
       
-    case 'weekly':
-      // Weekly toast is based on preferred day
-      const preferredDay = await getPreferredWeeklyDay(user);
-      // Convert to Luxon day format (1-7 where 7 is Sunday)
-      const luxonDay = preferredDay === 0 ? 7 : preferredDay;
-      
-      // Get most recent occurrence of preferred day
-      start = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 }).startOf('day');
-      
-      // If it's in the future, get previous week
-      if (start > now) {
-        start = start.minus({ weeks: 1 });
-      }
-      
-      // Weekly window goes back 7 days from the preferred day
-      end = start.minus({ days: 1 }).endOf('day');
-      start = start.minus({ days: 6 }).startOf('day');
-      break;
+    case 'weekly': {
+      // Get preferred day of week (0 = Sunday, 6 = Saturday)
+      const targetDow = user.weeklyToastDay ?? 0;          
+      // Get the most recent occurrence of that day (or today if it's the target day)
+      // Luxon uses 1-7 for weekdays where 1 is Monday, so we need to convert from 0-6 where 0 is Sunday
+      const luxonDay = targetDow === 0 ? 7 : targetDow;
+      const start = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 }).startOf('day');
+      // The window is 7 days from the start
+      const end = start.plus({ days: 6 }).endOf('day');
+      return { start, end };
+    }
       
     case 'monthly':
-      // Monthly toast goes from 1st of month to now
-      start = now.startOf('month');
-      end = now.endOf('day');
-      break;
+      return { 
+        start: now.startOf('month'), 
+        end: now.endOf('month') 
+      };
       
     case 'yearly':
-      // Yearly toast goes from Jan 1 to now
-      start = now.startOf('year');
-      end = now.endOf('day');
-      break;
+      return { 
+        start: now.set({ month: 1, day: 1 }).startOf('day'),
+        end: now.set({ month: 12, day: 31 }).endOf('day') 
+      };
       
     default:
-      throw new Error(`Unsupported toast type: ${toastType}`);
+      throw new Error(`Unsupported range type: ${range}`);
   }
+}
+
+/**
+ * Extract themes from note contents
+ * @param noteContents Array of note contents
+ * @returns Array of identified themes
+ */
+function getThemesFromNotes(noteContents: string[]): string[] {
+  // Simple theme extraction logic - in production this would use NLP
+  const allContent = noteContents.join(' ').toLowerCase();
+  const themes = [];
   
-  return {
-    start: start.toJSDate(),
-    end: end.toJSDate()
-  };
-}
-
-/**
- * Check if a toast already exists for the given time period and toast type
- */
-async function checkToastExists(userId: number, toastType: ToastRange, startDate: Date, endDate: Date): Promise<boolean> {
-  try {
-    // Check if type column exists
-    const hasTypeColumn = await checkColumnExists('toasts', 'type');
+  if (allContent.includes('work') || allContent.includes('project') || allContent.includes('job'))
+    themes.push('work');
     
-    if (hasTypeColumn) {
-      // Use type field for the check if it exists
-      try {
-        const result = await db.execute(sql`
-          SELECT id FROM toasts
-          WHERE user_id = ${userId}
-          AND type = ${toastType}
-          AND created_at BETWEEN ${startDate} AND ${endDate}
-          LIMIT 1
-        `);
-        
-        return result.rows && result.rows.length > 0;
-      } catch (e) {
-        console.error("Error checking toast with type column:", e);
-      }
-    }
+  if (allContent.includes('family') || allContent.includes('kids') || allContent.includes('parent'))
+    themes.push('family');
     
-    // Fall back to checking by creation date with time period limits
-    // The logic here implements the frequency limits:
-    // - Daily: one per calendar day
-    // - Weekly: one per 7-day period
-    // - Monthly: one per calendar month
-    // - Yearly: one per calendar year
+  if (allContent.includes('exercise') || allContent.includes('workout') || allContent.includes('fitness'))
+    themes.push('health');
     
-    let timeConstraint;
+  if (allContent.includes('learn') || allContent.includes('study') || allContent.includes('read'))
+    themes.push('learning');
     
-    if (toastType === 'daily') {
-      // For daily, check if any toast was created on this calendar day
-      const todayStart = new Date(startDate);
-      todayStart.setHours(0, 0, 0, 0);
-      
-      const todayEnd = new Date(startDate);
-      todayEnd.setHours(23, 59, 59, 999);
-      
-      timeConstraint = sql`created_at BETWEEN ${todayStart} AND ${todayEnd}`;
-    } else if (toastType === 'weekly') {
-      // For weekly, check if any toast was created in the last 7 days
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      
-      timeConstraint = sql`created_at > ${weekAgo}`;
-    } else if (toastType === 'monthly') {
-      // For monthly, check if any toast was created in the current month
-      const monthStart = new Date();
-      monthStart.setDate(1);
-      monthStart.setHours(0, 0, 0, 0);
-      
-      timeConstraint = sql`created_at >= ${monthStart}`;
-    } else if (toastType === 'yearly') {
-      // For yearly, check if any toast was created in the current year
-      const yearStart = new Date(new Date().getFullYear(), 0, 1);
-      
-      timeConstraint = sql`created_at >= ${yearStart}`;
-    } else {
-      // Default fallback - just check the date range
-      timeConstraint = sql`created_at BETWEEN ${startDate} AND ${endDate}`;
-    }
+  if (allContent.includes('friend') || allContent.includes('social') || allContent.includes('hangout'))
+    themes.push('social');
     
-    const result = await db.execute(sql`
-      SELECT id FROM toasts
-      WHERE user_id = ${userId}
-      AND ${timeConstraint}
-      LIMIT 1
-    `);
+  if (themes.length === 0)
+    themes.push('personal growth');
     
-    return result.rows && result.rows.length > 0;
-  } catch (error) {
-    console.error('Error checking for existing toast:', error);
-    return false;
-  }
-}
-
-/**
- * Check if a column exists in a table
- */
-async function checkColumnExists(tableName: string, columnName: string): Promise<boolean> {
-  try {
-    const result = await db.execute(sql`
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = ${tableName} 
-      AND column_name = ${columnName}
-    `);
-    
-    return result.rows && result.rows.length > 0;
-  } catch (error) {
-    console.error(`Error checking if column ${columnName} exists in table ${tableName}:`, error);
-    return false;
-  }
+  return themes;
 }
 
 /**
  * Generate personalized toast content using OpenAI
+ * @param noteContents Array of note contents
+ * @returns Generated toast content
  */
-async function generateToastContent(noteContents: string[]): Promise<string> {
-  if (!process.env.OPENAI_API_KEY || noteContents.length === 0) {
-    return generateFallbackToastContent(noteContents.length);
+async function generateToastContentWithAI(noteContents: string[]): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    // Fallback if no API key is available
+    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
   }
 
   try {
@@ -258,65 +119,73 @@ async function generateToastContent(noteContents: string[]): Promise<string> {
         },
         {
           role: "user",
-          content: `Create a personalized celebratory toast based on these reflection notes from the past ${noteContents.length > 1 ? 'period' : 'entry'}:\n\n${noteContents.join('\n\n')}`
+          content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
         }
       ],
       max_tokens: 400,
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length);
+    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
   } catch (error) {
     console.error("Error generating toast with OpenAI:", error);
-    return generateFallbackToastContent(noteContents.length);
+    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
   }
 }
 
 /**
  * Generate fallback toast content without using OpenAI
+ * @param noteCount Number of notes
+ * @param themes Array of themes identified in the notes
+ * @returns Generated toast content
  */
-function generateFallbackToastContent(noteCount: number): string {
+function generateFallbackToastContent(noteCount: number, themes: string[]): string {
+  const themeText = themes.length > 0 
+    ? `focusing on ${themes.join(', ')}`
+    : 'focusing on your personal growth';
+  
   const templates = [
-    `Here's to a period of reflection and growth! You took time to document ${noteCount} moment${noteCount !== 1 ? 's' : ''} recently. Each note represents a step in your journey - keep building on this momentum!`,
-    `Celebrating your consistency! With ${noteCount} reflection${noteCount !== 1 ? 's' : ''}, you're creating a valuable record of your journey. These moments of awareness are powerful tools for growth.`,
-    `A toast to your mindfulness! Your ${noteCount} reflection${noteCount !== 1 ? 's' : ''} show your commitment to self-awareness. These insights will serve you well as you continue forward.`
+    `Here's to a week of reflection and growth! You took time to document ${noteCount} moments, ${themeText}. Each note represents a step in your journey - keep building on this momentum!`,
+    `Celebrating your consistency this week! With ${noteCount} reflections ${themeText}, you're creating a valuable record of your journey. These moments of awareness are powerful tools for growth.`,
+    `A toast to your mindfulness! Your ${noteCount} reflections this week show your commitment to self-awareness. I notice you've been ${themeText} - these insights will serve you well as you continue forward.`
   ];
   
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
 /**
- * Generate a toast for a user with the specified range type
- * @param user The user object
- * @param toastType The type of toast to generate (daily, weekly, monthly, yearly)
- * @param bypassLimits Optional flag to bypass frequency limits for testing
+ * Generate a toast for a user within a specific date range
+ * @param user The user to generate a toast for
+ * @param range The type of toast to generate (daily, weekly, monthly, yearly)
+ * @returns The generated toast
  */
-export async function generateToast(user: User, toastType: ToastRange, bypassLimits: boolean = false): Promise<Toast> {
-  const userId = user.id;
+export async function generateToast(user: User, range: ToastRange): Promise<Toast> {
+  // Get date window based on range and user preferences
+  const { start, end } = getDateWindow(range, user);
   
-  // Get date range based on toast type and user preferences
-  const { start, end } = await getDateRange(user, toastType);
+  // Check for existing toast to prevent duplicates
+  const existingToast = await db.query.toasts.findFirst({
+    where: and(
+      eq(toasts.userId, user.id),
+      eq(toasts.type, range),
+      eq(toasts.intervalStart, start.toJSDate())
+    )
+  });
   
-  // Check if a toast already exists for this period and type (skip if debug bypass requested)
-  if (!bypassLimits) {
-    const toastExists = await checkToastExists(userId, toastType, start, end);
-    if (toastExists) {
-      throw new Error(`A ${toastType} toast has already been generated for this period`);
-    }
-  } else {
-    console.log(`[DEBUG] Bypassing toast frequency limits for ${toastType} toast`);
+  if (existingToast) {
+    throw new ApiError(409, `A ${range} toast already exists for this period`);
   }
   
-  // Get user notes for the date range
-  const userNotes = await db.select()
-    .from(notes)
-    .where(and(
-      eq(notes.userId, userId),
-      between(notes.createdAt, start, end)
-    ));
+  // Get user's notes within the date range
+  const userNotes = await db.query.notes.findMany({
+    where: and(
+      eq(notes.userId, user.id),
+      between(notes.createdAt, start.toJSDate(), end.toJSDate())
+    )
+  });
   
   if (userNotes.length === 0) {
-    throw new Error(`No notes found for this ${toastType} period. Add some reflections first!`);
+    throw new ApiError(400, `No notes found for the ${range} period. Add some reflections first!`);
   }
   
   // Extract note contents and IDs
@@ -324,32 +193,44 @@ export async function generateToast(user: User, toastType: ToastRange, bypassLim
   const noteIds = userNotes.map(note => note.id);
   
   // Generate toast content
-  const content = await generateToastContent(noteContents);
+  const content = await generateToastContentWithAI(noteContents);
   
-  // Create toast record
-  try {
-    // Try inserting with toast type field
-    const [newToast] = await db.insert(toasts)
-      .values({
-        userId,
-        content,
-        noteIds,
-        type: toastType,
-      })
-      .returning();
-    
-    return newToast;
-  } catch (e) {
-    // Fall back to original schema if type field doesn't exist
-    console.log("Falling back to original schema for toast creation");
-    const [newToast] = await db.insert(toasts)
-      .values({
-        userId,
-        content,
-        noteIds,
-      })
-      .returning();
-    
-    return newToast;
+  // Create new toast
+  const [newToast] = await db.insert(toasts)
+    .values({
+      userId: user.id,
+      content,
+      noteIds: noteIds,
+      type: range,
+      intervalStart: start.toJSDate(),
+      intervalEnd: end.toJSDate(),
+    })
+    .returning();
+  
+  return newToast;
+}
+
+/**
+ * Get the next toast date for a user based on their preferences
+ * @param user The user to get the next toast date for
+ * @returns The next toast date
+ */
+export function getNextToastDate(user: User): Date {
+  // For weekly toasts, get the user's preferred day
+  const preferredDay = user.weeklyToastDay ?? 0; // Default to Sunday (0)
+  const now = DateTime.now().setZone(user.timezone || 'UTC');
+  
+  // Get the next occurrence of the preferred day
+  // Luxon uses 1-7 for weekdays where 1 is Monday and 7 is Sunday
+  // Convert from our 0-6 where 0 is Sunday
+  const luxonDay = preferredDay === 0 ? 7 : preferredDay; 
+  let nextToastDate = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 });
+  
+  // If today is the preferred day but it's already past a certain time (e.g., 6 PM),
+  // or if the next occurrence would be in the past, move to next week
+  if (nextToastDate <= now) {
+    nextToastDate = nextToastDate.plus({ weeks: 1 });
   }
+  
+  return nextToastDate.startOf('day').toJSDate();
 }

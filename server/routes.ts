@@ -25,7 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId } from "./services/elevenlabs";
-import { generateToast } from "./services/toast-generator";
+import { generateWeeklyToast, getNextToastDate } from "./services/toast-service";
 
 /**
  * Extract main themes from note contents
@@ -245,19 +245,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const note = await storage.createNote(validatedData);
       console.log("Note created:", note);
       
-      // Log note creation activity for analytics
-      if (storage.logUserActivity) {
-        await storage.logUserActivity({
-          userId,
-          activityType: 'note-create',
-          metadata: {
-            noteId: note.id,
-            source: 'web'
-          } as Record<string, any>
-        });
-        console.log(`Activity logged for note creation: userId=${userId}, noteId=${note.id}`);
-      }
-      
       // Check if this is the user's first note and award badge if it is
       try {
         const notesCount = await storage.getUserNotesCount(userId);
@@ -466,42 +453,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Modern API route using the new toast-generator service
-  // Special development route without auth for easier testing
-  app.post("/api/dev/toasts/generate", async (req, res) => {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(404).json({ message: "Endpoint not available in production" });
-    }
-    
-    console.log("[DEV MODE] Using test mode for toast generation");
-    
-    // Use Kate's user account for development testing
-    const testUser = { 
-      id: 5, 
-      username: 'kate', 
-      email: 'kate@k', 
-      name: 'Kate', 
-      verified: true, 
-      createdAt: new Date('2025-05-16'),
-      externalId: null,
-      externalProvider: null,
-      weeklyToastDay: 0,
-      timezone: 'UTC',
-      password: 'dummy-not-used'  // Required by type but not used in generate function
-    };
-    
-    try {
-      const voice = req.body.voice;
-      const bypassLimits = true; // Always bypass in dev mode
-      const result = await generateToast(testUser, 'weekly', bypassLimits);
-      
-      res.status(201).json(result);
-    } catch (err: any) {
-      console.error('[Dev toast gen]', err);
-      res.status(500).json({ error: err.message || "Error generating test toast" });
-    }
-  });
-  
-  // Regular protected toast generation endpoint
   app.post("/api/toasts/generate", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
@@ -526,14 +477,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Use the dedicated toast generator service for weekly toasts
-        const user = await storage.getUser(req.user!.id);
-        if (!user) {
-          throw new Error("User not found");
-        }
-        
-        // Check if we should bypass frequency limits for testing
-        const bypassLimits = req.query.bypass === 'true';
-        const result = await generateToast(user, 'weekly', bypassLimits);
+        const userId = req.user!.id;
+        const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
@@ -556,18 +501,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(result);
       } catch (err: any) {
         console.error('[Toast gen]', err);
-        
-        // Handle specific frequency limit errors
-        if (err.message && err.message.includes('toast has already been generated')) {
-          return res.status(409).json({ 
-            error: err.message || "A weekly toast has already been generated for this period"
-          });
-        } else if (err.message && err.message.includes('No notes found')) {
-          return res.status(400).json({ 
-            error: err.message || "No notes found for this week. Add some reflections first!"
-          });
-        }
-        
         return res.status(400).json({ error: err.message });
       }
     } catch (error: any) {

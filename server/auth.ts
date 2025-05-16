@@ -74,12 +74,12 @@ export function setupAuth(app: Express) {
   // Configure session
   const sessionSettings: session.SessionOptions = {
     secret: SESSION_SECRET,
-    resave: false,
+    resave: true,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for better persistence
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       sameSite: 'lax'
     },
     store: storage.sessionStore,
@@ -117,16 +117,13 @@ export function setupAuth(app: Express) {
 
   // Serialization and deserialization
   passport.serializeUser((user, done) => {
-    console.log("Serializing user:", user.id);
     done(null, user.id);
   });
 
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log("Deserializing user:", id);
       const user = await storage.getUser(id);
       if (!user) {
-        console.log("User not found during deserialization:", id);
         return done(null, false);
       }
       
@@ -191,46 +188,7 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Special development login route for Kate
-  app.post("/api/dev/login", async (req, res) => {
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(404).json({ message: "Endpoint not available in production" });
-    }
-    
-    console.log("[DEV MODE] Auto-login for Kate");
-    
-    try {
-      // Get Kate's account
-      const user = await storage.getUserByUsername("kate");
-      
-      if (!user) {
-        return res.status(404).json({ message: "Kate's account not found" });
-      }
-      
-      // Generate JWT token
-      const token = generateToken(user);
-      
-      // Set token as HTTP-only cookie
-      res.cookie('at', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
-      });
-      
-      const { password: _, ...userWithoutPassword } = user;
-      return res.json({
-        user: userWithoutPassword,
-        token,
-        message: "Auto-login successful"
-      });
-    } catch (error) {
-      console.error("Dev login error:", error);
-      res.status(500).json({ message: "Auto-login failed" });
-    }
-  });
-  
-  // Regular login route with rate limiting
+  // Login route with rate limiting
   app.post("/api/login", async (req, res, next) => {
     try {
       // Get client IP (handle proxy forwarding)
@@ -271,14 +229,6 @@ export function setupAuth(app: Express) {
           
           // Generate JWT token
           const token = generateToken(user);
-          
-          // Set token as HTTP-only cookie for better security and persistence
-          res.cookie('at', token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: process.env.NODE_ENV === 'production',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-          });
           
           // Force session save before continuing
           req.session.save((err) => {
@@ -424,33 +374,7 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
     return next();
   }
   
-  // Check for JWT in HTTP-only cookie
-  const cookieToken = req.cookies?.at;
-  if (cookieToken) {
-    try {
-      // Verify the token from cookie
-      const { valid, userId } = verifyJwtToken(cookieToken);
-      if (valid && userId) {
-        return storage.getUser(userId)
-          .then(user => {
-            if (user) {
-              // Attach user to request and continue
-              req.user = user;
-              return next();
-            }
-            res.status(401).json({ message: "Authentication required" });
-          })
-          .catch(err => {
-            console.error("Error fetching user from cookie token:", err);
-            res.status(500).json({ message: "Internal server error" });
-          });
-      }
-    } catch (error) {
-      console.error("JWT cookie verification error:", error);
-    }
-  }
-  
-  // If not authenticated via cookie, check for JWT bearer token
+  // If not authenticated via session, check for JWT bearer token
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix

@@ -1,6 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
-import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection } from "./db";
@@ -14,7 +13,6 @@ if (!VITE_SUPABASE_URL || !VITE_SUPABASE_ANON_KEY) {
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
 
 // Serve static files from the public directory
 app.use('/audio', express.static(path.join(process.cwd(), 'public', 'audio')));

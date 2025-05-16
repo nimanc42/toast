@@ -1,17 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { format, addDays, startOfDay, endOfDay, startOfWeek, endOfWeek, isBefore, isAfter } from "date-fns";
+import { format } from "date-fns";
 import { Link } from "wouter";
 import AudioPlayer from "@/components/audio-player";
 import ShareToast from "@/components/share-toast";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import AutoLogin from "@/components/auto-login";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Loader2, RefreshCcw, InfoIcon, Clock, Calendar } from "lucide-react";
+import { Loader2, RefreshCcw, InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -27,96 +26,13 @@ interface Toast {
   shareUrl?: string;
 }
 
-// Define toast types and period helpers
-type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
-
-// Function to get date window for a toast range
-function getDateWindow(range: ToastRange, userPreferences: { weeklyToastDay?: number } = {}) {
-  const now = new Date();
-  
-  switch (range) {
-    case 'daily':
-      // Daily toast window is the current day
-      return {
-        start: startOfDay(now),
-        end: endOfDay(now)
-      };
-      
-    case 'weekly': {
-      // Weekly toast uses user's preferred day or defaults to Sunday (0)
-      const preferredDay = userPreferences?.weeklyToastDay ?? 0;
-      
-      // Calculate the previous week's end date (the user's preferred day)
-      let weekEnd = startOfWeek(now, { weekStartsOn: 1 }); // Start from Monday
-      weekEnd = addDays(weekEnd, (preferredDay === 0 ? 6 : preferredDay - 1)); // Adjust to preferred day
-      
-      // If we haven't reached the preferred day yet, go back a week
-      if (isAfter(weekEnd, now)) {
-        weekEnd = addDays(weekEnd, -7);
-      }
-      
-      // The period starts 7 days before the end date
-      const weekStart = addDays(weekEnd, -6);
-      
-      return {
-        start: startOfDay(weekStart),
-        end: endOfDay(weekEnd)
-      };
-    }
-      
-    case 'monthly':
-      // Monthly toast is previous month
-      const lastMonth = new Date(now);
-      lastMonth.setMonth(lastMonth.getMonth() - 1);
-      const monthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
-      const monthEnd = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
-      
-      return {
-        start: startOfDay(monthStart),
-        end: endOfDay(monthEnd)
-      };
-      
-    case 'yearly':
-      // Yearly toast is previous year
-      const lastYear = now.getFullYear() - 1;
-      const yearStart = new Date(lastYear, 0, 1);
-      const yearEnd = new Date(lastYear, 11, 31);
-      
-      return {
-        start: startOfDay(yearStart),
-        end: endOfDay(yearEnd)
-      };
-      
-    default:
-      // Fallback to weekly
-      return getDateWindow('weekly', userPreferences);
-  }
-}
-
-// Check if a toast period is available for generation
-function isToastAvailable(range: ToastRange, userPreferences: { weeklyToastDay?: number } = {}) {
-  const now = new Date();
-  const { end } = getDateWindow(range, userPreferences);
-  
-  // Toast is available if the period has ended
-  return isAfter(now, end);
-}
-
 export default function WeeklyToastPage() {
   // All hooks at the top level
   const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [toastAvailable, setToastAvailable] = useState<boolean>(false);
-  const [nextToastDate, setNextToastDate] = useState<Date | null>(null);
   const { toast } = useToast();
-  
-  // Fetch user preferences for toast generation timing
-  const { data: userPreferences } = useQuery<{ weeklyToastDay: number | null, timezone: string | null }>({
-    queryKey: ["/api/user/preferences"],
-    retry: false
-  });
   
   // Demo toast state for when no toast exists
   const [demoToast, setDemoToast] = useState<Toast>({
@@ -148,37 +64,11 @@ export default function WeeklyToastPage() {
     setSelectedVoice(value);
   };
   
-  // Effect to check toast availability based on user preferences
-  useEffect(() => {
-    if (userPreferences) {
-      const isAvailable = isToastAvailable('weekly', {
-        weeklyToastDay: userPreferences.weeklyToastDay ?? undefined
-      });
-      setToastAvailable(isAvailable);
-      
-      // Calculate next toast date for display
-      if (!isAvailable) {
-        const { end } = getDateWindow('weekly', {
-          weeklyToastDay: userPreferences.weeklyToastDay ?? undefined
-        });
-        setNextToastDate(addDays(end, 1)); // Next day after the period ends
-      } else {
-        setNextToastDate(null);
-      }
-    }
-  }, [userPreferences]);
-
   // Generate toast handler
   const generateToast = async () => {
     setLoading(true);
     try {
-      // Always use bypass parameter for testing until feature is stable
-      const bypassParam = '?bypass=true';
-      console.log("Generating toast with voice:", selectedVoice);
-      
-      // Use development endpoint for easier testing
-      const endpoint = process.env.NODE_ENV === 'development' ? '/api/dev/toasts/generate' : '/api/toasts/generate';
-      const res = await fetch(`${endpoint}${bypassParam}`, { 
+      const res = await fetch("/api/toasts/generate", { 
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -215,32 +105,12 @@ export default function WeeklyToastPage() {
         });
       } else {
         // Error handling for HTTP errors
-        let errorMessage = "Something went wrong with generating your toast.";
-        
-        try {
-          const errorData = await res.json();
-          console.error("Error generating toast:", errorData);
-          
-          // Handle specific error cases
-          if (res.status === 409) {
-            errorMessage = errorData.error || "A toast has already been generated for this period.";
-          } else if (res.status === 400 && errorData.error?.includes("No notes found")) {
-            errorMessage = "No notes found for this period. Add some reflections first!";
-          }
-        } catch (e) {
-          // If the response isn't JSON, use text
-          try {
-            const errorText = await res.text();
-            errorMessage = errorText || errorMessage;
-          } catch (textError) {
-            // Fall back to status text if all else fails
-            errorMessage = `Error: ${res.status} ${res.statusText}`;
-          }
-        }
+        const errorData = await res.text();
+        console.error("Error generating toast:", errorData);
         
         toast({
-          title: "Could not generate toast",
-          description: errorMessage,
+          title: "Error generating toast",
+          description: `Something went wrong: ${res.status} ${res.statusText}`,
           variant: "destructive",
         });
       }
@@ -262,10 +132,7 @@ export default function WeeklyToastPage() {
   const regenerateToast = async () => {
     setRegenerating(true);
     try {
-      // Add bypass parameter for testing
-      const bypassParam = process.env.NODE_ENV === 'development' ? '?bypass=true' : '';
-      
-      const res = await fetch(`/api/toasts/regenerate${bypassParam}`, { 
+      const res = await fetch("/api/toasts/regenerate", { 
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -283,33 +150,12 @@ export default function WeeklyToastPage() {
           description: "Your weekly toast has been refreshed.",
         });
       } else {
-        // Error handling for HTTP errors
-        let errorMessage = "Something went wrong regenerating your toast.";
-        
-        try {
-          const errorData = await res.json();
-          console.error("Error regenerating toast:", errorData);
-          
-          // Handle specific error cases
-          if (res.status === 409) {
-            errorMessage = errorData.error || "A toast has already been generated for this period.";
-          } else if (res.status === 400 && errorData.error?.includes("No notes found")) {
-            errorMessage = "No notes found for this period. Add some reflections first!";
-          }
-        } catch (e) {
-          // If the response isn't JSON, use text
-          try {
-            const errorText = await res.text();
-            errorMessage = errorText || errorMessage;
-          } catch (textError) {
-            // Fall back to status text if all else fails
-            errorMessage = `Error: ${res.status} ${res.statusText}`;
-          }
-        }
+        const errorData = await res.text();
+        console.error("Error regenerating toast:", errorData);
         
         toast({
-          title: "Could not regenerate toast",
-          description: errorMessage,
+          title: "Error regenerating toast",
+          description: `Something went wrong: ${res.status} ${res.statusText}`,
           variant: "destructive",
         });
       }
@@ -408,13 +254,6 @@ export default function WeeklyToastPage() {
                 )}
               </p>
               
-              {/* Auto-login button for development */}
-              {process.env.NODE_ENV === 'development' && !user && (
-                <div className="flex justify-center mb-4">
-                  <AutoLogin />
-                </div>
-              )}
-              
               {/* Generate or Regenerate button */}
               {latestToast ? (
                 <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -444,18 +283,13 @@ export default function WeeklyToastPage() {
                       <TooltipTrigger asChild>
                         <Button 
                           onClick={regenerateToast} 
-                          disabled={regenerating || !toastAvailable}
+                          disabled={regenerating}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                           {regenerating ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Regenerating...
-                            </>
-                          ) : !toastAvailable && nextToastDate ? (
-                            <>
-                              <Clock className="mr-2 h-4 w-4" />
-                              Available {format(nextToastDate, "EEEE, MMM d")}
                             </>
                           ) : (
                             <>
@@ -499,18 +333,13 @@ export default function WeeklyToastPage() {
                       <TooltipTrigger asChild>
                         <Button 
                           onClick={generateToast} 
-                          disabled={loading || !toastAvailable}
+                          disabled={loading}
                           className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                           {loading ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                               Generating...
-                            </>
-                          ) : !toastAvailable && nextToastDate ? (
-                            <>
-                              <Clock className="mr-2 h-4 w-4" />
-                              Available {format(nextToastDate, "EEEE, MMM d")}
                             </>
                           ) : (
                             <>

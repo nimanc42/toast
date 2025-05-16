@@ -258,7 +258,10 @@ export default function WeeklyToastPage() {
   const regenerateToast = async () => {
     setRegenerating(true);
     try {
-      const res = await fetch("/api/toasts/regenerate", { 
+      // Add bypass parameter for testing
+      const bypassParam = process.env.NODE_ENV === 'development' ? '?bypass=true' : '';
+      
+      const res = await fetch(`/api/toasts/regenerate${bypassParam}`, { 
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -276,12 +279,33 @@ export default function WeeklyToastPage() {
           description: "Your weekly toast has been refreshed.",
         });
       } else {
-        const errorData = await res.text();
-        console.error("Error regenerating toast:", errorData);
+        // Error handling for HTTP errors
+        let errorMessage = "Something went wrong regenerating your toast.";
+        
+        try {
+          const errorData = await res.json();
+          console.error("Error regenerating toast:", errorData);
+          
+          // Handle specific error cases
+          if (res.status === 409) {
+            errorMessage = errorData.error || "A toast has already been generated for this period.";
+          } else if (res.status === 400 && errorData.error?.includes("No notes found")) {
+            errorMessage = "No notes found for this period. Add some reflections first!";
+          }
+        } catch (e) {
+          // If the response isn't JSON, use text
+          try {
+            const errorText = await res.text();
+            errorMessage = errorText || errorMessage;
+          } catch (textError) {
+            // Fall back to status text if all else fails
+            errorMessage = `Error: ${res.status} ${res.statusText}`;
+          }
+        }
         
         toast({
-          title: "Error regenerating toast",
-          description: `Something went wrong: ${res.status} ${res.statusText}`,
+          title: "Could not regenerate toast",
+          description: errorMessage,
           variant: "destructive",
         });
       }

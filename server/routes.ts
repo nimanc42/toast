@@ -25,7 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId } from "./services/elevenlabs";
-import { generateWeeklyToast, getNextToastDate } from "./services/toast-service";
+import { generateWeeklyToast } from "./services/toast-generator-v2";
 
 /**
  * Extract main themes from note contents
@@ -550,7 +550,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Use the dedicated toast generator service to create a new toast
         // The generator should automatically use the updated voice preference
-        const result = await generateToast(req.user!, 'weekly');
+        const userId = req.user!.id;
+        const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Regenerated toast:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

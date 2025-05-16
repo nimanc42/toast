@@ -24,7 +24,7 @@ function getDayNameFromNumber(dayNumber: number): string {
 export async function getPreferredWeeklyDay(userId: number): Promise<number> {
   try {
     // First try to get from user table if the column exists
-    const [userRow] = await db.execute(sql`
+    const result = await db.execute(sql`
       SELECT weekly_toast_day 
       FROM users 
       WHERE id = ${userId} 
@@ -36,16 +36,20 @@ export async function getPreferredWeeklyDay(userId: number): Promise<number> {
       )
     `);
     
-    if (userRow && userRow.weekly_toast_day !== undefined) {
+    const userRow = result.rows[0];
+    
+    if (userRow && typeof userRow.weekly_toast_day === 'number') {
       return userRow.weekly_toast_day;
     }
     
     // If not available from user table, try to get from voice_preferences
-    const [preferenceRow] = await db.execute(sql`
+    const prefResult = await db.execute(sql`
       SELECT toast_day 
       FROM voice_preferences
       WHERE user_id = ${userId}
     `);
+    
+    const preferenceRow = prefResult.rows[0];
     
     if (preferenceRow && preferenceRow.toast_day) {
       // Convert day name to number

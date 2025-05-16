@@ -245,6 +245,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const note = await storage.createNote(validatedData);
       console.log("Note created:", note);
       
+      // Log note creation activity for analytics
+      if (storage.logUserActivity) {
+        await storage.logUserActivity({
+          userId,
+          activityType: 'note-create',
+          metadata: {
+            noteId: note.id,
+            source: 'web'
+          } as Record<string, any>
+        });
+        console.log(`Activity logged for note creation: userId=${userId}, noteId=${note.id}`);
+      }
+      
       // Check if this is the user's first note and award badge if it is
       try {
         const notesCount = await storage.getUserNotesCount(userId);

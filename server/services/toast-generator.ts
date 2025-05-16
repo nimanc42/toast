@@ -287,17 +287,24 @@ function generateFallbackToastContent(noteCount: number): string {
 
 /**
  * Generate a toast for a user with the specified range type
+ * @param user The user object
+ * @param toastType The type of toast to generate (daily, weekly, monthly, yearly)
+ * @param bypassLimits Optional flag to bypass frequency limits for testing
  */
-export async function generateToast(user: User, toastType: ToastRange): Promise<Toast> {
+export async function generateToast(user: User, toastType: ToastRange, bypassLimits: boolean = false): Promise<Toast> {
   const userId = user.id;
   
   // Get date range based on toast type and user preferences
   const { start, end } = await getDateRange(user, toastType);
   
-  // Check if a toast already exists for this period and type
-  const toastExists = await checkToastExists(userId, toastType, start, end);
-  if (toastExists) {
-    throw new Error(`A ${toastType} toast has already been generated for this period`);
+  // Check if a toast already exists for this period and type (skip if debug bypass requested)
+  if (!bypassLimits) {
+    const toastExists = await checkToastExists(userId, toastType, start, end);
+    if (toastExists) {
+      throw new Error(`A ${toastType} toast has already been generated for this period`);
+    }
+  } else {
+    console.log(`[DEBUG] Bypassing toast frequency limits for ${toastType} toast`);
   }
   
   // Get user notes for the date range

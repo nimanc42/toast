@@ -481,7 +481,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!user) {
           throw new Error("User not found");
         }
-        const result = await generateToast(user, 'weekly');
+        
+        // Check if we should bypass frequency limits for testing
+        const bypassLimits = req.query.bypass === 'true';
+        const result = await generateToast(user, 'weekly', bypassLimits);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

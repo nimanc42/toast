@@ -6,6 +6,7 @@ import AudioPlayer from "@/components/audio-player";
 import ShareToast from "@/components/share-toast";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import AutoLogin from "@/components/auto-login";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
@@ -406,6 +407,13 @@ export default function WeeklyToastPage() {
                   <>Create your weekly toast to celebrate your progress!</>
                 )}
               </p>
+              
+              {/* Auto-login button for development */}
+              {process.env.NODE_ENV === 'development' && !user && (
+                <div className="flex justify-center mb-4">
+                  <AutoLogin />
+                </div>
+              )}
               
               {/* Generate or Regenerate button */}
               {latestToast ? (

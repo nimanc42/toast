@@ -191,7 +191,46 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Login route with rate limiting
+  // Special development login route for Kate
+  app.post("/api/dev/login", async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(404).json({ message: "Endpoint not available in production" });
+    }
+    
+    console.log("[DEV MODE] Auto-login for Kate");
+    
+    try {
+      // Get Kate's account
+      const user = await storage.getUserByUsername("kate");
+      
+      if (!user) {
+        return res.status(404).json({ message: "Kate's account not found" });
+      }
+      
+      // Generate JWT token
+      const token = generateToken(user);
+      
+      // Set token as HTTP-only cookie
+      res.cookie('at', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+      });
+      
+      const { password: _, ...userWithoutPassword } = user;
+      return res.json({
+        user: userWithoutPassword,
+        token,
+        message: "Auto-login successful"
+      });
+    } catch (error) {
+      console.error("Dev login error:", error);
+      res.status(500).json({ message: "Auto-login failed" });
+    }
+  });
+  
+  // Regular login route with rate limiting
   app.post("/api/login", async (req, res, next) => {
     try {
       // Get client IP (handle proxy forwarding)

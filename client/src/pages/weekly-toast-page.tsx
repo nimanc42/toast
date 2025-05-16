@@ -261,7 +261,7 @@ export default function WeeklyToastPage() {
                     <label htmlFor="voice-select" className="block text-sm font-medium text-white mb-1">
                       Voice:
                     </label>
-                    <Select value={selectedVoice} onValueChange={handleVoiceChange} id="voice-select">
+                    <Select value={selectedVoice} onValueChange={handleVoiceChange}>
                       <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
                         <SelectValue placeholder="Select voice" />
                       </SelectTrigger>
@@ -311,7 +311,7 @@ export default function WeeklyToastPage() {
                     <label htmlFor="voice-generate" className="block text-sm font-medium text-white mb-1">
                       Voice:
                     </label>
-                    <Select value={selectedVoice} onValueChange={handleVoiceChange} id="voice-generate">
+                    <Select value={selectedVoice} onValueChange={handleVoiceChange}>
                       <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
                         <SelectValue placeholder="Select voice" />
                       </SelectTrigger>

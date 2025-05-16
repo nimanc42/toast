@@ -123,9 +123,9 @@ export async function getWeeklyDateRange(userId: number) {
 }
 
 /**
- * Check if a toast already exists for the given time period
+ * Check if a toast already exists for the given time period and toast type
  */
-export async function checkToastExists(userId: number, startDate: Date, endDate: Date): Promise<boolean> {
+export async function checkToastExists(userId: number, toastType: ToastRange, startDate: Date, endDate: Date): Promise<boolean> {
   try {
     // First check if interval_start column exists in the toasts table
     const columnCheck = await db.execute(sql`
@@ -135,28 +135,60 @@ export async function checkToastExists(userId: number, startDate: Date, endDate:
       AND column_name = 'interval_start'
     `);
     
-    // If the column exists, use it for the check
+    // If the columns exist, use them for the check
     if (columnCheck.rowCount > 0) {
-      const result = await db.select()
-        .from(toasts)
-        .where(and(
-          eq(toasts.userId, userId),
-          between(toasts.intervalStart, startDate, endDate)
-        ));
+      // Check if type column exists
+      const typeCheck = await db.execute(sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'toasts' 
+        AND column_name = 'type'
+      `);
       
-      return result.length > 0;
+      if (typeCheck.rowCount > 0) {
+        // Use type and interval columns for the check
+        const typeResult = await db.execute(sql`
+          SELECT id FROM toasts
+          WHERE user_id = ${userId}
+          AND type = ${toastType}
+          AND interval_start >= ${startDate}
+          AND interval_start <= ${endDate}
+        `);
+        
+        return typeResult.rowCount > 0;
+      }
     }
     
-    // Fall back to using the creation date
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    // Fall back to limiting by creation date based on toast type
+    let limitDate = new Date();
+    
+    switch (toastType) {
+      case 'daily':
+        // Limit to one per day
+        limitDate.setHours(0, 0, 0, 0);
+        break;
+      case 'weekly':
+        // Limit to one per week
+        limitDate.setDate(limitDate.getDate() - 7);
+        break;
+      case 'monthly':
+        // Limit to one per month
+        limitDate.setMonth(limitDate.getMonth() - 1);
+        break;
+      case 'yearly':
+        // Limit to one per year
+        limitDate.setFullYear(limitDate.getFullYear() - 1);
+        break;
+    }
     
     const result = await db.select()
       .from(toasts)
       .where(and(
         eq(toasts.userId, userId),
-        between(toasts.createdAt, oneWeekAgo, new Date())
-      ));
+        between(toasts.createdAt, limitDate, new Date())
+      ))
+      .orderBy(desc(toasts.createdAt))
+      .limit(1);
     
     return result.length > 0;
   } catch (error) {
@@ -232,16 +264,42 @@ export async function getNextToastDate(userId: number): Promise<Date> {
 }
 
 /**
- * Generate a weekly toast for a user
+ * Generate a toast for a user with the specified range type
  */
-export async function generateWeeklyToast(userId: number): Promise<Toast> {
-  // Get date range for weekly toast
-  const { start, end } = await getWeeklyDateRange(userId);
+export async function generateToast(userId: number, toastType: ToastRange): Promise<Toast> {
+  // Get appropriate date range based on toast type
+  let start: Date, end: Date;
   
-  // Check if a toast already exists for this period
-  const toastExists = await checkToastExists(userId, start, end);
+  if (toastType === 'weekly') {
+    const weekRange = await getWeeklyDateRange(userId);
+    start = weekRange.start;
+    end = weekRange.end;
+  } else if (toastType === 'daily') {
+    // Daily toast is for the current day
+    const timezone = await getUserTimezone(userId);
+    const now = DateTime.now().setZone(timezone);
+    start = now.startOf('day').toJSDate();
+    end = now.endOf('day').toJSDate();
+  } else if (toastType === 'monthly') {
+    // Monthly toast is for the current month
+    const timezone = await getUserTimezone(userId);
+    const now = DateTime.now().setZone(timezone);
+    start = now.startOf('month').toJSDate();
+    end = now.endOf('month').toJSDate();
+  } else if (toastType === 'yearly') {
+    // Yearly toast is for the current year
+    const timezone = await getUserTimezone(userId);
+    const now = DateTime.now().setZone(timezone);
+    start = now.startOf('year').toJSDate();
+    end = now.endOf('year').toJSDate();
+  } else {
+    throw new Error(`Unsupported toast type: ${toastType}`);
+  }
+  
+  // Check if a toast already exists for this period and type
+  const toastExists = await checkToastExists(userId, toastType, start, end);
   if (toastExists) {
-    throw new Error('A toast has already been generated for this week');
+    throw new Error(`A ${toastType} toast has already been generated for this period`);
   }
   
   // Get user notes for the date range
@@ -273,7 +331,7 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
         userId,
         content,
         noteIds,
-        type: 'weekly',
+        type: toastType,
         intervalStart: start,
         intervalEnd: end,
       })

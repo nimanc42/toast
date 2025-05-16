@@ -174,7 +174,7 @@ export default function WeeklyToastPage() {
       // Add bypass parameter for testing (in production, respect the period limits)
       const bypassParam = process.env.NODE_ENV === 'development' ? '?bypass=true' : '';
       
-      const res = await fetch(`/api/toasts/weekly${bypassParam}`, { 
+      const res = await fetch(`/api/toasts/generate${bypassParam}`, { 
         method: "POST",
         headers: {
           "Content-Type": "application/json"

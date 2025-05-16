@@ -175,7 +175,9 @@ export default function WeeklyToastPage() {
       const bypassParam = '?bypass=true';
       console.log("Generating toast with voice:", selectedVoice);
       
-      const res = await fetch(`/api/toasts/generate${bypassParam}`, { 
+      // Use development endpoint for easier testing
+      const endpoint = process.env.NODE_ENV === 'development' ? '/api/dev/toasts/generate' : '/api/toasts/generate';
+      const res = await fetch(`${endpoint}${bypassParam}`, { 
         method: "POST",
         headers: {
           "Content-Type": "application/json"

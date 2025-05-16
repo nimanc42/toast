@@ -466,15 +466,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Modern API route using the new toast-generator service
-  // Skip authentication in development for easier testing
-  app.post("/api/toasts/generate", process.env.NODE_ENV === 'development' ? (req, res, next) => {
-    // If no user in session, use a default test user for development
-    if (!req.user) {
-      console.log("[DEV MODE] Using default test user for toast generation");
-      req.user = { id: 1, username: 'testuser', email: 'test@example.com', name: 'Test User', verified: true, createdAt: new Date() };
+  // Special development route without auth for easier testing
+  app.post("/api/dev/toasts/generate", async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(404).json({ message: "Endpoint not available in production" });
     }
-    next();
-  } : ensureAuthenticated, async (req, res) => {
+    
+    console.log("[DEV MODE] Using test mode for toast generation");
+    
+    // Use a test user for development
+    const testUser = { 
+      id: 1, 
+      username: 'testuser', 
+      email: 'test@example.com', 
+      name: 'Test User', 
+      verified: true, 
+      createdAt: new Date(),
+      externalId: null,
+      externalProvider: null,
+      weeklyToastDay: null,
+      timezone: null,
+      password: 'dummy-not-used'  // Required by type but not used in generate function
+    };
+    
+    try {
+      const voice = req.body.voice;
+      const bypassLimits = true; // Always bypass in dev mode
+      const result = await generateToast(testUser, 'weekly', bypassLimits);
+      
+      res.status(201).json(result);
+    } catch (err: any) {
+      console.error('[Dev toast gen]', err);
+      res.status(500).json({ error: err.message || "Error generating test toast" });
+    }
+  });
+  
+  // Regular protected toast generation endpoint
+  app.post("/api/toasts/generate", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
       const voice = req.body.voice;

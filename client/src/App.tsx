@@ -5,7 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
-import { WebSocketProvider } from "@/hooks/websocket-provider";
+// WebSocket temporarily disabled
+// import { WebSocketProvider } from "@/hooks/websocket-provider";
 import { NewBadgeNotification } from "@/components/new-badge-notification";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
@@ -43,13 +44,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <WebSocketProvider>
-          <TooltipProvider>
-            <Toaster />
-            <NewBadgeNotification />
-            <Router />
-          </TooltipProvider>
-        </WebSocketProvider>
+        {/* WebSocket temporarily disabled */}
+        <TooltipProvider>
+          <Toaster />
+          <NewBadgeNotification />
+          <Router />
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

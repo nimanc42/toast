@@ -50,7 +50,8 @@ export default function WeeklyToastPage() {
   const voiceOptions = [
     { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
     { id: "friendly", name: "Adam", description: "Warm and friendly" },
-    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" }
+    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" },
+    { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
   
   // Fetch the latest toast

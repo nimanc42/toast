@@ -20,6 +20,17 @@ export function useWebSocket() {
       return;
     }
 
+    // Skip connection attempts if WebSocket is disabled on the server
+    const isWSDisabled = localStorage.getItem('ws_disabled') === 'true';
+    if (isWSDisabled) {
+      // Check every minute if WebSocket should be re-enabled
+      reconnectTimeoutRef.current = setTimeout(() => {
+        localStorage.removeItem('ws_disabled');
+        connect();
+      }, 60000);
+      return;
+    }
+
     // Close existing connection if any
     if (socketRef.current) {
       socketRef.current.close();
@@ -82,6 +93,9 @@ export function useWebSocket() {
         setStatus('error');
         console.error('WebSocket error:', error);
         
+        // Mark WebSocket as disabled to prevent constant reconnection attempts
+        localStorage.setItem('ws_disabled', 'true');
+        
         // Close the socket on error
         socket.close();
       };
@@ -89,11 +103,15 @@ export function useWebSocket() {
       console.error('Error creating WebSocket connection:', error);
       setStatus('error');
       
-      // Attempt to reconnect after a delay
+      // Mark WebSocket as disabled when we can't connect
+      localStorage.setItem('ws_disabled', 'true');
+      
+      // Only attempt reconnection once per minute
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('Attempting to reconnect WebSocket...');
+        localStorage.removeItem('ws_disabled');
+        console.log('Checking if WebSocket can be reconnected...');
         connect();
-      }, 5000);
+      }, 60000);
     }
   }, [user]);
 

@@ -25,7 +25,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId } from "./services/elevenlabs";
-import { generateWeeklyToast } from "./services/toast-generator-v2";
+import { generateWeeklyToast } from "./services/toast-helper";
 
 /**
  * Extract main themes from note contents

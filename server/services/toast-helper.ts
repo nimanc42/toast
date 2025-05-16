@@ -1,44 +1,12 @@
-import { DateTime } from 'luxon';
 import { db } from '../db';
-import { toasts, notes, users } from '@shared/schema';
-import { eq, and, between, desc, sql } from 'drizzle-orm';
-import { User, Toast } from '@shared/schema';
+import { toasts, notes, voicePreferences } from '@shared/schema';
+import { eq, and, between, sql } from 'drizzle-orm';
+import { Toast } from '@shared/schema';
 import OpenAI from 'openai';
+import { generateSpeech, getVoiceId } from './elevenlabs';
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-/**
- * Get date range for weekly toast generation
- * This is a simplified version that doesn't rely on user preferences yet
- */
-export function getWeeklyDateRange() {
-  const now = new Date();
-  const startDate = new Date();
-  startDate.setDate(now.getDate() - 7); // 7 days ago
-  
-  return { 
-    start: startDate, 
-    end: now 
-  };
-}
-
-/**
- * Check if a toast already exists for the given time period
- */
-export async function checkToastExists(userId: number): Promise<boolean> {
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  
-  const result = await db.select()
-    .from(toasts)
-    .where(and(
-      eq(toasts.userId, userId),
-      between(toasts.createdAt, oneWeekAgo, new Date())
-    ));
-  
-  return result.length > 0;
-}
 
 /**
  * Generate personalized toast content using OpenAI
@@ -86,28 +54,39 @@ function generateFallbackToastContent(noteCount: number): string {
   return templates[Math.floor(Math.random() * templates.length)];
 }
 
-// Import the speech generation function
-import { generateSpeech, getVoiceId } from './elevenlabs';
+/**
+ * Get the user's preferred voice style
+ */
+async function getUserVoiceStyle(userId: number): Promise<string> {
+  try {
+    const userPrefs = await db.select()
+      .from(voicePreferences)
+      .where(eq(voicePreferences.userId, userId));
+    
+    return userPrefs.length > 0 && userPrefs[0].voiceStyle 
+      ? userPrefs[0].voiceStyle 
+      : 'friendly';
+  } catch (error) {
+    console.error('Error getting user voice style:', error);
+    return 'friendly';
+  }
+}
 
 /**
  * Generate a weekly toast for a user
  */
 export async function generateWeeklyToast(userId: number): Promise<Toast> {
-  // Get date range for weekly toast (using simplified approach for now)
-  const { start, end } = getWeeklyDateRange();
+  // Date range for the past week
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 7);
   
-  // Check if a toast already exists for this period
-  const toastExists = await checkToastExists(userId);
-  if (toastExists) {
-    throw new Error('A toast has already been generated for this week');
-  }
-  
-  // Get user notes for the date range
+  // Get user notes for the past week
   const userNotes = await db.select()
     .from(notes)
     .where(and(
       eq(notes.userId, userId),
-      between(notes.createdAt, start, end)
+      between(notes.createdAt, startDate, endDate)
     ));
   
   if (userNotes.length === 0) {
@@ -121,7 +100,11 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
   // Generate toast content
   const content = await generateToastContent(noteContents);
   
-  // Create toast record without audio first
+  // Get user's voice preference
+  const voiceStyle = await getUserVoiceStyle(userId);
+  const voiceId = getVoiceId(voiceStyle);
+  
+  // Create toast record
   const [newToast] = await db.insert(toasts)
     .values({
       userId,
@@ -130,26 +113,11 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
     })
     .returning();
   
+  // Generate audio for the toast
   try {
-    // Get user voice preferences from database
-    const voicePrefs = await db.execute(sql`
-      SELECT voice_style 
-      FROM voice_preferences 
-      WHERE user_id = ${userId}
-    `);
-    
-    // Default to 'friendly' if no preference exists
-    const voiceStyle = voicePrefs.rows.length > 0 && voicePrefs.rows[0].voice_style 
-      ? voicePrefs.rows[0].voice_style 
-      : 'friendly';
-      
-    const voiceId = getVoiceId(voiceStyle);
-    
-    // Generate audio for the toast
     const audioUrl = await generateSpeech(content, voiceId);
-    
     if (audioUrl) {
-      // Update toast with the audio URL
+      // Update toast with audio URL
       const [updatedToast] = await db.update(toasts)
         .set({ audioUrl })
         .where(eq(toasts.id, newToast.id))
@@ -158,8 +126,7 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
       return updatedToast;
     }
   } catch (error) {
-    console.error('Error generating audio for toast:', error);
-    // Continue with the toast even if audio generation fails
+    console.error('Error generating speech for toast:', error);
   }
   
   return newToast;

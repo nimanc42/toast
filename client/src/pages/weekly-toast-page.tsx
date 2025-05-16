@@ -171,8 +171,9 @@ export default function WeeklyToastPage() {
   const generateToast = async () => {
     setLoading(true);
     try {
-      // Add bypass parameter for testing (in production, respect the period limits)
-      const bypassParam = process.env.NODE_ENV === 'development' ? '?bypass=true' : '';
+      // Always use bypass parameter for testing until feature is stable
+      const bypassParam = '?bypass=true';
+      console.log("Generating toast with voice:", selectedVoice);
       
       const res = await fetch(`/api/toasts/generate${bypassParam}`, { 
         method: "POST",

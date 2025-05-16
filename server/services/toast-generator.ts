@@ -224,7 +224,7 @@ export function getNextToastDate(user: User): Date {
   // Luxon uses 1-7 for weekdays where 1 is Monday and 7 is Sunday
   // Convert from our 0-6 where 0 is Sunday
   const luxonDay = preferredDay === 0 ? 7 : preferredDay; 
-  let nextToastDate = now.set({ weekday: luxonDay });
+  let nextToastDate = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 });
   
   // If today is the preferred day but it's already past a certain time (e.g., 6 PM),
   // or if the next occurrence would be in the past, move to next week

@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
 import gamificationRoutes from "./routes/gamification";
+import userSettingsRoutes from "./routes/user-settings";
 import googleAuth from './auth-google';
 import { 
   sendVerification, 
@@ -222,6 +223,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Gamification and analytics routes
   app.use('/api/gamification', gamificationRoutes);
+  
+  // User settings routes
+  app.use(userSettingsRoutes);
 
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {
@@ -473,7 +477,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Use the dedicated toast generator service with weekly range
-        const result = await generateToast(req.user!, 'weekly');
+        // Get complete user data including timezone and weekly toast day preferences
+        const user = await storage.getUser(req.user!.id);
+        if (!user) {
+          throw new Error("User not found");
+        }
+        const result = await generateToast(user, 'weekly');
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

@@ -4,6 +4,7 @@ import { toasts, notes, users } from '@shared/schema';
 import { eq, and, between, desc, sql } from 'drizzle-orm';
 import { User, Toast } from '@shared/schema';
 import OpenAI from 'openai';
+import { CONFIG } from '../config';
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -25,8 +26,15 @@ export function getWeeklyDateRange() {
 
 /**
  * Check if a toast already exists for the given time period
+ * Respects the testing mode configuration
  */
 export async function checkToastExists(userId: number): Promise<boolean> {
+  // In testing mode, always return false to allow toast generation regardless of timing
+  if (CONFIG.TESTING_MODE) {
+    console.log('[Toast Generator] Testing mode enabled - bypassing toast existence check');
+    return false;
+  }
+  
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   

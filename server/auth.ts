@@ -381,7 +381,8 @@ export function setupAuth(app: Express) {
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   // Check if we're in a testing mode session
-  if ((req.session as any).testingMode === true) {
+  if ((req.session as any).testingMode === true || CONFIG.TESTING_MODE) {
+    console.log("Testing mode authentication detected");
     // Testing mode is active, create a test user
     req.user = {
       ...CONFIG.TEST_USER,

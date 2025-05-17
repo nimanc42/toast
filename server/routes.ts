@@ -867,30 +867,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Create a test user session
     req.session.testingMode = true;
     
-    // Properly authenticate by logging in the test user
-    req.login(testUser, (err) => {
-      if (err) {
-        console.error("Error setting up testing mode session:", err);
-        return res.status(500).json({ message: "Error setting up testing mode session" });
+    // Add the user ID to the session directly for testing mode
+    req.session.userId = testUser.id;
+    
+    // Generate JWT token for the test user
+    const token = generateToken(testUser);
+    
+    // Ensure session is saved before responding
+    req.session.save((saveErr) => {
+      if (saveErr) {
+        console.error("Error saving testing mode session:", saveErr);
+        return res.status(500).json({ message: "Error saving testing mode session" });
       }
       
-      // Generate JWT token for the test user (to match regular login behavior)
-      const token = generateToken(testUser);
+      console.log("Testing mode enabled for session:", req.sessionID);
       
-      // Ensure session is saved before responding
-      req.session.save((saveErr) => {
-        if (saveErr) {
-          console.error("Error saving testing mode session:", saveErr);
-          return res.status(500).json({ message: "Error saving testing mode session" });
-        }
-        
-        console.log("Testing mode enabled for session:", req.sessionID);
-        
-        // Send back the test user with token
-        res.status(200).json({
-          ...testUser,
-          token
-        });
+      // Send back the test user with token
+      res.status(200).json({
+        ...testUser,
+        token
       });
     });
   });

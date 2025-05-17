@@ -171,27 +171,27 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
       
       // Store the error message in the toast
       const errorMessage = ttsResult.error;
-      let statusMessage = '';
       
       // Provide user-friendly error messages
+      let errorPrefix = 'Error: ';
       if (errorMessage.includes('Rate limit')) {
-        statusMessage = 'Rate limit reached. Please try again later.';
+        errorPrefix += 'Rate limit reached. Please try again later.';
       } 
       else if (errorMessage.includes('quota exceeded') || errorMessage.includes('Not enough TTS credits')) {
-        statusMessage = 'Voice generation quota exceeded. Please try again later.';
+        errorPrefix += 'Voice generation quota exceeded. Please try again later.';
       }
       else if (errorMessage.includes('timeout')) {
-        statusMessage = 'Voice generation timed out. Please try again later.';
+        errorPrefix += 'Voice generation timed out. Please try again later.';
       }
       else {
-        statusMessage = 'Unable to generate audio at this time.';
+        errorPrefix += 'Unable to generate audio at this time.';
       }
       
-      // Update toast with error status but keep the text content
+      // Update toast with error status in the audioUrl field
+      // This will display the error message in the UI where the audio player would normally be
       const [updatedToast] = await db.update(toasts)
         .set({ 
-          audioUrl: 'No audio URL',
-          status: statusMessage
+          audioUrl: errorPrefix
         })
         .where(eq(toasts.id, newToast.id))
         .returning();
@@ -204,7 +204,7 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
       
       // Update toast with generic error
       const [updatedToast] = await db.update(toasts)
-        .set({ audioUrl: 'No audio URL' })
+        .set({ audioUrl: 'Error: Audio generation failed. Please try again later.' })
         .where(eq(toasts.id, newToast.id))
         .returning();
       

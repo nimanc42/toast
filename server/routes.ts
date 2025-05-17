@@ -622,13 +622,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = getVoiceId(voiceStyle);
       
       // Generate speech audio using ElevenLabs API
-      let audioUrl = null;
+      let audioUrl: string | null = null;
       try {
-        audioUrl = await generateSpeech(toastContent, voiceId);
-        console.log(`Generated audio file: ${audioUrl}`);
+        const ttsResult = await generateSpeech(toastContent, voiceId, userId);
+        
+        // Handle different response types
+        if (typeof ttsResult === 'string') {
+          // Success case - we got an audio URL
+          audioUrl = ttsResult;
+          console.log(`Generated audio file: ${audioUrl}`);
+        } 
+        else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
+          // Error case with specific message
+          console.warn(`Audio generation error: ${ttsResult.error}`);
+          audioUrl = `Error: ${ttsResult.error}`;
+        }
+        else {
+          // Null or unexpected response
+          console.log('Failed to generate audio - null response');
+          audioUrl = 'Error: Audio generation failed';
+        }
       } catch (error) {
         console.error('Error generating audio:', error);
-        // Continue even if audio generation fails
+        audioUrl = 'Error: Audio generation failed';
       }
       
       // Create a unique share URL
@@ -693,13 +709,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voiceId = getVoiceId(voiceStyle || 'motivational');
       
       // Generate new audio
-      let audioUrl = null;
+      let audioUrl: string | null = null;
       try {
-        audioUrl = await generateSpeech(toast.content, voiceId);
-        console.log(`Regenerated audio file: ${audioUrl}`);
+        const ttsResult = await generateSpeech(toast.content, voiceId, userId);
+        
+        // Handle different response types
+        if (typeof ttsResult === 'string') {
+          // Success case - we got an audio URL
+          audioUrl = ttsResult;
+          console.log(`Regenerated audio file: ${audioUrl}`);
+        } 
+        else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
+          // Error case with specific message
+          console.warn(`Audio regeneration error: ${ttsResult.error}`);
+          return res.status(500).json({ 
+            message: `Failed to generate audio: ${ttsResult.error}`,
+            error: ttsResult.error
+          });
+        }
+        else {
+          // Null or unexpected response
+          console.log('Failed to regenerate audio - null response');
+          return res.status(500).json({ message: "Failed to generate audio: Unexpected error" });
+        }
       } catch (error) {
         console.error('Error regenerating audio:', error);
-        return res.status(500).json({ message: "Failed to generate audio" });
+        return res.status(500).json({ message: "Failed to generate audio: Server error" });
       }
       
       // Update the toast with the new audio URL

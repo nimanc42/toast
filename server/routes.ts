@@ -599,14 +599,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ? noteThemes.join(" and ") 
               : "personal growth";
               
-            // Create a personalized toast message incorporating the reflection themes
-            content = `Here's a toast to your reflective week! You captured ${noteContents.length} moment${noteContents.length > 1 ? 's' : ''} of insight. 
+            // Create a personalized toast message that directly incorporates the user's actual reflections
+            content = `Here's a toast to your reflective week! 
 
-I noticed themes of ${themesText} in your reflections. These insights show your commitment to growth and self-awareness.
+I can see that ${noteContents.length > 1 ? 'one of the things' : 'something'} you reflected on was: "${noteContents[0]}". 
+${noteContents.length > 1 ? `You also shared: "${noteContents[1]}"` : ''}
 
-Your dedication to regular reflection is helping you build momentum in your personal development journey. Keep going, and remember to celebrate these small wins along the way!
+Taking time for relationships and personal connections is so valuable. Your reflections show you're mindful about what matters in life.
 
-Here's to another week of discovery and progress ahead.`;
+Your dedication to regular reflection is helping you build momentum in your personal development journey. Keep going, and celebrate these moments of connection!
+
+Here's to another week of meaningful experiences ahead.`;
             
             console.log(`[Toast Generator] Created content from ${noteContents.length} reflections`);
             

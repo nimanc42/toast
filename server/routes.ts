@@ -799,13 +799,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API endpoint to get application config status (for testing mode)
-  app.get("/api/config/status", ensureAuthenticated, (req, res) => {
+  app.get("/api/config/status", (req, res) => {
+    // Check if user is in testing mode from session
+    const isTestingSession = req.session?.testingMode === true;
+    
     res.json({
-      testingMode: CONFIG.TESTING_MODE,
-      message: CONFIG.TESTING_MODE 
+      testingModeEnabled: CONFIG.ENABLE_TESTING_MODE,
+      testingMode: isTestingSession || CONFIG.TESTING_MODE,
+      message: (isTestingSession || CONFIG.TESTING_MODE)
         ? "Testing mode is enabled. Message generation restriction is bypassed." 
         : "Production mode is active. Normal message generation restrictions apply."
     });
+  });
+  
+  // Special route for starting a testing mode session
+  app.post("/api/auth/testing-mode", (req, res) => {
+    if (!CONFIG.ENABLE_TESTING_MODE) {
+      return res.status(403).json({ message: "Testing mode is disabled" });
+    }
+    
+    // Create a test user session
+    req.session.testingMode = true;
+    
+    // Mock authentication by using the test user
+    const testUser = {
+      ...CONFIG.TEST_USER,
+      verified: true,
+      createdAt: new Date()
+    };
+    
+    // Send back the test user
+    res.status(200).json(testUser);
   });
 
   // API endpoint to check ElevenLabs credit status

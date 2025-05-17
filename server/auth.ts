@@ -25,6 +25,7 @@ import {
   generateToken,
   verifyToken as verifyJwtToken
 } from "./services/jwt";
+import { CONFIG } from "./config";
 
 declare global {
   namespace Express {
@@ -36,7 +37,18 @@ declare global {
       name: string;
       verified: boolean;
       createdAt: Date;
+      externalId?: string | null;
+      externalProvider?: string | null;
+      weeklyToastDay?: number | null;
+      timezone?: string | null;
     }
+  }
+}
+
+// Extend the session interface to include testing mode
+declare module 'express-session' {
+  interface SessionData {
+    testingMode?: boolean;
   }
 }
 
@@ -365,10 +377,21 @@ export function setupAuth(app: Express) {
 
 /**
  * Middleware to ensure a user is authenticated
- * Checks both session authentication and JWT bearer token
+ * Checks session authentication, JWT bearer token, and testing mode
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
-  // First check if the user is authenticated via session
+  // Check if we're in a testing mode session
+  if ((req.session as any).testingMode === true) {
+    // Testing mode is active, create a test user
+    req.user = {
+      ...CONFIG.TEST_USER,
+      verified: true,
+      createdAt: new Date()
+    } as User;
+    return next();
+  }
+  
+  // Check if the user is authenticated via session
   if (req.isAuthenticated() && req.user) {
     // User is already authenticated via session
     return next();

@@ -24,15 +24,24 @@ type AuthContextType = {
   user: Omit<User, "password"> | null;
   isLoading: boolean;
   error: Error | null;
+  isTestingMode: boolean;
   loginMutation: UseMutationResult<LoginResponse, Error, LoginUser>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<RegisterResponse, Error, z.infer<typeof insertUserSchema>>;
+  enterTestingModeMutation: UseMutationResult<Omit<User, "password">, Error, void>;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  
+  // Check application config to determine if testing mode is available
+  const { data: configData } = useQuery<{ testingModeEnabled: boolean, testingMode: boolean }, Error>({
+    queryKey: ["/api/config/status"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+  });
   
   // Get user data
   const {
@@ -193,15 +202,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Testing mode mutation
+  const enterTestingModeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/auth/testing-mode");
+      return await res.json();
+    },
+    onSuccess: (testUser) => {
+      // Set testing mode flag in localStorage
+      localStorage.setItem('testingMode', 'true');
+      
+      // Update the user in cache
+      queryClient.setQueryData(["/api/user"], testUser);
+      
+      // Invalidate all queries to refresh with testing mode
+      queryClient.invalidateQueries();
+      
+      toast({
+        title: "Testing Mode Activated",
+        description: "You are now in testing mode. No changes will be saved to the database.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Testing Mode Failed",
+        description: error.message || "Could not enable testing mode",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Determine if we're in testing mode
+  const isTestingMode = Boolean(
+    (configData?.testingMode) || 
+    (localStorage.getItem('testingMode') === 'true')
+  );
+
   return (
     <AuthContext.Provider
       value={{
         user: user ?? null,
         isLoading,
         error,
+        isTestingMode,
         loginMutation,
         logoutMutation,
         registerMutation,
+        enterTestingModeMutation,
       }}
     >
       {children}

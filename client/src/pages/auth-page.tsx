@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, FlaskConical } from "lucide-react";
 import { SocialAuthButtons } from "@/components/ui/social-auth-buttons";
+import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -33,7 +36,23 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const [_, setLocation] = useLocation();
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { 
+    user, 
+    loginMutation, 
+    registerMutation, 
+    enterTestingModeMutation,
+    isTestingMode 
+  } = useAuth();
+  
+  // Check if testing mode is available
+  const { data: configData } = useQuery<{ testingModeEnabled: boolean }, Error>({
+    queryKey: ["/api/config/status"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
+  });
+
+  // Testing mode availability flag
+  const isTestingModeEnabled = configData?.testingModeEnabled || false;
 
   // Redirect if user is already logged in
   useEffect(() => {
@@ -41,6 +60,11 @@ export default function AuthPage() {
       setLocation("/");
     }
   }, [user, setLocation]);
+  
+  // Handle entering testing mode
+  const handleEnterTestingMode = () => {
+    enterTestingModeMutation.mutate();
+  };
 
   // Login form setup
   const loginForm = useForm<LoginFormValues>({

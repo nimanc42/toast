@@ -139,11 +139,22 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
     `);
     
     // Default to 'friendly' if no preference exists
-    const voiceStyle = voicePrefs.rows.length > 0 && voicePrefs.rows[0].voice_style 
-      ? voicePrefs.rows[0].voice_style 
-      : 'friendly';
-      
-    console.log(`[Toast Generator] Updated voice preference to: ${voiceStyle}`);
+    let voiceStyle = 'friendly';
+    
+    console.log('[Toast Generator] Raw voice preference:', 
+      voicePrefs.rows.length > 0 ? 
+      JSON.stringify(voicePrefs.rows[0]) : 
+      'No preferences found');
+    
+    // Ensure we have a valid string for the voice style
+    if (voicePrefs.rows.length > 0 && 
+        voicePrefs.rows[0].voice_style && 
+        typeof voicePrefs.rows[0].voice_style === 'string' &&
+        voicePrefs.rows[0].voice_style.trim() !== '') {
+      voiceStyle = voicePrefs.rows[0].voice_style;
+    }
+    
+    console.log(`[Toast Generator] Using voice preference: ${voiceStyle}`);
     const voiceId = getVoiceId(voiceStyle);
     
     // Try to generate audio for the toast with our enhanced error handling

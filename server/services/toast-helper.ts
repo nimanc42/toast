@@ -4,6 +4,7 @@ import { eq, and, between, sql } from 'drizzle-orm';
 import { Toast } from '@shared/schema';
 import OpenAI from 'openai';
 import { generateSpeech, getVoiceId } from './elevenlabs';
+import { CONFIG } from '../config';
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

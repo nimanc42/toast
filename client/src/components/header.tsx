@@ -43,13 +43,14 @@ export default function Header() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-primary-600 font-accent flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="white" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  {/* Toast outline */}
-                  <path d="M4,7 L4,19 C4,20.1 4.9,21 6,21 L18,21 C19.1,21 20,20.1 20,19 L20,7" />
-                  <path d="M2,7 L22,7 C22,3.5 18.5,3 12,3 C5.5,3 2,3.5 2,7 Z" />
-                  {/* Smiley face */}
-                  <circle cx="9" cy="13" r="1" fill="#3b82f6" />
-                  <circle cx="15" cy="13" r="1" fill="#3b82f6" />
-                  <path d="M9,17 C10,18 14,18 15,17" />
+                  {/* Toast outline with slightly rounded bottom corners for a more toast-like shape */}
+                  <path d="M4,7 L4,18 C4,19.7 5.3,21 7,21 L17,21 C18.7,21 20,19.7 20,18 L20,7" />
+                  {/* Slightly curved top */}
+                  <path d="M2,7 L22,7 C22,4.5 18.5,3 12,3 C5.5,3 2,4.5 2,7 Z" />
+                  {/* Smiley face with blue eyes and smile */}
+                  <circle cx="9" cy="12" r="1" fill="#3b82f6" />
+                  <circle cx="15" cy="12" r="1" fill="#3b82f6" />
+                  <path d="M9,16 C10,17.5 14,17.5 15,16" stroke="#3b82f6" fill="none" />
                 </svg>
                 A Toast to You
               </Link>

@@ -14,6 +14,7 @@ import {
   resendVerification 
 } from "./routes/auth-email";
 // WebSocket temporarily disabled for debugging
+import WebSocket from 'ws';
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
@@ -242,56 +243,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bundleTag: req.body.bundleTag || null
       });
       
-      console.log("Validated data:", validatedData);
-      const note = await storage.createNote(validatedData);
-      console.log("Note created:", note);
+      // Check if in testing mode - skip database writes
+      const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
       
-      // Check if this is the user's first note and award badge if it is
-      try {
-        const notesCount = await storage.getUserNotesCount(userId);
-        console.log(`User ${userId} has ${notesCount} notes`);
+      let note;
+      let userBadge = null;
+      
+      if (isTestingMode) {
+        // Create a mock note without saving to database
+        note = {
+          id: Math.floor(Math.random() * 10000),
+          userId,
+          content: validatedData.content,
+          audioUrl: null,
+          bundleTag: validatedData.bundleTag,
+          createdAt: new Date()
+        };
+        console.log("[Testing Mode] Skipped database write for note creation:", note);
         
-        if (notesCount === 1) {
-          console.log("This is the user's first note! Checking for first note badge...");
-          const badge = await storage.getBadgeByRequirement('first_note');
-          
-          if (badge) {
-            console.log(`Found first note badge: ${badge.name}`);
-            const userBadge = await storage.awardBadge(userId, badge.id);
-            console.log(`Badge awarded: ${userBadge.id}`);
-            
-            // Notify connected WebSocket clients about the badge
-            const wss = req.app.locals.wss;
-            if (wss) {
-              const clients = [...wss.clients].filter(
-                client => client.userId === userId && client.readyState === WebSocket.OPEN
-              );
-              
-              if (clients.length > 0) {
-                const badgeEvent = {
-                  type: 'badge-earned',
-                  data: {
-                    badgeId: badge.id,
-                    badgeName: badge.name,
-                    badgeIcon: badge.icon,
-                    badgeDescription: badge.description
-                  }
-                };
-                
-                clients.forEach(client => {
-                  client.send(JSON.stringify(badgeEvent));
-                });
-                
-                console.log(`WebSocket notification sent to ${clients.length} clients`);
-              }
-            }
-          } else {
-            console.log("First note badge not found in the database");
+        // Create a mock first note badge for testing
+        userBadge = {
+          id: Math.floor(Math.random() * 10000),
+          userId,
+          badgeId: 1,
+          seen: false,
+          createdAt: new Date(),
+          badge: {
+            id: 1,
+            name: "First Note",
+            description: "You created your first note!",
+            imageUrl: "/badges/first-note.svg",
+            category: "milestone",
+            requirement: "first_note",
+            createdAt: new Date()
           }
+        };
+      } else {
+        console.log("Validated data:", validatedData);
+        note = await storage.createNote(validatedData);
+        console.log("Note created:", note);
+        
+        // Check if this is the user's first note and award badge if it is
+        try {
+          const notesCount = await storage.getUserNotesCount(userId);
+          console.log(`User ${userId} has ${notesCount} notes`);
+          
+          if (notesCount === 1) {
+            console.log("This is the user's first note! Checking for first note badge...");
+            const badge = await storage.getBadgeByRequirement('first_note');
+            
+            if (badge) {
+              console.log(`Found first note badge: ${badge.name}`);
+              userBadge = await storage.awardBadge(userId, badge.id);
+              console.log(`Badge awarded: ${userBadge.id}`);
+              
+              // Notify connected WebSocket clients about the badge
+              const wss = req.app.locals.wss;
+              if (wss) {
+                const clients = [...wss.clients].filter(
+                  client => client.userId === userId && client.readyState === WebSocket.OPEN
+                );
+                
+                if (clients.length > 0) {
+                  const badgeEvent = {
+                    type: 'badge-earned',
+                    data: {
+                      badgeId: badge.id,
+                      badgeName: badge.name,
+                      badgeIcon: badge.icon,
+                      badgeDescription: badge.description
+                    }
+                  };
+                  
+                  clients.forEach(client => {
+                    client.send(JSON.stringify(badgeEvent));
+                  });
+                  
+                  console.log(`WebSocket notification sent to ${clients.length} clients`);
+                }
+              }
+            } else {
+              console.log("First note badge not found in the database");
+            }
+          }
+        } catch (badgeError) {
+          // Just log the error but don't fail the note creation
+          console.error("Error awarding badge:", badgeError);
         }
-      } catch (badgeError) {
-        // Just log the error but don't fail the note creation
-        console.error("Error awarding badge:", badgeError);
       }
       
       res.status(201).json(note);

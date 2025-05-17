@@ -49,6 +49,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <NewBadgeNotification />
+          <TestingModeBanner />
           <Router />
         </TooltipProvider>
       </AuthProvider>

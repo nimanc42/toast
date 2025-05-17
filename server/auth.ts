@@ -386,7 +386,11 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
     req.user = {
       ...CONFIG.TEST_USER,
       verified: true,
-      createdAt: new Date()
+      createdAt: new Date(),
+      externalId: null,
+      externalProvider: null,
+      weeklyToastDay: 0,
+      timezone: "UTC"
     } as User;
     return next();
   }

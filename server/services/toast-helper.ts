@@ -76,7 +76,50 @@ async function getUserVoiceStyle(userId: number): Promise<string> {
 /**
  * Generate a weekly toast for a user
  */
-export async function generateWeeklyToast(userId: number): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, isTestingMode: boolean = false): Promise<Toast> {
+  // When in testing mode and TESTING_MODE config is enabled, bypass all restrictions
+  if (isTestingMode || CONFIG.TESTING_MODE) {
+    console.log('[Toast Helper] Running in testing mode - bypassing normal restrictions');
+    
+    // Create mock data for testing
+    const mockToastContent = `
+      Here's a toast to your amazing week! You've been recording thoughtful reflections that show 
+      your commitment to personal growth. I noticed your consistency in journaling and your focus 
+      on gratitude. You're making progress on your goals while maintaining balance. 
+      Keep up the great work - you're on an impressive journey of self-improvement!
+    `;
+    
+    // Generate a random ID for the test toast
+    const toastId = Math.floor(Math.random() * 10000);
+    
+    // For testing, generate real audio but don't save to database
+    const voiceId = getVoiceId('friendly');
+    let audioUrl: string | null = null;
+    
+    try {
+      // Even in testing mode, we'll generate real audio for proper testing
+      audioUrl = await generateSpeech(mockToastContent, voiceId, userId) as string;
+    } catch (error) {
+      console.warn('[Testing Mode] Audio generation skipped:', error);
+      audioUrl = "Testing-mode-audio-url";
+    }
+    
+    return {
+      id: toastId,
+      userId,
+      content: mockToastContent,
+      audioUrl,
+      noteIds: [9001, 9002, 9003], // mock note IDs
+      type: 'weekly',
+      intervalStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      intervalEnd: new Date(),
+      createdAt: new Date(),
+      shared: false,
+      shareUrl: null
+    };
+  }
+
+  // Normal production mode flow
   // Date range for the past week
   const endDate = new Date();
   const startDate = new Date();

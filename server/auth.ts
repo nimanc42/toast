@@ -380,44 +380,25 @@ export function setupAuth(app: Express) {
  * Checks session authentication, JWT bearer token, and testing mode
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
-  // Check if we're in a testing mode session
-  if ((req.session as any).testingMode === true) {
-    console.log("Testing mode authentication active - using test user");
-    // Testing mode is active, create a test user
-    const testUser: User = {
+  // Check if we're in a testing mode session or if global testing mode is enabled
+  if ((req.session as any).testingMode === true || CONFIG.ENABLE_TESTING_MODE) {
+    console.log("Testing mode authentication detected");
+    
+    // Create a test user with all required fields
+    req.user = {
       id: CONFIG.TEST_USER.id,
       username: CONFIG.TEST_USER.username,
       name: CONFIG.TEST_USER.name,
       email: CONFIG.TEST_USER.email,
+      password: 'dummypassword', // Required by schema but not used
       verified: true,
       createdAt: new Date(),
       externalId: null,
       externalProvider: null,
       weeklyToastDay: 0,
       timezone: "UTC"
-    };
+    } as any;
     
-    req.user = testUser;
-    return next();
-  }
-  
-  // Also apply testing mode if global testing mode is enabled (as fallback)
-  if (CONFIG.TESTING_MODE) {
-    console.log("Global testing mode detected");
-    const testUser: User = {
-      id: CONFIG.TEST_USER.id,
-      username: CONFIG.TEST_USER.username,
-      name: CONFIG.TEST_USER.name,
-      email: CONFIG.TEST_USER.email,
-      verified: true,
-      createdAt: new Date(),
-      externalId: null,
-      externalProvider: null,
-      weeklyToastDay: 0,
-      timezone: "UTC"
-    };
-    
-    req.user = testUser;
     return next();
   }
   

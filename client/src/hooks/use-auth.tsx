@@ -205,34 +205,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Testing mode mutation
   const enterTestingModeMutation = useMutation({
     mutationFn: async () => {
+      // Call the testing mode endpoint
       const res = await apiRequest("POST", "/api/auth/testing-mode");
-      return await res.json();
-    },
-    onSuccess: (response) => {
-      // Store token similar to regular login
-      if (response.token) {
-        localStorage.setItem('authToken', response.token);
-        
-        // Set token expiry indicator (1 week from now)
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + 7);
-        localStorage.setItem('authTokenExpiry', expiryDate.toISOString());
-      }
+      const data = await res.json();
       
-      // Set testing mode flag in localStorage
+      // Clear all existing auth
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authTokenExpiry');
+      
+      // Set testing mode flag
       localStorage.setItem('testingMode', 'true');
       
-      // Update the user in cache
-      queryClient.setQueryData(["/api/user"], response);
+      // Force a page reload to clear all state
+      window.location.href = '/';
       
-      // Clear any errors that may exist from previous auth attempts
-      queryClient.clear();
-      
-      // Force reload data with new auth
-      setTimeout(() => {
-        queryClient.invalidateQueries();
-      }, 500);
-      
+      return data;
+    },
+    onSuccess: () => {
       toast({
         title: "Testing Mode Activated",
         description: "You are now in testing mode. No changes will be saved to the database.",

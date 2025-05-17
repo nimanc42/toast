@@ -570,8 +570,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Use the dedicated toast generator service for weekly toasts
-        const result = await generateWeeklyToast(userId);
+        // For testing mode, use the session notes for toast generation
+        const isTestingMode = (req.session as any).testingMode === true;
+        let result;
+        
+        if (isTestingMode && (req.session as any).testingNotes) {
+          // Get notes from session
+          const testingNotes = (req.session as any).testingNotes || [];
+          console.log(`[Toast Generator] Testing mode with ${testingNotes.length} notes`);
+          
+          // If we have testing notes, use them for content generation
+          if (testingNotes.length > 0) {
+            const noteContents = testingNotes.map((note: any) => note.content).filter(Boolean);
+            const noteIds = testingNotes.map((note: any) => note.id);
+            
+            console.log(`[Toast Generator] Using ${noteContents.length} notes from testing session`);
+            
+            // Generate content using OpenAI
+            const content = await generateToastContent(noteContents);
+            
+            // Create a mock toast with the generated content
+            result = {
+              id: Math.floor(Math.random() * 10000),
+              userId,
+              content,
+              audioUrl: null, // No audio in testing mode
+              noteIds,
+              createdAt: new Date(),
+              type: 'weekly',
+              intervalStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              intervalEnd: new Date(),
+              shared: false,
+              shareUrl: null,
+              processed: true
+            };
+          } else {
+            // No testing notes, proceed with normal generation
+            result = await generateWeeklyToast(userId);
+          }
+        } else {
+          // Normal toast generation
+          result = await generateWeeklyToast(userId);
+        }
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

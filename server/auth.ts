@@ -381,18 +381,43 @@ export function setupAuth(app: Express) {
  */
 export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   // Check if we're in a testing mode session
-  if ((req.session as any).testingMode === true || CONFIG.TESTING_MODE) {
-    console.log("Testing mode authentication detected");
+  if ((req.session as any).testingMode === true) {
+    console.log("Testing mode authentication active - using test user");
     // Testing mode is active, create a test user
-    req.user = {
-      ...CONFIG.TEST_USER,
+    const testUser: User = {
+      id: CONFIG.TEST_USER.id,
+      username: CONFIG.TEST_USER.username,
+      name: CONFIG.TEST_USER.name,
+      email: CONFIG.TEST_USER.email,
       verified: true,
       createdAt: new Date(),
       externalId: null,
       externalProvider: null,
       weeklyToastDay: 0,
       timezone: "UTC"
-    } as User;
+    };
+    
+    req.user = testUser;
+    return next();
+  }
+  
+  // Also apply testing mode if global testing mode is enabled (as fallback)
+  if (CONFIG.TESTING_MODE) {
+    console.log("Global testing mode detected");
+    const testUser: User = {
+      id: CONFIG.TEST_USER.id,
+      username: CONFIG.TEST_USER.username,
+      name: CONFIG.TEST_USER.name,
+      email: CONFIG.TEST_USER.email,
+      verified: true,
+      createdAt: new Date(),
+      externalId: null,
+      externalProvider: null,
+      weeklyToastDay: 0,
+      timezone: "UTC"
+    };
+    
+    req.user = testUser;
     return next();
   }
   

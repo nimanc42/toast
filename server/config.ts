@@ -41,8 +41,8 @@ export const CONFIG = {
   // Test user settings
   TEST_USER: {
     id: 9999, // Special ID for test user
-    username: 'testuser',
-    name: 'Test User',
-    email: 'test@example.com'
+    username: 'tester',
+    name: 'Tester',
+    email: 'tester@example.com'
   }
 };

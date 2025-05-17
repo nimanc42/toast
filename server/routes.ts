@@ -857,35 +857,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Testing mode is disabled" });
     }
     
-    // Create a test user
-    const testUser = {
-      ...CONFIG.TEST_USER,
-      verified: true,
-      createdAt: new Date()
-    };
-    
-    // Create a test user session
-    req.session.testingMode = true;
-    
-    // Add the user ID to the session directly for testing mode
-    req.session.userId = testUser.id;
-    
-    // Generate JWT token for the test user
-    const token = generateToken(testUser);
-    
-    // Ensure session is saved before responding
-    req.session.save((saveErr) => {
-      if (saveErr) {
-        console.error("Error saving testing mode session:", saveErr);
-        return res.status(500).json({ message: "Error saving testing mode session" });
+    // First, clear any existing session data
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error clearing existing session:", err);
       }
       
-      console.log("Testing mode enabled for session:", req.sessionID);
+      // Create a complete test user with all required fields
+      const testUser: User = {
+        id: CONFIG.TEST_USER.id,
+        username: CONFIG.TEST_USER.username,
+        name: CONFIG.TEST_USER.name,
+        email: CONFIG.TEST_USER.email,
+        verified: true,
+        createdAt: new Date(),
+        externalId: null,
+        externalProvider: null,
+        weeklyToastDay: 0,
+        timezone: "UTC"
+      };
       
-      // Send back the test user with token
-      res.status(200).json({
-        ...testUser,
-        token
+      // Generate JWT token for the test user
+      const token = generateToken(testUser);
+      
+      // Create a fresh session
+      req.session = req.session || {};
+      req.session.testingMode = true;
+      
+      // Log in the user to establish both session and JWT authentication
+      req.login(testUser, (loginErr) => {
+        if (loginErr) {
+          console.error("Error logging in test user:", loginErr);
+          return res.status(500).json({ message: "Error creating testing mode session" });
+        }
+        
+        // Save the new session
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Error saving testing mode session:", saveErr);
+            return res.status(500).json({ message: "Error saving testing mode session" });
+          }
+          
+          console.log("Testing mode enabled for session:", req.sessionID);
+          
+          // Send back the test user with token
+          res.status(200).json({
+            ...testUser,
+            token
+          });
+        });
       });
     });
   });

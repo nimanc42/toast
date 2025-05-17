@@ -268,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         (req.session as any).testingNotes.push(note);
         
-        console.log("[Testing Mode] Adding note with content:", note.content.substring(0, 50) + "...");
+        console.log("[Testing Mode] Adding note with content:", note.content ? note.content.substring(0, 50) + "..." : "No content");
         
         // Save session
         req.session.save((err) => {
@@ -924,9 +924,7 @@ Here's to another week of discovery and progress ahead.`;
   app.get("/api/stats", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      
-      // Get streak count (consecutive days with notes)
-      const streak = await storage.getUserStreak(userId);
+      const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
       
       // Get the count of notes for the current week
       const today = new Date();
@@ -934,7 +932,39 @@ Here's to another week of discovery and progress ahead.`;
       startOfWeek.setDate(today.getDate() - today.getDay()); // Set to Sunday
       startOfWeek.setHours(0, 0, 0, 0);
       
-      const weeklyNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfWeek, today);
+      let weeklyNotesCount = 0;
+      let streak = 0;
+      
+      // If in testing mode, get notes from session instead of database
+      if (isTestingMode && (req.session as any).testingNotes) {
+        const testingNotes = (req.session as any).testingNotes || [];
+        
+        // Count notes in the current week
+        const weeklyNotes = testingNotes.filter((note: any) => {
+          const noteDate = new Date(note.createdAt);
+          return noteDate >= startOfWeek && noteDate <= today;
+        });
+        
+        weeklyNotesCount = weeklyNotes.length;
+        
+        // Set streak to the number of consecutive days with notes
+        // For testing mode, simplify by returning count of days with notes
+        const days = new Set();
+        testingNotes.forEach((note: any) => {
+          const noteDate = new Date(note.createdAt);
+          const dayKey = `${noteDate.getFullYear()}-${noteDate.getMonth()}-${noteDate.getDate()}`;
+          days.add(dayKey);
+        });
+        
+        streak = days.size;
+        
+        console.log(`[Testing Mode] Stats: ${weeklyNotesCount} weekly notes, ${streak} day streak`);
+      } else {
+        // Normal database access
+        streak = await storage.getUserStreak(userId);
+        const weeklyNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfWeek, today);
+        weeklyNotesCount = weeklyNotes.length;
+      }
       
       // Get user preferences to determine the next toast day
       const preferences = await storage.getVoicePreferenceByUserId(userId);
@@ -961,13 +991,20 @@ Here's to another week of discovery and progress ahead.`;
         nextToastDate.setDate(today.getDate() + daysUntilSunday);
       }
       
+      // In testing mode, always set the next toast date to tomorrow for easier testing
+      if (isTestingMode) {
+        nextToastDate = new Date(today);
+        nextToastDate.setDate(today.getDate() + 1);
+      }
+      
       res.json({
         streak,
-        weeklyNotesCount: weeklyNotes.length,
+        weeklyNotesCount,
         totalNotesNeeded: 7,
         nextToastDate: nextToastDate.toISOString()
       });
     } catch (error) {
+      console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch user stats" });
     }
   });

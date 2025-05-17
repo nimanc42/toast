@@ -24,7 +24,7 @@ import {
 } from "@shared/schema";
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
-import { generateSpeech, getVoiceId } from "./services/elevenlabs";
+import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
 import { generateWeeklyToast } from "./services/toast-helper";
 
 /**
@@ -759,6 +759,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user stats" });
+    }
+  });
+
+  // API endpoint to check ElevenLabs credit status
+  app.get("/api/tts/credits", ensureAuthenticated, async (req, res) => {
+    try {
+      // This endpoint is admin-only or for checking system status
+      const credits = await checkElevenLabsCredits();
+      
+      if (!credits) {
+        return res.status(500).json({ 
+          message: "Failed to retrieve TTS credit information", 
+          status: "error" 
+        });
+      }
+      
+      return res.json({
+        ...credits,
+        message: credits.status === 'low' 
+          ? `TTS credits are running low: ${credits.remaining} characters remaining out of ${credits.limit}.` 
+          : `TTS credits available: ${credits.remaining} characters out of ${credits.limit}.`
+      });
+    } catch (error) {
+      console.error("Error checking TTS credits:", error);
+      return res.status(500).json({ 
+        message: "An error occurred while checking TTS credits", 
+        status: "error" 
+      });
     }
   });
 

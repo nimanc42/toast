@@ -146,33 +146,69 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
     console.log(`[Toast Generator] Updated voice preference to: ${voiceStyle}`);
     const voiceId = getVoiceId(voiceStyle);
     
-    // Try to generate audio for the toast with multiple attempts
-    let audioUrl = null;
-    let attempts = 0;
-    const maxAttempts = 2;
+    // Try to generate audio for the toast with our enhanced error handling
+    console.log(`[Toast Generator] Generating audio with voice: ${voiceId} for user ${userId}`);
     
-    while (!audioUrl && attempts < maxAttempts) {
-      attempts++;
-      console.log(`[Toast Generator] Attempt ${attempts}/${maxAttempts} to generate audio`);
-      audioUrl = await generateSpeech(content, voiceId);
+    // Pass the userId to enable rate limiting
+    const ttsResult = await generateSpeech(content, voiceId, userId);
+    
+    // Handle various response types from the TTS service
+    if (typeof ttsResult === 'string') {
+      // Success case - we got a URL to the audio file
+      console.log(`[Toast Generator] Audio generated successfully: ${ttsResult}`);
       
-      if (!audioUrl && attempts < maxAttempts) {
-        // Wait a moment before retrying
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-    
-    if (audioUrl) {
-      console.log(`[Toast Generator] Audio generated successfully: ${audioUrl}`);
       // Update toast with the audio URL
       const [updatedToast] = await db.update(toasts)
-        .set({ audioUrl })
+        .set({ audioUrl: ttsResult })
         .where(eq(toasts.id, newToast.id))
         .returning();
       
       return updatedToast;
-    } else {
-      console.log('[Toast Generator] Failed to generate audio after multiple attempts');
+    } 
+    else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
+      // Error case with specific message
+      console.warn(`[Toast Generator] Audio generation error: ${ttsResult.error}`);
+      
+      // Store the error message in the toast
+      const errorMessage = ttsResult.error;
+      let statusMessage = '';
+      
+      // Provide user-friendly error messages
+      if (errorMessage.includes('Rate limit')) {
+        statusMessage = 'Rate limit reached. Please try again later.';
+      } 
+      else if (errorMessage.includes('quota exceeded') || errorMessage.includes('Not enough TTS credits')) {
+        statusMessage = 'Voice generation quota exceeded. Please try again later.';
+      }
+      else if (errorMessage.includes('timeout')) {
+        statusMessage = 'Voice generation timed out. Please try again later.';
+      }
+      else {
+        statusMessage = 'Unable to generate audio at this time.';
+      }
+      
+      // Update toast with error status but keep the text content
+      const [updatedToast] = await db.update(toasts)
+        .set({ 
+          audioUrl: 'No audio URL',
+          status: statusMessage
+        })
+        .where(eq(toasts.id, newToast.id))
+        .returning();
+      
+      return updatedToast;
+    } 
+    else {
+      // Null or unexpected response
+      console.log('[Toast Generator] Failed to generate audio');
+      
+      // Update toast with generic error
+      const [updatedToast] = await db.update(toasts)
+        .set({ audioUrl: 'No audio URL' })
+        .where(eq(toasts.id, newToast.id))
+        .returning();
+      
+      return updatedToast;
     }
   } catch (error) {
     console.error('Error generating audio for toast:', error);

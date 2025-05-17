@@ -28,6 +28,7 @@ import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
 import { generateWeeklyToast } from "./services/toast-helper";
 import { CONFIG } from "./config";
+import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
 
 /**
@@ -570,25 +571,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // For testing mode, use the session notes for toast generation
+        // Simplified toast generation with testing mode support
         const isTestingMode = (req.session as any).testingMode === true;
         let result;
         
-        if (isTestingMode && (req.session as any).testingNotes) {
-          // Get notes from session
+        // In testing mode, use the session notes if available
+        if (isTestingMode) {
           const testingNotes = (req.session as any).testingNotes || [];
-          console.log(`[Toast Generator] Testing mode with ${testingNotes.length} notes`);
           
-          // If we have testing notes, use them for content generation
           if (testingNotes.length > 0) {
+            // Extract note content to use in the toast
             const noteContents = testingNotes.map((note: any) => note.content).filter(Boolean);
             const noteIds = testingNotes.map((note: any) => note.id);
             
-            console.log(`[Toast Generator] Using ${noteContents.length} notes from testing session`);
+            console.log(`[Toast Generator] Testing mode with ${noteContents.length} notes`);
             
-            // Use the simple testing mode toast generator
-            const { createTestingModeToast } = require('./services/testing-mode-toast');
-            const content = createTestingModeToast(noteContents);
+            // Use OpenAI API to generate toast content from the notes if available
+            let content;
+            try {
+              const openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY
+              });
+              
+              const response = await openai.chat.completions.create({
+                model: "gpt-4o",
+                messages: [
+                  {
+                    role: "system",
+                    content: "You are a motivational coach who creates personalized weekly celebrations based on reflection notes. Keep the tone warm, encouraging, and celebratory. Highlight patterns, progress, and growth. Keep responses under 200 words."
+                  },
+                  {
+                    role: "user",
+                    content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
+                  }
+                ],
+                max_tokens: 400,
+                temperature: 0.7,
+              });
+              
+              content = response.choices[0].message.content;
+              console.log(`[Toast Generator] Successfully generated content from reflections using OpenAI`);
+            } catch (error) {
+              // Fallback to direct reference of reflection content
+              console.error(`[Toast Generator] Error using OpenAI:`, error);
+              
+              // Use the existing getThemesFromNotes function
+              const themes = getThemesFromNotes(noteContents).join(" and ") || "personal growth";
+              content = `Here's a toast to your reflective week! You captured ${noteContents.length} moment${noteContents.length > 1 ? 's' : ''} of insight. I noticed themes of ${themes} in your reflections. Keep up the great work on your journey of self-improvement!`;
+            }
             
             // Create a mock toast with the generated content
             result = {
@@ -606,11 +636,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               processed: true
             };
           } else {
-            // No testing notes, proceed with normal generation
-            result = await generateWeeklyToast(userId);
+            // No testing notes, generate a placeholder toast
+            result = {
+              id: Math.floor(Math.random() * 10000),
+              userId,
+              content: "You haven't added any reflections this week. Start adding daily reflections to get a personalized weekly toast!",
+              audioUrl: null,
+              noteIds: [],
+              createdAt: new Date(),
+              type: 'weekly',
+              intervalStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+              intervalEnd: new Date(),
+              shared: false,
+              shareUrl: null,
+              processed: true
+            };
           }
         } else {
-          // Normal toast generation
+          // Normal toast generation for regular users
           result = await generateWeeklyToast(userId);
         }
         

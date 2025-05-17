@@ -42,15 +42,19 @@ export default function Header() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-primary-600 font-accent flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="white" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  {/* Toast outline with slightly rounded bottom corners for a more toast-like shape */}
-                  <path d="M4,7 L4,18 C4,19.7 5.3,21 7,21 L17,21 C18.7,21 20,19.7 20,18 L20,7" />
-                  {/* Slightly curved top */}
-                  <path d="M2,7 L22,7 C22,4.5 18.5,3 12,3 C5.5,3 2,4.5 2,7 Z" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="#FFF8E1" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  {/* Toast shape with more toast-like appearance */}
+                  <path d="M4,6 C4,6 3,12 5,16 C7,20 9,21 12,21 C15,21 17,20 19,16 C21,12 20,6 20,6 L4,6 Z" stroke="#3b82f6" fill="#FFF8E1" />
+                  {/* Slightly wavy top to look like toast */}
+                  <path d="M4,6 C4,4 8,3 12,3 C16,3 20,4 20,6" />
+                  {/* Toast texture lines */}
+                  <path d="M7,9 L9,9" stroke="#3b82f6" strokeWidth="0.75" opacity="0.7" />
+                  <path d="M12,8 L16,8" stroke="#3b82f6" strokeWidth="0.75" opacity="0.7" />
+                  <path d="M8,12 L14,12" stroke="#3b82f6" strokeWidth="0.75" opacity="0.7" />
                   {/* Smiley face with blue eyes and smile */}
-                  <circle cx="9" cy="12" r="1" fill="#3b82f6" />
-                  <circle cx="15" cy="12" r="1" fill="#3b82f6" />
-                  <path d="M9,16 C10,17.5 14,17.5 15,16" stroke="#3b82f6" fill="none" />
+                  <circle cx="9" cy="14" r="1" fill="#3b82f6" />
+                  <circle cx="15" cy="14" r="1" fill="#3b82f6" />
+                  <path d="M9,17 C10,18.5 14,18.5 15,17" stroke="#3b82f6" fill="none" />
                 </svg>
                 A Toast to You
               </Link>

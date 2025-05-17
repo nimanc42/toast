@@ -575,81 +575,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Simplified toast generation with testing mode support
-        const isTestingMode = (req.session as any).testingMode === true;
-        let result;
-        
-        // In testing mode, use the session notes if available
-        if (isTestingMode) {
-          const testingNotes = (req.session as any).testingNotes || [];
-          
-          if (testingNotes.length > 0) {
-            // Extract note content to use in the toast
-            const noteContents = testingNotes.map((note: any) => note.content).filter(Boolean);
-            const noteIds = testingNotes.map((note: any) => note.id);
-            
-            console.log(`[Toast Generator] Testing mode with ${noteContents.length} notes`);
-            
-            // Generate toast content from the notes
-            let content;
-            
-            // Extract themes from notes to use in the toast
-            const noteThemes = getThemesFromNotes(noteContents);
-            const themesText = noteThemes.length > 0 
-              ? noteThemes.join(" and ") 
-              : "personal growth";
-              
-            // Create a personalized toast message that directly incorporates the user's actual reflections
-            content = `Here's a toast to your reflective week! 
-
-I can see that ${noteContents.length > 1 ? 'one of the things' : 'something'} you reflected on was: "${noteContents[0]}". 
-${noteContents.length > 1 ? `You also shared: "${noteContents[1]}"` : ''}
-
-Taking time for relationships and personal connections is so valuable. Your reflections show you're mindful about what matters in life.
-
-Your dedication to regular reflection is helping you build momentum in your personal development journey. Keep going, and celebrate these moments of connection!
-
-Here's to another week of meaningful experiences ahead.`;
-            
-            console.log(`[Toast Generator] Created content from ${noteContents.length} reflections`);
-            
-            
-            // Create a mock toast with the generated content
-            result = {
-              id: Math.floor(Math.random() * 10000),
-              userId,
-              content,
-              audioUrl: null, // No audio in testing mode
-              noteIds,
-              createdAt: new Date(),
-              type: 'weekly',
-              intervalStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-              intervalEnd: new Date(),
-              shared: false,
-              shareUrl: null,
-              processed: true
-            };
-          } else {
-            // No testing notes, generate a placeholder toast
-            result = {
-              id: Math.floor(Math.random() * 10000),
-              userId,
-              content: "You haven't added any reflections this week. Start adding daily reflections to get a personalized weekly toast!",
-              audioUrl: null,
-              noteIds: [],
-              createdAt: new Date(),
-              type: 'weekly',
-              intervalStart: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-              intervalEnd: new Date(),
-              shared: false,
-              shareUrl: null,
-              processed: true
-            };
-          }
-        } else {
-          // Normal toast generation for regular users
-          result = await generateWeeklyToast(userId);
-        }
+        // Generate the weekly toast directly using the toast helper
+        // This will automatically get the user's notes from the database
+        const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

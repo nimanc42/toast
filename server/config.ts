@@ -19,13 +19,11 @@ function getConfigValue(key: string, defaultValue: string): string {
  * - A visual indicator appears on every page
  */
 export const CONFIG = {
-  // Whether testing mode is available at all (set to false before production)
-  // Controls visibility of testing mode button on login page
-  ENABLE_TESTING_MODE: getConfigValue('ENABLE_TESTING_MODE', 'true') === 'true',
+  // Temporarily disabled testing mode to simplify app functionality
+  ENABLE_TESTING_MODE: false,
   
-  // Set to true during development to enable unlimited toast generation
-  // Set to false in production to enforce proper timing restrictions
-  TESTING_MODE: getConfigValue('TESTING_MODE', 'true') === 'true',
+  // Disabled testing mode to focus on core app functionality
+  TESTING_MODE: false,
   
   // Default voice settings
   DEFAULT_VOICE_STYLE: 'friendly',

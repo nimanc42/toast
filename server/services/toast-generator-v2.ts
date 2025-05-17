@@ -117,79 +117,20 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
   let noteContents = [];
   let noteIds = [];
   
-  // Import Request type for accessing session
-  import { Request } from 'express';
-  
-  // This function is only used in Testing Mode to access session notes
-  async function getTestingModeNotes(req: Request): Promise<{contents: string[], ids: number[]}> {
-    if (!(req.session as any).testingNotes || (req.session as any).testingNotes.length === 0) {
-      // Fall back to sample data if no session notes found
-      return {
-        contents: [
-          "Had a productive meeting with the team today.",
-          "Completed the project ahead of schedule.",
-          "Took time to meditate this morning and felt centered all day.",
-          "Connected with an old friend and had a great conversation."
-        ],
-        ids: [9991, 9992, 9993, 9994]
-      };
-    }
-    
-    // Get notes from session
-    const testNotes = (req.session as any).testingNotes;
-    return {
-      contents: testNotes.map((note: any) => note.content || '').filter(Boolean),
-      ids: testNotes.map((note: any) => note.id)
-    };
-  }
-  
-  // Access the request object from the global context if we're in a route handler
-  const req = global.currentRequest as Request | undefined;
+  // Sample data for when no notes are available
+  const SAMPLE_NOTES = [
+    "Had a productive meeting with the team today.",
+    "Completed the project ahead of schedule.",
+    "Took time to meditate this morning and felt centered all day.",
+    "Connected with an old friend and had a great conversation."
+  ];
+  const SAMPLE_IDS = [9991, 9992, 9993, 9994];
   
   if (isTestUser) {
-    // For test users, check if we have access to the request object and session
-    if (req && (req.session as any).testingNotes) {
-      // Use notes from the current session
-      console.log('[Toast Generator] Test user detected, using session notes');
-      try {
-        const sessionNotes = await getTestingModeNotes(req);
-        noteContents = sessionNotes.contents;
-        noteIds = sessionNotes.ids;
-        
-        if (noteContents.length === 0) {
-          console.log('[Toast Generator] No notes found in session, using sample data');
-          noteContents = [
-            "Had a productive meeting with the team today.",
-            "Completed the project ahead of schedule.",
-            "Took time to meditate this morning and felt centered all day.",
-            "Connected with an old friend and had a great conversation."
-          ];
-          noteIds = [9991, 9992, 9993, 9994]; // Dummy IDs
-        } else {
-          console.log(`[Toast Generator] Using ${noteContents.length} notes from session`);
-        }
-      } catch (error) {
-        console.error('[Toast Generator] Error accessing session notes:', error);
-        // Fall back to sample data
-        noteContents = [
-          "Had a productive meeting with the team today.",
-          "Completed the project ahead of schedule.",
-          "Took time to meditate this morning and felt centered all day.",
-          "Connected with an old friend and had a great conversation."
-        ];
-        noteIds = [9991, 9992, 9993, 9994]; // Dummy IDs
-      }
-    } else {
-      // No access to request or session, use sample data
-      console.log('[Toast Generator] Test user detected, but no session available. Using sample data');
-      noteContents = [
-        "Had a productive meeting with the team today.",
-        "Completed the project ahead of schedule.",
-        "Took time to meditate this morning and felt centered all day.",
-        "Connected with an old friend and had a great conversation."
-      ];
-      noteIds = [9991, 9992, 9993, 9994]; // Dummy IDs
-    }
+    // For test users, use sample data as the fallback
+    console.log('[Toast Generator] Test user detected, using sample reflection data');
+    noteContents = SAMPLE_NOTES;
+    noteIds = SAMPLE_IDS;
   } else {
     // Get real user notes for the date range
     userNotes = await db.select()

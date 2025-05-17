@@ -586,8 +586,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`[Toast Generator] Using ${noteContents.length} notes from testing session`);
             
-            // Generate content using OpenAI
-            const content = await generateToastContent(noteContents);
+            // Use the simple testing mode toast generator
+            const { createTestingModeToast } = require('./services/testing-mode-toast');
+            const content = createTestingModeToast(noteContents);
             
             // Create a mock toast with the generated content
             result = {

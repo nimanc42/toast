@@ -500,8 +500,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}`);
       
-      // Update user voice preference if provided
-      if (voice) {
+      // Update user voice preference if provided, but skip for test users
+      const isTestUser = userId === CONFIG.TEST_USER.id;
+      if (voice && !isTestUser) {
         const existingPref = await storage.getVoicePreferenceByUserId(userId);
         if (existingPref) {
           await storage.updateVoicePreference(existingPref.id, {
@@ -515,9 +516,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // For test users, proceed without voice preference database operations
+      if (isTestUser) {
+        console.log("Testing mode: Skipping voice preference database operations");
+      }
+      
       try {
         // Use the dedicated toast generator service for weekly toasts
-        const userId = req.user!.id;
         const result = await generateWeeklyToast(userId);
         
         console.log(`[Toast Generator] Result:`, {

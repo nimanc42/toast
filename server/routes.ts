@@ -530,17 +530,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           audioUrl: result.audioUrl || 'No audio URL'
         });
         
-        // Log analytics for toast generation
-        if (storage.logUserActivity) {
-          await storage.logUserActivity({
-            userId,
-            activityType: 'toast-generate',
-            metadata: { 
-              automated: false,
-              source: 'manual-trigger',
-              hasAudio: !!result.audioUrl
-            } as Record<string, any>
-          });
+        // Log analytics for toast generation, but skip for test users
+        if (storage.logUserActivity && userId !== CONFIG.TEST_USER.id) {
+          try {
+            await storage.logUserActivity({
+              userId,
+              activityType: 'toast-generate',
+              metadata: { 
+                automated: false,
+                source: 'manual-trigger',
+                hasAudio: !!result.audioUrl
+              } as Record<string, any>
+            });
+          } catch (activityError) {
+            // Log but don't fail the request if activity logging fails
+            console.warn('[Toast Generator] Failed to log user activity:', activityError);
+          }
+        } else if (userId === CONFIG.TEST_USER.id) {
+          console.log('[Toast Generator] Test user - skipping activity logging');
         }
         
         res.status(201).json(result);

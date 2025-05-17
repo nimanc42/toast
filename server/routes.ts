@@ -268,12 +268,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         (req.session as any).testingNotes.push(note);
         
+        console.log("[Testing Mode] Adding note with content:", note.content.substring(0, 50) + "...");
+        
         // Save session
         req.session.save((err) => {
           if (err) {
             console.error("Error saving testing note to session:", err);
           } else {
-            console.log("[Testing Mode] Stored note in session, count:", (req.session as any).testingNotes.length);
+            const notes = (req.session as any).testingNotes || [];
+            console.log(`[Testing Mode] Stored note in session, current count: ${notes.length}`);
+            console.log(`[Testing Mode] Notes in session: ${JSON.stringify(notes.map((n: any) => ({ id: n.id, content: n.content.substring(0, 30) + "..." })))}`);
           }
         });
         
@@ -586,39 +590,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             console.log(`[Toast Generator] Testing mode with ${noteContents.length} notes`);
             
-            // Use OpenAI API to generate toast content from the notes if available
+            // Generate toast content from the notes
             let content;
-            try {
-              const openai = new OpenAI({
-                apiKey: process.env.OPENAI_API_KEY
-              });
+            
+            // Extract themes from notes to use in the toast
+            const noteThemes = getThemesFromNotes(noteContents);
+            const themesText = noteThemes.length > 0 
+              ? noteThemes.join(" and ") 
+              : "personal growth";
               
-              const response = await openai.chat.completions.create({
-                model: "gpt-4o",
-                messages: [
-                  {
-                    role: "system",
-                    content: "You are a motivational coach who creates personalized weekly celebrations based on reflection notes. Keep the tone warm, encouraging, and celebratory. Highlight patterns, progress, and growth. Keep responses under 200 words."
-                  },
-                  {
-                    role: "user",
-                    content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
-                  }
-                ],
-                max_tokens: 400,
-                temperature: 0.7,
-              });
-              
-              content = response.choices[0].message.content;
-              console.log(`[Toast Generator] Successfully generated content from reflections using OpenAI`);
-            } catch (error) {
-              // Fallback to direct reference of reflection content
-              console.error(`[Toast Generator] Error using OpenAI:`, error);
-              
-              // Use the existing getThemesFromNotes function
-              const themes = getThemesFromNotes(noteContents).join(" and ") || "personal growth";
-              content = `Here's a toast to your reflective week! You captured ${noteContents.length} moment${noteContents.length > 1 ? 's' : ''} of insight. I noticed themes of ${themes} in your reflections. Keep up the great work on your journey of self-improvement!`;
-            }
+            // Create a personalized toast message incorporating the reflection themes
+            content = `Here's a toast to your reflective week! You captured ${noteContents.length} moment${noteContents.length > 1 ? 's' : ''} of insight. 
+
+I noticed themes of ${themesText} in your reflections. These insights show your commitment to growth and self-awareness.
+
+Your dedication to regular reflection is helping you build momentum in your personal development journey. Keep going, and remember to celebrate these small wins along the way!
+
+Here's to another week of discovery and progress ahead.`;
+            
+            console.log(`[Toast Generator] Created content from ${noteContents.length} reflections`);
+            
             
             // Create a mock toast with the generated content
             result = {

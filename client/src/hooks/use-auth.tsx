@@ -202,24 +202,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Testing mode mutation
+  // Testing mode mutation - simplified to avoid server crashes
   const enterTestingModeMutation = useMutation({
     mutationFn: async () => {
-      // Call the testing mode endpoint
-      const res = await apiRequest("POST", "/api/auth/testing-mode");
-      const data = await res.json();
-      
-      // Clear all existing auth
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('authTokenExpiry');
-      
-      // Set testing mode flag
-      localStorage.setItem('testingMode', 'true');
-      
-      // Force a page reload to clear all state
-      window.location.href = '/';
-      
-      return data;
+      try {
+        // Set testing mode flag first, in case server call fails
+        localStorage.setItem('testingMode', 'true');
+        
+        // Clear existing auth 
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('authTokenExpiry');
+        
+        // Optional: try to call the server endpoint, but don't depend on it
+        try {
+          await apiRequest("POST", "/api/auth/testing-mode");
+        } catch (err) {
+          console.log("Testing mode server notification failed, but continuing anyway");
+        }
+        
+        // Simple object to return
+        return { success: true };
+      } finally {
+        // Force a page reload to clear all state no matter what
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 100);
+      }
     },
     onSuccess: () => {
       toast({

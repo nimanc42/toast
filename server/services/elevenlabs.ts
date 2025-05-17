@@ -9,8 +9,66 @@ const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Rachel voice
 const DEFAULT_STABILITY = 0.5;
 const DEFAULT_SIMILARITY_BOOST = 0.75;
 
+// Rate limiting settings (per user)
+const MAX_REQUESTS_PER_HOUR = 5;
+const QUOTA_WARNING_THRESHOLD = 2000; // Show warning when less than this many credits remaining
+
 // Flag to determine if we should use Supabase or local storage
 const useSupabase = !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY);
+
+// In-memory rate limiting storage
+// In a production environment, this should be in Redis or another distributed store
+type RateLimitEntry = {
+  userId: number;
+  requestCount: number;
+  resetTime: number; // Timestamp when the count resets
+};
+
+const userRateLimits = new Map<number, RateLimitEntry>();
+
+/**
+ * Check if user has exceeded their rate limit
+ * @param userId The user ID to check
+ * @returns Object with isLimited flag and resetTime if limited
+ */
+function checkRateLimit(userId: number): { isLimited: boolean; resetTime?: Date } {
+  const now = Date.now();
+  const entry = userRateLimits.get(userId);
+  
+  if (!entry) {
+    // First request, create new entry
+    userRateLimits.set(userId, {
+      userId,
+      requestCount: 1,
+      resetTime: now + 3600000 // 1 hour from now
+    });
+    return { isLimited: false };
+  }
+  
+  // Check if the reset time has passed
+  if (now > entry.resetTime) {
+    // Reset period has elapsed, reset counter
+    userRateLimits.set(userId, {
+      userId,
+      requestCount: 1,
+      resetTime: now + 3600000 // 1 hour from now
+    });
+    return { isLimited: false };
+  }
+  
+  // Check if user has exceeded limit
+  if (entry.requestCount >= MAX_REQUESTS_PER_HOUR) {
+    return { 
+      isLimited: true, 
+      resetTime: new Date(entry.resetTime) 
+    };
+  }
+  
+  // Increment request count
+  entry.requestCount += 1;
+  userRateLimits.set(userId, entry);
+  return { isLimited: false };
+}
 
 // Ensure audio directory exists (for fallback to local storage)
 const ensureAudioDirExists = () => {
@@ -22,17 +80,105 @@ const ensureAudioDirExists = () => {
 };
 
 /**
+ * Check ElevenLabs account credit balance
+ * @returns Object with user's credit information or null if error
+ */
+export async function checkElevenLabsCredits(): Promise<{
+  remaining: number,
+  limit: number,
+  status: 'low' | 'ok' | 'error'
+} | null> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    console.error('[TTS] ELEVENLABS_API_KEY is not set');
+    return null;
+  }
+  
+  try {
+    const response = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+      headers: {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`[TTS] Error checking credit balance: ${response.status} ${response.statusText}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    // Type guard to ensure data has the expected structure
+    if (typeof data === 'object' && data !== null && 
+        'character_count' in data && 'character_limit' in data) {
+      const remaining = data.character_count as number;
+      const limit = data.character_limit as number;
+    
+      // Determine credit status
+      let status: 'low' | 'ok' | 'error' = 'ok';
+      if (remaining < QUOTA_WARNING_THRESHOLD) {
+        status = 'low';
+        console.warn(`[TTS] ElevenLabs credits low: ${remaining} characters remaining`);
+      }
+      
+      return {
+        remaining,
+        limit,
+        status
+      };
+    }
+    
+    console.error('[TTS] Unexpected response structure from ElevenLabs API');
+    return null;
+  } catch (error) {
+    console.error('[TTS] Error checking ElevenLabs credit balance:', error);
+    return null;
+  }
+}
+
+/**
  * Generate audio from text using ElevenLabs API
  * @param text The text to convert to speech
  * @param voiceId Optional voice ID to use (defaults to Rachel)
- * @returns The URL to the generated audio file
+ * @param userId User ID for rate limiting purposes
+ * @returns The URL to the generated audio file or an error object
  */
-export async function generateSpeech(text: string, voiceId: string = DEFAULT_VOICE_ID): Promise<string | null> {
+export async function generateSpeech(
+  text: string, 
+  voiceId: string = DEFAULT_VOICE_ID,
+  userId?: number
+): Promise<string | { error: string, resetTime?: Date } | null> {
   // Ensure we have an API key
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
-    console.error('ELEVENLABS_API_KEY is not set');
-    return null;
+    console.error('[TTS] ELEVENLABS_API_KEY is not set');
+    return { error: 'TTS service not configured' };
+  }
+  
+  // Check rate limit if userId is provided
+  if (userId) {
+    const rateLimit = checkRateLimit(userId);
+    if (rateLimit.isLimited) {
+      console.warn(`[TTS] Rate limit exceeded for user ${userId}`);
+      return { 
+        error: 'Rate limit exceeded. Please try again later.', 
+        resetTime: rateLimit.resetTime 
+      };
+    }
+  }
+  
+  // Check credit balance
+  const credits = await checkElevenLabsCredits();
+  if (credits && credits.status === 'low') {
+    console.warn(`[TTS] Credit balance low: ${credits.remaining} characters remaining`);
+    // We continue with the request, but log the warning
+  }
+  
+  // Estimate character count needed
+  const estimatedChars = text.length;
+  if (credits && credits.remaining < estimatedChars) {
+    console.error(`[TTS] Not enough credits: ${estimatedChars} needed, ${credits.remaining} available`);
+    return { error: 'Not enough TTS credits available' };
   }
 
   try {
@@ -80,13 +226,42 @@ export async function generateSpeech(text: string, voiceId: string = DEFAULT_VOI
     // Handle failed fetch (like network errors)
     if (!response) {
       console.error('[TTS] Fetch failed, null response');
-      return null;
+      return { error: 'Failed to connect to TTS service. Please try again later.' };
     }
 
     if (!response.ok) {
-      const errorData = await response.text().catch(() => 'Unable to read error response');
-      console.error(`[TTS] ElevenLabs API error: ${response.status} ${response.statusText} - ${errorData}`);
-      return null;
+      try {
+        const errorText = await response.text();
+        let errorData;
+        
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { detail: errorText };
+        }
+        
+        console.error(`[TTS] ElevenLabs API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+        
+        // Handle specific error scenarios
+        if (response.status === 401) {
+          if (errorData?.detail?.status === 'quota_exceeded') {
+            const message = errorData?.detail?.message || 'Usage quota exceeded';
+            console.error(`[TTS] Quota exceeded: ${message}`);
+            return { error: 'Voice generation quota exceeded. Please try again later.' };
+          }
+          return { error: 'TTS service authentication failed' };
+        }
+        
+        if (response.status === 429) {
+          return { error: 'Too many requests. Please try again later.' };
+        }
+        
+        // Generic error handling
+        return { error: `TTS service error: ${response.status} ${response.statusText}` };
+      } catch (parseError) {
+        console.error('[TTS] Error parsing error response:', parseError);
+        return { error: 'Failed to process TTS service response' };
+      }
     }
 
     try {

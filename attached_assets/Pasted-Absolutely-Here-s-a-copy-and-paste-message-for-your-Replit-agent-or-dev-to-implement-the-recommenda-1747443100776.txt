@@ -1,0 +1,51 @@
+Absolutely! Here’s a copy-and-paste message for your Replit agent or dev to implement the recommendations above. It’s direct and task-focused:
+
+⸻
+
+Hi Replit, here are some requested upgrades and checks for the ElevenLabs voice generation feature. Please review and implement:
+
+⸻
+
+1. Add API Rate Limiting/Quota Guardrails
+	•	Implement backend rate limiting so users can’t spam toast/audio generation (suggestion: limit to X requests per user per hour).
+	•	Add a quota check—if ElevenLabs credits are low or exhausted, return a user-friendly message and block further TTS attempts.
+
+2. Connect Frontend Voice Style Selection
+	•	Ensure the voice picker/dropdown in the UI is wired up to pass the selected voiceStyle (e.g., “motivational”, “friendly”, “poetic”, “custom”) to the backend TTS endpoint.
+	•	Confirm the backend receives and uses the voiceStyle to pick the correct voice ID via getVoiceId().
+
+3. Frontend Playback & Static Audio File Access
+	•	Verify that after a toast is generated, the audio is playable from the returned URL (both in development and in production).
+	•	If using local storage in production, ensure the /public/audio directory is served as a static file directory and is accessible from the client.
+	•	If using Supabase, double-check that public access permissions are correctly set for audio files.
+
+4. Testing Coverage
+	•	Add or expand unit tests in test-elevenlabs.ts to cover these cases:
+	•	Successful TTS/audio file creation
+	•	API timeout and failure
+	•	ElevenLabs quota exceeded
+	•	Failed upload to Supabase or local storage
+	•	User requests unsupported voice style (should gracefully fall back to default)
+
+5. Security & Secrets
+	•	Double-check that no real secrets or API keys are committed to git—use .env and .env.example only for placeholders.
+	•	Confirm Supabase uploads are not world-writeable; public read-only is fine.
+
+6. Logging & Error Reporting
+	•	Make sure logs clearly indicate quota issues, API failures, and storage problems.
+	•	Send clear, friendly error messages to users when failures happen (quota, timeout, file error).
+
+⸻
+
+Bonus:
+If possible, add a user-facing warning banner or notification if/when ElevenLabs credits are running low.
+
+Let me know if you need more detail on any point, or want me to help test after these changes!
+
+⸻
+
+(Craig’s AI assistant summary – feel free to follow up for more detailed checklists or frontend code review.)
+
+⸻
+
+Just copy and paste that into your Replit chat or tasking system! Let me know what they say, or if you want to refine any task further.

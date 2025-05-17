@@ -28,6 +28,7 @@ import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
 import { generateWeeklyToast } from "./services/toast-helper";
 import { CONFIG } from "./config";
+import { generateToken } from "./services/jwt";
 
 /**
  * Extract main themes from note contents
@@ -856,18 +857,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "Testing mode is disabled" });
     }
     
-    // Create a test user session
-    req.session.testingMode = true;
-    
-    // Mock authentication by using the test user
+    // Create a test user
     const testUser = {
       ...CONFIG.TEST_USER,
       verified: true,
       createdAt: new Date()
     };
     
-    // Send back the test user
-    res.status(200).json(testUser);
+    // Create a test user session
+    req.session.testingMode = true;
+    
+    // Properly authenticate by logging in the test user
+    req.login(testUser, (err) => {
+      if (err) {
+        console.error("Error setting up testing mode session:", err);
+        return res.status(500).json({ message: "Error setting up testing mode session" });
+      }
+      
+      // Generate JWT token for the test user (to match regular login behavior)
+      const token = generateToken(testUser);
+      
+      // Ensure session is saved before responding
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error("Error saving testing mode session:", saveErr);
+          return res.status(500).json({ message: "Error saving testing mode session" });
+        }
+        
+        console.log("Testing mode enabled for session:", req.sessionID);
+        
+        // Send back the test user with token
+        res.status(200).json({
+          ...testUser,
+          token
+        });
+      });
+    });
   });
 
   // API endpoint to check ElevenLabs credit status

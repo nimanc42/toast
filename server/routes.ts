@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userBadge = null;
       
       if (isTestingMode) {
-        // Create a mock note without saving to database
+        // Create a mock note with a consistent ID for testing
         note = {
           id: Math.floor(Math.random() * 10000),
           userId,
@@ -260,7 +260,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bundleTag: validatedData.bundleTag,
           createdAt: new Date()
         };
-        console.log("[Testing Mode] Skipped database write for note creation:", note);
+        
+        // Store the note in the session's testingNotes array 
+        if (!(req.session as any).testingNotes) {
+          (req.session as any).testingNotes = [];
+        }
+        (req.session as any).testingNotes.push(note);
+        
+        // Save session
+        req.session.save((err) => {
+          if (err) {
+            console.error("Error saving testing note to session:", err);
+          } else {
+            console.log("[Testing Mode] Stored note in session, count:", (req.session as any).testingNotes.length);
+          }
+        });
+        
+        // Log the user data for debugging
+        console.log("Testing user:", req.user);
         
         // Create a mock first note badge for testing
         userBadge = {
@@ -347,9 +364,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      
+      // Check if in testing mode
+      const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
+      
+      if (isTestingMode && (req.session as any).testingNotes) {
+        // Return notes from session for testing mode
+        const testingNotes = (req.session as any).testingNotes || [];
+        console.log(`[Testing Mode] Returning ${testingNotes.length} notes from session`);
+        return res.json(testingNotes);
+      }
+      
+      // Normal database access
       const notes = await storage.getNotesByUserId(userId);
       res.json(notes);
     } catch (error) {
+      console.error("Error fetching notes:", error);
       res.status(500).json({ message: "Failed to fetch notes" });
     }
   });
@@ -360,9 +390,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
+      // Check if in testing mode
+      const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
+      
+      if (isTestingMode && (req.session as any).testingNotes) {
+        // Filter today's notes from session for testing mode
+        const testingNotes = (req.session as any).testingNotes || [];
+        const todayNotes = testingNotes.filter((note: any) => {
+          const noteDate = new Date(note.createdAt);
+          noteDate.setHours(0, 0, 0, 0);
+          return noteDate.getTime() === today.getTime();
+        });
+        
+        console.log(`[Testing Mode] Returning ${todayNotes.length} notes for today from session`);
+        return res.json(todayNotes);
+      }
+      
+      // Normal database access
       const notes = await storage.getNotesByUserIdAndDate(userId, today);
       res.json(notes);
     } catch (error) {
+      console.error("Error fetching today's notes:", error);
       res.status(500).json({ message: "Failed to fetch today's note" });
     }
   });

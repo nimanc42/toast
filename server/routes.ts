@@ -26,6 +26,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
 import { generateWeeklyToast } from "./services/toast-helper";
+import { CONFIG } from "./config";
 
 /**
  * Extract main themes from note contents
@@ -795,6 +796,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user stats" });
     }
+  });
+
+  // API endpoint to get application config status (for testing mode)
+  app.get("/api/config/status", ensureAuthenticated, (req, res) => {
+    res.json({
+      testingMode: CONFIG.TESTING_MODE,
+      message: CONFIG.TESTING_MODE 
+        ? "Testing mode is enabled. Message generation restriction is bypassed." 
+        : "Production mode is active. Normal message generation restrictions apply."
+    });
   });
 
   // API endpoint to check ElevenLabs credit status

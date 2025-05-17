@@ -116,11 +116,28 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
   
   // Generate audio for the toast
   try {
-    const audioUrl = await generateSpeech(content, voiceId);
-    if (audioUrl) {
+    // Pass userId to enable rate limiting
+    const ttsResult = await generateSpeech(content, voiceId, userId);
+    
+    // Handle various response types
+    let finalAudioUrl: string | null = null;
+    
+    console.log(`[Toast Helper] TTS result type: ${typeof ttsResult}`, ttsResult);
+    
+    if (typeof ttsResult === 'string') {
+      // Success case - got a valid URL
+      finalAudioUrl = ttsResult;
+    }
+    else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
+      // Error case - use the error message in the audio URL field
+      finalAudioUrl = `Error: ${ttsResult.error}`;
+      console.warn(`[Toast Helper] Audio generation error: ${ttsResult.error}`);
+    }
+    
+    if (finalAudioUrl) {
       // Update toast with audio URL
       const [updatedToast] = await db.update(toasts)
-        .set({ audioUrl })
+        .set({ audioUrl: finalAudioUrl })
         .where(eq(toasts.id, newToast.id))
         .returning();
       

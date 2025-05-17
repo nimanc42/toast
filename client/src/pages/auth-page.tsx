@@ -202,6 +202,35 @@ export default function AuthPage() {
                     onAuthStart={() => loginForm.reset()}
                     onAuthError={(error) => console.error('Auth error:', error)}
                   />
+                  
+                  {isTestingModeEnabled && (
+                    <div className="mt-6 pt-4 border-t">
+                      <Alert className="mb-4 bg-yellow-50 border-yellow-200">
+                        <AlertDescription className="text-sm text-yellow-800">
+                          Testing Mode bypasses normal login and allows unlimited toast generation without saving to the database.
+                        </AlertDescription>
+                      </Alert>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        className="w-full flex items-center justify-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50"
+                        onClick={handleEnterTestingMode}
+                        disabled={enterTestingModeMutation.isPending}
+                      >
+                        {enterTestingModeMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Entering Testing Mode...
+                          </>
+                        ) : (
+                          <>
+                            <FlaskConical className="h-4 w-4" />
+                            Enter Testing Mode
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 </form>
               </Form>
             </TabsContent>

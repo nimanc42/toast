@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { TestingModeBanner } from "@/components/testing-mode-banner";
 // WebSocket temporarily disabled
 // import { WebSocketProvider } from "@/hooks/websocket-provider";
 import { NewBadgeNotification } from "@/components/new-badge-notification";

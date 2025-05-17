@@ -863,19 +863,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
-  // Special route for starting a testing mode session
+  // Special route for testing mode
   app.post("/api/auth/testing-mode", (req, res) => {
     if (!CONFIG.ENABLE_TESTING_MODE) {
       return res.status(403).json({ message: "Testing mode is disabled" });
     }
     
-    // Simply respond with success - the client side will handle the testing mode
-    // This avoids all session issues we've been having
-    console.log("Testing mode request received - responding with success");
+    // Set testing mode flag in session
+    req.session.testingMode = true;
     
-    res.status(200).json({
-      success: true,
-      message: "Testing mode initialization successful"
+    // Save session
+    req.session.save((err) => {
+      if (err) {
+        console.error("Error saving testing mode session:", err);
+      }
+      
+      // Return success to client
+      console.log("Testing mode enabled for session:", req.sessionID);
+      res.status(200).json({
+        success: true,
+        message: "Testing mode enabled"
+      });
     });
   });
 

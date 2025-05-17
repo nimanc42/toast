@@ -61,9 +61,19 @@ export default function AuthPage() {
     }
   }, [user, setLocation]);
   
-  // Handle entering testing mode
+  // Handle entering testing mode directly without server interaction
   const handleEnterTestingMode = () => {
-    enterTestingModeMutation.mutate();
+    // Set testing mode flag in localStorage
+    localStorage.setItem('testingMode', 'true');
+    
+    // Clear any existing authentication
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authTokenExpiry');
+    
+    // Force page reload to start fresh
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   };
 
   // Login form setup
@@ -215,19 +225,9 @@ export default function AuthPage() {
                         variant="outline"
                         className="w-full flex items-center justify-center gap-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50"
                         onClick={handleEnterTestingMode}
-                        disabled={enterTestingModeMutation.isPending}
                       >
-                        {enterTestingModeMutation.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Entering Testing Mode...
-                          </>
-                        ) : (
-                          <>
-                            <FlaskConical className="h-4 w-4" />
-                            Enter Testing Mode
-                          </>
-                        )}
+                        <FlaskConical className="h-4 w-4" />
+                        Enter Testing Mode
                       </Button>
                     </div>
                   )}

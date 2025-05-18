@@ -176,7 +176,7 @@ export default function SettingsPage() {
                               <RadioGroup
                                 onValueChange={field.onChange}
                                 defaultValue={field.value}
-                                className="grid grid-cols-1 gap-4 sm:grid-cols-3"
+                                className="grid grid-cols-1 gap-4 sm:grid-cols-4"
                               >
                                 <FormItem className="relative">
                                   <FormControl>

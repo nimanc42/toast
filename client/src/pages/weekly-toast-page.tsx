@@ -52,6 +52,7 @@ export default function WeeklyToastPage() {
     { id: "poetic", name: "Domi", description: "Thoughtful and poetic" },
     { id: "david", name: "David", description: "British Gentleman" },
     { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
+    { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
   

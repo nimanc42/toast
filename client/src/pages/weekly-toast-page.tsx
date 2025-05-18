@@ -49,7 +49,6 @@ export default function WeeklyToastPage() {
   // Voice options with descriptions
   const voiceOptions = [
     { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
-    { id: "poetic", name: "Domi", description: "Thoughtful and poetic" },
     { id: "david", name: "David", description: "British Gentleman" },
     { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
     { id: "grandpa", name: "Grandpa", description: "Wise Elder" },

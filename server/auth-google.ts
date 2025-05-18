@@ -10,8 +10,13 @@ const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 const isGoogleAuthConfigured = !!googleClientId && !!googleClientSecret;
 
-// Default callback URL, can be overridden by env variable
-const defaultCallbackUrl = 'https://a-toast-to-you.cngixg884d.repl.co/auth/google/callback';
+// Default callback URL based on environment
+let defaultCallbackUrl = 'http://localhost:5000/auth/google/callback';
+
+// If running in Replit production environment, use the Replit domain
+if (process.env.REPLIT_SLUG || process.env.REPL_SLUG) {
+  defaultCallbackUrl = 'https://a-toast-to-you.cngixg884d.repl.co/auth/google/callback';
+}
 
 const callbackURL = process.env.GOOGLE_CALLBACK_URL || defaultCallbackUrl;
 

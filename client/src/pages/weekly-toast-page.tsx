@@ -51,6 +51,7 @@ export default function WeeklyToastPage() {
     { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
     { id: "poetic", name: "Domi", description: "Thoughtful and poetic" },
     { id: "david", name: "David", description: "British Gentleman" },
+    { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
   

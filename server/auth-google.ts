@@ -11,9 +11,7 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 const isGoogleAuthConfigured = !!googleClientId && !!googleClientSecret;
 
 // Default callback URL, can be overridden by env variable
-const defaultCallbackUrl = process.env.NODE_ENV === 'production'
-  ? 'https://your-production-domain.com/api/auth/google/callback'
-  : 'http://localhost:5000/api/auth/google/callback';
+const defaultCallbackUrl = 'https://a-toast-to-you.cngixg884d.repl.co/auth/google/callback';
 
 const callbackURL = process.env.GOOGLE_CALLBACK_URL || defaultCallbackUrl;
 

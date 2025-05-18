@@ -26,7 +26,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
-import { generateWeeklyToast } from "./services/toast-helper";
+import { generateWeeklyToast } from "./services/toast-generator-v2";
 import { CONFIG } from "./config";
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";

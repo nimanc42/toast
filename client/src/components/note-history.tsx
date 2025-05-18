@@ -6,13 +6,24 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Pencil, Heart, Play, Loader2 } from "lucide-react";
+import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function NoteHistory() {
   const [showAll, setShowAll] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<{ id: number, content: string } | null>(null);
   const [editedContent, setEditedContent] = useState("");
   const { toast } = useToast();
@@ -74,6 +85,30 @@ export default function NoteHistory() {
     },
   });
   
+  // Delete note mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/notes/${id}`);
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Reflection deleted",
+        description: "Your reflection has been removed.",
+      });
+      setDeleteDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete reflection",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Handle audio playback
   const handlePlayAudio = (audioUrl: string) => {
     // In a real implementation, we would play the audio file here
@@ -93,6 +128,18 @@ export default function NoteHistory() {
     setCurrentNote({ id, content });
     setEditedContent(content);
     setEditDialogOpen(true);
+  };
+  
+  // Handle delete click
+  const handleDelete = (id: number, content: string) => {
+    setCurrentNote({ id, content });
+    setDeleteDialogOpen(true);
+  };
+  
+  // Handle confirm delete
+  const handleConfirmDelete = () => {
+    if (!currentNote) return;
+    deleteMutation.mutate(currentNote.id);
   };
   
   // Handle saving edited note
@@ -223,6 +270,14 @@ export default function NoteHistory() {
                     <Button 
                       variant="ghost" 
                       size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                      onClick={() => handleDelete(note.id, note.content || "")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
                       className={`h-8 w-8 ${note.favorite ? 'text-accent-500' : 'text-gray-400 hover:text-accent-500'}`}
                       onClick={() => handleFavorite(note.id)}
                     >
@@ -300,6 +355,43 @@ export default function NoteHistory() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+              Delete Reflection
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this reflection? This action cannot be undone.
+              {currentNote && (
+                <div className="mt-2 p-3 bg-gray-50 rounded-md border border-gray-200 text-gray-700">
+                  <p className="text-sm italic">{currentNote.content}</p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

@@ -644,6 +644,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to regenerate a toast with updated voice preference
   app.post("/api/toasts/regenerate", ensureAuthenticated, async (req, res) => {
     try {
+      // Get user info and preferences
       const userId = req.user!.id;
       const voice = req.body.voice;
       const toastStyle = req.body.toastStyle || 'weekly'; // Get toast style from request or default to 'weekly'
@@ -669,16 +670,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[Toast Generator] No voice preference provided, using user's saved preference`);
       }
       
+      // Get date range for the past week
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 7);
+      
+      // Get user notes for the past week
+      const userNotes = await storage.getNotesByUserIdAndDateRange(userId, startDate, endDate);
+      
+      if (userNotes.length === 0) {
+        return res.status(400).json({ error: "No notes found for this week. Add some reflections first!" });
+      }
+      
+      // Extract note contents and IDs
+      const noteContents = userNotes.map(note => note.content || '').filter(Boolean);
+      const noteIds = userNotes.map(note => note.id);
+      
+      // Define toast prompt templates - mirrors the structure in toast-generator-v2.ts
+      const TOAST_PROMPTS = {
+        system: "You are a warm, inspirational toastmaster. You create heartfelt, personalized celebrations based on people's reflection notes.",
+        weekly: `Write a heartfelt, motivating weekly toast for this user based on their reflections below.
+          - Make it sound like an uplifting, personal speech.
+          - Keep it positive and encouraging, but genuine.
+          - Keep it under 90 seconds if read aloud.
+          - The reflections for this week are: [REFLECTIONS]`,
+        uplifting: `Create an energetic, uplifting toast that celebrates this user's achievements and growth.
+          - Use motivational language that inspires continued action.
+          - Acknowledge both big and small wins from their reflections.
+          - Keep it concise and impactful, under 90 seconds when read aloud.
+          - The reflections for this week are: [REFLECTIONS]`,
+        reflective: `Craft a thoughtful, contemplative toast that highlights insights from this user's reflections.
+          - Focus on personal growth, learning moments, and wisdom gained.
+          - Create a reflective mood that encourages deeper thought.
+          - Keep it concise yet meaningful, under 90 seconds when read aloud.
+          - The reflections for this week are: [REFLECTIONS]`
+      };
+      
+      // Safely select the prompt template based on the requested style
+      const validToastStyles = ['weekly', 'uplifting', 'reflective'];
+      const validStyle = validToastStyles.includes(toastStyle) ? toastStyle : 'weekly';
+      const promptTemplate = TOAST_PROMPTS[validStyle] || TOAST_PROMPTS.weekly;
+      
+      // Insert the user's reflections into the prompt template
+      const formattedReflections = noteContents.join('\n\n');
+      const userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
+      
+      console.log(`[Toast Generator] Using '${validStyle}' toast style for regeneration`);
+      
       try {
-        // Use the dedicated toast generator service to create a new toast with the selected style
-        // The generator should automatically use the updated voice preference
-        const userId = req.user!.id;
-        const result = await generateWeeklyToast(userId, toastStyle);
-        
-        console.log(`[Toast Generator] Regenerated toast:`, {
-          content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
-          audioUrl: result.audioUrl || 'No audio URL'
+        // Generate toast content with OpenAI
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest model as of May 13, 2024
+          messages: [
+            { role: "system", content: TOAST_PROMPTS.system },
+            { role: "user", content: userPrompt }
+          ],
+          max_tokens: 400,
+          temperature: 0.7,
         });
+        
+        const content = response.choices[0].message.content || "Here's to your week of reflection and growth!";
+        
+        // Create a new toast
+        const newToast = await storage.createToast({
+          userId,
+          content,
+          noteIds,
+          type: 'weekly'
+        });
+        
+        // Now generate audio with the selected voice
+        const voiceId = getVoiceId(voice || 'motivational');
+        const ttsResult = await generateSpeech(content, voiceId, userId);
+        
+        let audioUrl = null;
+        
+        // Handle various response types from the TTS service
+        if (typeof ttsResult === 'string') {
+          // Success case - got a URL to the audio file
+          console.log(`[Toast Generator] Audio generated successfully: ${ttsResult}`);
+          audioUrl = ttsResult;
+        } 
+        else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
+          // Error case with specific message
+          console.warn(`[Toast Generator] Audio generation error: ${ttsResult.error}`);
+          
+          // Provide user-friendly error message
+          audioUrl = 'Error: ' + (
+            ttsResult.error.includes('Rate limit') ? 'Rate limit reached. Please try again later.' :
+            ttsResult.error.includes('quota exceeded') ? 'Voice generation quota exceeded. Please try again later.' :
+            ttsResult.error.includes('timeout') ? 'Voice generation timed out. Please try again later.' :
+            'Unable to generate audio at this time.'
+          );
+        } 
+        else {
+          // Null or unexpected response
+          console.log('[Toast Generator] Failed to generate audio');
+          audioUrl = 'Error: Audio generation failed. Please try again later.';
+        }
+        
+        // Update toast with audio URL
+        const updatedToast = await storage.updateToast(newToast.id, { audioUrl });
         
         // Log analytics for toast regeneration
         if (storage.logUserActivity) {
@@ -688,14 +781,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata: { 
               voiceChanged: !!voice,
               source: 'manual-trigger',
-              hasAudio: !!result.audioUrl
+              hasAudio: !!audioUrl && !audioUrl.startsWith('Error:')
             } as Record<string, any>
           });
         }
         
-        res.status(200).json(result);
+        console.log(`[Toast Generator] Regenerated toast:`, {
+          content: updatedToast.content ? `${updatedToast.content.substring(0, 30)}...` : 'No content', 
+          audioUrl: updatedToast.audioUrl || 'No audio URL'
+        });
+        
+        res.status(200).json(updatedToast);
       } catch (err: any) {
-        console.error('[Toast regeneration]', err);
+        console.error('[Toast regeneration] OpenAI or database error:', err);
         return res.status(400).json({ error: err.message });
       }
     } catch (error: any) {

@@ -204,6 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Check if Google OAuth is configured
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    // Standard API endpoint for Google Auth
     app.get('/api/auth/google', 
       googleAuth.authenticate('google', { 
         scope: ['email', 'profile'],
@@ -211,7 +212,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })
     );
     
+    // Handle callback at API path
     app.get('/api/auth/google/callback', 
+      googleAuth.authenticate('google', { 
+        failureRedirect: '/auth?error=google_auth_failed' 
+      }),
+      (req, res) => {
+        // Successful authentication, redirect to home page
+        res.redirect('/');
+      }
+    );
+    
+    // Also handle the callback at the path configured in Google Cloud Console
+    app.get('/auth/google/callback', 
       googleAuth.authenticate('google', { 
         failureRedirect: '/auth?error=google_auth_failed' 
       }),

@@ -29,6 +29,7 @@ interface Toast {
 export default function WeeklyToastPage() {
   // All hooks at the top level
   const [selectedVoice, setSelectedVoice] = useState("motivational");
+  const [selectedToastStyle, setSelectedToastStyle] = useState("weekly");
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,6 +56,13 @@ export default function WeeklyToastPage() {
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
   
+  // Toast style options
+  const toastStyleOptions = [
+    { id: "weekly", name: "Balanced", description: "Heartfelt weekly reflection" },
+    { id: "uplifting", name: "Energetic", description: "More motivational and energizing" },
+    { id: "reflective", name: "Thoughtful", description: "Deeper and more contemplative" }
+  ];
+  
   // Fetch the latest toast
   const { data: latestToast, isLoading, error } = useQuery<Toast>({
     queryKey: ["/api/toasts/latest"],
@@ -66,6 +74,11 @@ export default function WeeklyToastPage() {
     setSelectedVoice(value);
   };
   
+  // Handle toast style selection
+  const handleToastStyleChange = (value: string) => {
+    setSelectedToastStyle(value);
+  };
+  
   // Generate toast handler
   const generateToast = async () => {
     setLoading(true);
@@ -75,7 +88,10 @@ export default function WeeklyToastPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ voice: selectedVoice })
+        body: JSON.stringify({ 
+          voice: selectedVoice,
+          toastStyle: selectedToastStyle
+        })
       });
       
       if (res.ok) {

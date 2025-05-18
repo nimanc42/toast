@@ -563,8 +563,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const voice = req.body.voice;
+      const toastStyle = req.body.toastStyle || 'weekly'; // Get toast style from request or default to 'weekly'
       
-      console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}`);
+      console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}, style: ${toastStyle}`);
       
       // Update user voice preference if provided, but skip for test users
       const isTestUser = userId === CONFIG.TEST_USER.id;
@@ -588,13 +589,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Generate the weekly toast directly using the toast helper
+        // Generate the weekly toast directly using the toast helper with the selected style
         // This will automatically get the user's notes from the database
-        const result = await generateWeeklyToast(userId);
+        const result = await generateWeeklyToast(userId, toastStyle);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
-          audioUrl: result.audioUrl || 'No audio URL'
+          audioUrl: result.audioUrl || 'No audio URL',
+          style: toastStyle
         });
         
         // Log analytics for toast generation, but skip for test users
@@ -644,8 +646,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const voice = req.body.voice;
+      const toastStyle = req.body.toastStyle || 'weekly'; // Get toast style from request or default to 'weekly'
       
-      console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}`);
+      console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}, style: ${toastStyle}`);
       
       // Always update user voice preference if provided
       if (voice) {
@@ -667,10 +670,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Use the dedicated toast generator service to create a new toast
+        // Use the dedicated toast generator service to create a new toast with the selected style
         // The generator should automatically use the updated voice preference
         const userId = req.user!.id;
-        const result = await generateWeeklyToast(userId);
+        const result = await generateWeeklyToast(userId, toastStyle);
         
         console.log(`[Toast Generator] Regenerated toast:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

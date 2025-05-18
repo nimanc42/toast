@@ -324,7 +324,8 @@ export function getVoiceId(voiceStyle: string): string {
     'motivational': 'EXAVITQu4vr4xnSDxMaL', // Rachel
     'friendly': '21m00Tcm4TlvDq8ikWAM',     // Adam
     'poetic': 'AZnzlk1XvdvUeBnXmlld',       // Domi
-    'custom': 'Dnd9VXpAjEGXiRGBf1O6'        // Custom voice added by user
+    'custom': 'Dnd9VXpAjEGXiRGBf1O6',       // Custom voice added by user
+    'david': 'jvcMcno3QtjOzGtfpjoI'         // David voice
   };
   
   return voiceMap[voiceStyle] || DEFAULT_VOICE_ID;

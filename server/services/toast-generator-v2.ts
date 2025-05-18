@@ -54,34 +54,54 @@ type ToastPromptStyle = 'system' | 'weekly' | 'uplifting' | 'reflective';
 // Toast prompt templates - easy to customize
 const TOAST_PROMPTS: Record<ToastPromptStyle, string> = {
   // System message that defines the AI's role and tone
-  system: "You are a warm, inspirational toastmaster. You create heartfelt, personalized celebrations based on people's reflection notes.",
+  system: "You are a warm, encouraging toastmaster who creates personal, meaningful celebrations.",
   
-  // Main prompt template for generating weekly toasts
+  // Main prompt template for generating weekly toasts - a more direct and personalized format
   weekly: `
-Write a heartfelt, motivating weekly toast for this user based on their reflections below.
-- Make it sound like an uplifting, personal speech.
-- Keep it positive and encouraging, but genuine.
-- Keep it under 90 seconds if read aloud.
-- The reflections for this week are: 
+You are a warm, encouraging toastmaster.  
+Write a short, uplifting weekly toast in SECOND PERSON, addressed directly to the user.
+• Use "you" / "your" throughout (no "he/she/they").  
+• Begin with a friendly greeting.  
+• Highlight the specific achievements and moments from this week's reflections.  
+• Express genuine pride and admiration (e.g., "I am so proud of you…").  
+• Keep the tone supportive, motivational, and personal—like a mentor speaking directly.  
+• Keep it under 90 seconds if read aloud.
+• End with a heartfelt "Cheers!" or similar closing.
+
+The reflections for this week are: 
 [REFLECTIONS]
 `,
   
-  // Add more toast types/styles as needed
+  // More energetic and action-oriented style
   uplifting: `
-Create an energetic, uplifting toast that celebrates this user's achievements and growth.
-- Use motivational language that inspires continued action.
-- Acknowledge both big and small wins from their reflections.
-- Keep it concise and impactful, under 90 seconds when read aloud.
-- The reflections for this week are:
+You are a warm, encouraging toastmaster.  
+Write an ENERGETIC and MOTIVATING weekly toast in SECOND PERSON, addressed directly to the user.
+• Use "you" / "your" throughout (no "he/she/they").  
+• Begin with an enthusiastic greeting.  
+• Emphasize achievements, wins, and positive actions from the weekly reflections.
+• Use motivational language that inspires continued action.  
+• Keep the tone energetic, exciting, and forward-looking—like a coach celebrating a victory.  
+• Keep it under 90 seconds if read aloud.
+• End with an inspiring call to action or celebratory closing.
+
+The reflections for this week are:
 [REFLECTIONS]
 `,
   
+  // More thoughtful and introspective style
   reflective: `
-Craft a thoughtful, contemplative toast that highlights insights from this user's reflections.
-- Focus on personal growth, learning moments, and wisdom gained.
-- Create a reflective mood that encourages deeper thought.
-- Keep it concise yet meaningful, under 90 seconds when read aloud.
-- The reflections for this week are:
+You are a warm, encouraging toastmaster.  
+Write a THOUGHTFUL, CONTEMPLATIVE weekly toast in SECOND PERSON, addressed directly to the user.
+• Use "you" / "your" throughout (no "he/she/they").  
+• Begin with a gentle, considerate greeting.  
+• Focus on personal growth, learning moments, and wisdom gained from the reflections.
+• Highlight insights rather than just achievements.
+• Create a reflective mood that encourages deeper thought.
+• Keep the tone warm, wise, and supportive—like a mentor sharing wisdom.  
+• Keep it under 90 seconds if read aloud.
+• End with a thoughtful closing that invites continued reflection.
+
+The reflections for this week are:
 [REFLECTIONS]
 `
 };
@@ -90,9 +110,14 @@ Craft a thoughtful, contemplative toast that highlights insights from this user'
  * Generate personalized toast content using OpenAI
  * @param noteContents Array of user's reflection notes for the period
  * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
+ * @param userName Optional user's name for personalized greeting
  * @returns Generated toast content
  */
-async function generateToastContent(noteContents: string[], toastStyle: ToastPromptStyle | string = 'weekly'): Promise<string> {
+async function generateToastContent(
+  noteContents: string[], 
+  toastStyle: ToastPromptStyle | string = 'weekly',
+  userName: string = ''
+): Promise<string> {
   if (!process.env.OPENAI_API_KEY || noteContents.length === 0) {
     return generateFallbackToastContent(noteContents.length);
   }
@@ -104,11 +129,16 @@ async function generateToastContent(noteContents: string[], toastStyle: ToastPro
       : 'weekly';
     
     // Get the appropriate prompt template
-    const promptTemplate = TOAST_PROMPTS[validStyle];
+    let promptTemplate = TOAST_PROMPTS[validStyle];
     
     // Insert the user's reflections into the prompt template
     const formattedReflections = noteContents.join('\n\n');
-    const userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
+    let userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
+    
+    // If we have the user's name, personalize the prompt further
+    if (userName) {
+      userPrompt = `${userPrompt}\n\nPlease address the user by name: ${userName}`;
+    }
     
     console.log(`[Toast Generator] Using '${toastStyle}' toast style`);
     
@@ -151,7 +181,7 @@ import { generateSpeech, getVoiceId } from './elevenlabs';
  * @param userId ID of the user to generate toast for
  * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
  */
-export async function generateWeeklyToast(userId: number, toastStyle: string = 'weekly'): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, toastStyle: string = 'weekly', userName: string = ''): Promise<Toast> {
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
   
@@ -200,8 +230,31 @@ export async function generateWeeklyToast(userId: number, toastStyle: string = '
     noteIds = userNotes.map(note => note.id);
   }
   
-  // Generate toast content with the specified style
-  const content = await generateToastContent(noteContents, toastStyle);
+  // Get user info to personalize the toast with their name
+  let userInfo;
+  if (!isTestUser) {
+    try {
+      // Query the database to get the user's name
+      const userResult = await db.select()
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      if (userResult.length > 0) {
+        userInfo = userResult[0];
+        console.log(`[Toast Generator] Including user's name: ${userInfo.name}`);
+      }
+    } catch (error) {
+      console.warn(`[Toast Generator] Couldn't fetch user info:`, error);
+    }
+  }
+  
+  // Generate toast content with the specified style and user's name if available
+  const content = await generateToastContent(
+    noteContents, 
+    toastStyle, 
+    userInfo?.name || userName || ''
+  );
   
   // For test users, skip database operations and return mock data
   if (isTestUser) {

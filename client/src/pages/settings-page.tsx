@@ -32,13 +32,28 @@ type SettingsFormValues = z.infer<typeof settingsFormSchema>;
 export default function SettingsPage() {
   const { toast } = useToast();
   
+  // Define types for API responses
+  type VoicePreferencesResponse = {
+    voiceStyle: string;
+    toastDay: string;
+    toastTone: string;
+    dailyReminder: boolean;
+    toastNotification: boolean;
+    emailNotifications: boolean;
+  };
+  
+  type UserSettingsResponse = {
+    timezone: string;
+    weeklyToastDay: number;
+  };
+  
   // Fetch user voice preferences
-  const { data: voicePreferences, isLoading: isLoadingVoicePrefs } = useQuery({
+  const { data: voicePreferences, isLoading: isLoadingVoicePrefs } = useQuery<VoicePreferencesResponse>({
     queryKey: ["/api/preferences"],
   });
   
   // Fetch user settings (timezone and weekly toast day)
-  const { data: userSettings, isLoading: isLoadingSettings } = useQuery({
+  const { data: userSettings, isLoading: isLoadingSettings } = useQuery<UserSettingsResponse>({
     queryKey: ["/api/user/settings"],
   });
   
@@ -61,11 +76,15 @@ export default function SettingsPage() {
   useEffect(() => {
     // Only update when both sets of data are available
     if (voicePreferences && userSettings) {
+      const safeVoiceStyle = (voicePreferences.voiceStyle || "motivational") as "motivational" | "friendly" | "poetic" | "david";
+      const safeToastDay = (voicePreferences.toastDay || "Sunday") as "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday";
+      const safeToastTone = (voicePreferences.toastTone || "auto") as "auto" | "uplifting" | "reflective" | "humorous";
+      
       form.reset({
         // Voice preferences
-        voiceStyle: voicePreferences.voiceStyle as "motivational" | "friendly" | "poetic" | "david" || "motivational",
-        toastDay: voicePreferences.toastDay as "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" || "Sunday",
-        toastTone: voicePreferences.toastTone as "auto" | "uplifting" | "reflective" | "humorous" || "auto",
+        voiceStyle: safeVoiceStyle,
+        toastDay: safeToastDay,
+        toastTone: safeToastTone,
         dailyReminder: voicePreferences.dailyReminder ?? true,
         toastNotification: voicePreferences.toastNotification ?? true,
         emailNotifications: voicePreferences.emailNotifications ?? false,
@@ -111,6 +130,8 @@ export default function SettingsPage() {
       description: "Voice sample playback is not implemented in this prototype.",
     });
   };
+  
+  const isLoading = isLoadingVoicePrefs || isLoadingSettings;
   
   if (isLoading) {
     return (

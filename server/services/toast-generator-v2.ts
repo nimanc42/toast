@@ -48,27 +48,76 @@ export async function checkToastExists(userId: number): Promise<boolean> {
   return result.length > 0;
 }
 
+// Define toast prompt type for type safety
+type ToastPromptStyle = 'system' | 'weekly' | 'uplifting' | 'reflective';
+
+// Toast prompt templates - easy to customize
+const TOAST_PROMPTS: Record<ToastPromptStyle, string> = {
+  // System message that defines the AI's role and tone
+  system: "You are a warm, inspirational toastmaster. You create heartfelt, personalized celebrations based on people's reflection notes.",
+  
+  // Main prompt template for generating weekly toasts
+  weekly: `
+Write a heartfelt, motivating weekly toast for this user based on their reflections below.
+- Make it sound like an uplifting, personal speech.
+- Keep it positive and encouraging, but genuine.
+- Keep it under 90 seconds if read aloud.
+- The reflections for this week are: 
+[REFLECTIONS]
+`,
+  
+  // Add more toast types/styles as needed
+  uplifting: `
+Create an energetic, uplifting toast that celebrates this user's achievements and growth.
+- Use motivational language that inspires continued action.
+- Acknowledge both big and small wins from their reflections.
+- Keep it concise and impactful, under 90 seconds when read aloud.
+- The reflections for this week are:
+[REFLECTIONS]
+`,
+  
+  reflective: `
+Craft a thoughtful, contemplative toast that highlights insights from this user's reflections.
+- Focus on personal growth, learning moments, and wisdom gained.
+- Create a reflective mood that encourages deeper thought.
+- Keep it concise yet meaningful, under 90 seconds when read aloud.
+- The reflections for this week are:
+[REFLECTIONS]
+`
+};
+
 /**
  * Generate personalized toast content using OpenAI
+ * @param noteContents Array of user's reflection notes for the period
+ * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
+ * @returns Generated toast content
  */
-async function generateToastContent(noteContents: string[]): Promise<string> {
+async function generateToastContent(noteContents: string[], toastStyle: ToastPromptStyle | string = 'weekly'): Promise<string> {
   if (!process.env.OPENAI_API_KEY || noteContents.length === 0) {
     return generateFallbackToastContent(noteContents.length);
   }
 
   try {
+    // Check if the toast style is a valid style, otherwise use weekly
+    const validStyle = (Object.keys(TOAST_PROMPTS) as ToastPromptStyle[]).includes(toastStyle as ToastPromptStyle)
+      ? toastStyle as ToastPromptStyle
+      : 'weekly';
+    
+    // Get the appropriate prompt template
+    const promptTemplate = TOAST_PROMPTS[validStyle];
+    
+    // Insert the user's reflections into the prompt template
+    const formattedReflections = noteContents.join('\n\n');
+    const userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
+    
+    console.log(`[Toast Generator] Using '${toastStyle}' toast style`);
+    
     // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
-        {
-          role: "system",
-          content: "You are a motivational coach who creates personalized weekly celebrations based on reflection notes. Keep the tone warm, encouraging, and celebratory. Highlight patterns, progress, and growth. Keep responses under 200 words."
-        },
-        {
-          role: "user",
-          content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
-        }
+        { role: "system", content: TOAST_PROMPTS.system },
+        { role: "user", content: userPrompt }
       ],
       max_tokens: 400,
       temperature: 0.7,
@@ -99,8 +148,10 @@ import { generateSpeech, getVoiceId } from './elevenlabs';
 
 /**
  * Generate a weekly toast for a user
+ * @param userId ID of the user to generate toast for
+ * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
  */
-export async function generateWeeklyToast(userId: number): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, toastStyle: string = 'weekly'): Promise<Toast> {
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
   
@@ -149,8 +200,8 @@ export async function generateWeeklyToast(userId: number): Promise<Toast> {
     noteIds = userNotes.map(note => note.id);
   }
   
-  // Generate toast content
-  const content = await generateToastContent(noteContents);
+  // Generate toast content with the specified style
+  const content = await generateToastContent(noteContents, toastStyle);
   
   // For test users, skip database operations and return mock data
   if (isTestUser) {

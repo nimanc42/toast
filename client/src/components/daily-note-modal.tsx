@@ -95,6 +95,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         // Set up event handlers
         recognition.onresult = (event: SpeechRecognitionEvent) => {
           let finalTranscript = '';
+          let interimTranscript = '';
           
           // Process each result from the speech recognition
           for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -102,34 +103,32 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             
             if (event.results[i].isFinal) {
               finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
             }
           }
           
-          // Update the text content with the transcript
+          // Get the textarea element
+          const textElement = document.getElementById('reflectionInput') as HTMLTextAreaElement;
+          
+          // If we have a final transcript, add it to the text content
           if (finalTranscript) {
-            // Trim any leading/trailing whitespace and ensure we don't add double spaces
-            const cleanTranscript = finalTranscript.trim();
+            console.log("Final transcript received:", finalTranscript);
+            const trimmedTranscript = finalTranscript.trim();
             
-            // If we already have text, add a space before the new content
-            setTextContent((prevText) => {
-              const prevTextTrimmed = prevText.trim();
-              if (prevTextTrimmed) {
-                return prevTextTrimmed + ' ' + cleanTranscript;
-              }
-              return cleanTranscript;
+            // Update the text content state with the final transcript
+            setTextContent(prev => {
+              const prevTrimmed = prev.trim();
+              return prevTrimmed ? `${prevTrimmed} ${trimmedTranscript}` : trimmedTranscript;
             });
-          } else {
-            // If there's no final transcript, use the latest result as interim result
-            const interimTranscript = event.results[event.results.length - 1][0].transcript;
-            if (interimTranscript) {
-              // Show interim results but don't save them to state yet
-              const textElement = document.getElementById('reflectionInput');
-              if (textElement) {
-                const displayText = textContent.trim() + ' ' + interimTranscript.trim();
-                // Add a placeholder display for interim results
-                textElement.setAttribute('placeholder', `${displayText}...`);
-              }
-            }
+          }
+          
+          // If we have an interim transcript, show it in the placeholder
+          if (interimTranscript && textElement) {
+            // Create placeholder text that includes both current text and interim results
+            const currentText = textElement.value || "";
+            const placeholderText = `${currentText} ${interimTranscript}...`;
+            textElement.placeholder = placeholderText;
           }
         };
         
@@ -178,17 +177,31 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     }
     
     if (isListening) {
+      console.log("Stopping speech recognition");
       // Stop listening
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
       setIsListening(false);
     } else {
+      console.log("Starting speech recognition");
       // Start listening
       if (recognitionRef.current) {
         try {
+          // Reset the input placeholder
+          const textElement = document.getElementById('reflectionInput') as HTMLTextAreaElement;
+          if (textElement) {
+            textElement.placeholder = "Type your reflection here...";
+          }
+          
+          // Start recognition
           recognitionRef.current.start();
           setIsListening(true);
+          
+          toast({
+            title: "Voice-to-text activated",
+            description: "Speak clearly and your words will be converted to text.",
+          });
         } catch (error) {
           console.error("Failed to start speech recognition:", error);
           toast({

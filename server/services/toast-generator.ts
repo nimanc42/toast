@@ -47,12 +47,25 @@ export function getDateWindow(range: ToastRange, user: User) {
     case 'weekly': {
       // Get preferred day of week (0 = Sunday, 6 = Saturday)
       const targetDow = user.weeklyToastDay ?? 0;          
-      // Get the most recent occurrence of that day (or today if it's the target day)
       // Luxon uses 1-7 for weekdays where 1 is Monday, so we need to convert from 0-6 where 0 is Sunday
       const luxonDay = targetDow === 0 ? 7 : targetDow;
-      const start = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 }).startOf('day');
-      // The window is 7 days from the start
-      const end = start.plus({ days: 6 }).endOf('day');
+      
+      // Get the most recent occurrence of the preferred day
+      let mostRecentDay = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 }).startOf('day');
+      
+      // If today is the preferred day or we haven't passed it yet this week,
+      // go back to the previous week's occurrence
+      if (mostRecentDay > now.startOf('day')) {
+        mostRecentDay = mostRecentDay.minus({ weeks: 1 });
+      }
+      
+      // The start date is 7 days before the most recent preferred day
+      const start = mostRecentDay.minus({ days: 7 }).startOf('day');
+      // The end date is the day before the most recent preferred day
+      const end = mostRecentDay.minus({ days: 1 }).endOf('day');
+      
+      console.log(`[Toast Generator] Weekly window for user ${user.id}: ${start.toFormat('yyyy-MM-dd')} to ${end.toFormat('yyyy-MM-dd')} (preferred day: ${targetDow})`);
+      
       return { start, end };
     }
       

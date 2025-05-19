@@ -16,6 +16,7 @@ import {
 } from "./routes/auth-email";
 // WebSocket temporarily disabled for debugging
 import WebSocket from 'ws';
+import { DateTime } from 'luxon';
 import { 
   insertNoteSchema, 
   insertVoicePreferenceSchema,
@@ -981,26 +982,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weeklyNotesCount = weeklyNotes.length;
       }
       
-      // Get user preferences to determine the next toast day
-      const preferences = await storage.getVoicePreferenceByUserId(userId);
+      // Get user data to determine the next toast day using weeklyToastDay preference
+      const user = await storage.getUser(userId);
       
       let nextToastDate: Date;
-      if (preferences) {
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const todayDayIndex = today.getDay();
-        const toastDayIndex = days.indexOf(preferences.toastDay);
+      if (user) {
+        // Use user timezone if set, otherwise default to UTC
+        const timezone = user.timezone || 'UTC';
+        // Get preferred day (0 = Sunday, 6 = Saturday) or default to Sunday (0)
+        const preferredDay = user.weeklyToastDay ?? 0;
         
-        nextToastDate = new Date(today);
-        if (todayDayIndex < toastDayIndex) {
-          nextToastDate.setDate(today.getDate() + (toastDayIndex - todayDayIndex));
-        } else if (todayDayIndex > toastDayIndex) {
-          nextToastDate.setDate(today.getDate() + (7 - todayDayIndex + toastDayIndex));
-        } else {
-          // If today is the toast day, set to next week
-          nextToastDate.setDate(today.getDate() + 7);
+        try {
+          // Calculate next toast date using user's timezone
+          const now = DateTime.now().setZone(timezone);
+          // Convert weeklyToastDay (0-6) to Luxon format (1-7)
+          const luxonDay = preferredDay === 0 ? 7 : preferredDay;
+          // Get next occurrence of preferred day
+          let nextDate = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 });
+          
+          // If today is the toast day or we've already passed it, move to next week
+          if (nextDate <= now) {
+            nextDate = nextDate.plus({ weeks: 1 });
+          }
+          
+          nextToastDate = nextDate.toJSDate();
+          console.log(`Next toast date calculated as ${nextDate.toFormat('yyyy-MM-dd')} in timezone ${timezone}`);
+        } catch (error) {
+          console.error('Error calculating next toast date:', error);
+          // Fallback to simple calculation if DateTime fails
+          const todayDayIndex = today.getDay();
+          const preferredDayIndex = preferredDay;
+          
+          nextToastDate = new Date(today);
+          if (todayDayIndex < preferredDayIndex) {
+            nextToastDate.setDate(today.getDate() + (preferredDayIndex - todayDayIndex));
+          } else if (todayDayIndex > preferredDayIndex) {
+            nextToastDate.setDate(today.getDate() + (7 - todayDayIndex + preferredDayIndex));
+          } else {
+            // If today is the toast day, set to next week
+            nextToastDate.setDate(today.getDate() + 7);
+          }
         }
       } else {
-        // Default to Sunday if no preferences
+        // Default to Sunday if no user found
         const daysUntilSunday = (7 - today.getDay()) % 7;
         nextToastDate = new Date(today);
         nextToastDate.setDate(today.getDate() + daysUntilSunday);

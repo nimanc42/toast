@@ -66,6 +66,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   const [textContent, setTextContent] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -334,14 +335,64 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       } 
       // AUDIO MODE - Save audio recording
       else if (inputType === "audio" && audioBlob) {
-        console.log("Saving audio reflection with URL:", audioUrl);
+        console.log("Audio blob available for saving:", audioBlob);
         
-        // Save as an audio reflection
-        saveMutation.mutate({ 
-          content: "[Audio reflection]",
-          audioUrl: audioUrl || "audio-url-placeholder",
-          bundleTag: null
-        });
+        try {
+          // First show a toast to indicate transcription is starting
+          setIsTranscribing(true);
+          toast({
+            title: "Transcribing audio...",
+            description: "We're converting your audio to text. This may take a moment.",
+          });
+          
+          // Create FormData to send the audio file
+          const formData = new FormData();
+          formData.append("file", audioBlob, "reflection.webm");
+          
+          // Call the transcription API
+          const response = await fetch("/api/transcribe", {
+            method: "POST",
+            body: formData
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Transcription failed: ${response.statusText}`);
+          }
+          
+          const { transcript } = await response.json();
+          console.log("Transcription result:", transcript);
+          
+          // Now save the reflection with both audio and transcript
+          saveMutation.mutate({ 
+            content: transcript || "[Audio reflection]", // Use transcript if available, fallback otherwise
+            audioUrl: audioUrl || "audio-url-placeholder",
+            bundleTag: null
+          });
+          
+          // Show success toast for transcription
+          toast({
+            title: "Audio transcribed",
+            description: "Your audio has been successfully converted to text.",
+          });
+        } catch (error) {
+          console.error("Error during transcription:", error);
+          
+          // If transcription fails, save with default text
+          saveMutation.mutate({ 
+            content: "[Audio reflection]",
+            audioUrl: audioUrl || "audio-url-placeholder",
+            bundleTag: null
+          });
+          
+          // Show warning toast for failed transcription
+          toast({
+            title: "Transcription unavailable",
+            description: "We couldn't transcribe your audio, but your recording has been saved.",
+            variant: "warning"
+          });
+        } finally {
+          setIsTranscribing(false);
+        }
       }
     } catch (error) {
       console.error("Error in handleSave:", error);

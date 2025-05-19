@@ -347,7 +347,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 <line x1="21" y1="14" x2="3" y2="14"></line>
                 <line x1="17" y1="18" x2="3" y2="18"></line>
               </svg>
-              Text
+              Text Input
             </Button>
             <Button
               type="button"
@@ -361,7 +361,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 <line x1="12" y1="19" x2="12" y2="23"></line>
                 <line x1="8" y1="23" x2="16" y2="23"></line>
               </svg>
-              Audio
+              Audio Recording
             </Button>
           </div>
         </div>
@@ -386,7 +386,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 variant={isListening ? "default" : "outline"}
                 className={`h-8 w-8 rounded-full ${isListening ? 'bg-blue-500 text-white hover:bg-blue-600' : 'text-gray-600'}`}
                 onClick={toggleSpeechRecognition}
-                title={isListening ? "Stop listening" : "Start voice to text"}
+                title={isListening ? "Stop listening" : "Speak to convert to text"}
                 disabled={!speechSupported}
               >
                 {isListening ? (
@@ -397,13 +397,17 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               </Button>
             </div>
             
-            {/* Speech Recognition Status */}
+            {/* Voice to Text Indicator */}
             {isListening && (
-              <div className="mt-1 text-sm text-blue-600 animate-pulse flex items-center">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-ping"></div>
-                Listening... Speak clearly
+              <div className="mb-2 text-sm text-blue-600 font-medium">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-ping"></div>
+                  Voice-to-Text active: Your speech will be converted to text
+                </div>
               </div>
             )}
+            
+            {/* This second status indicator is redundant - removing it */}
             
             {/* Unsupported Browser Warning */}
             {!speechSupported && (

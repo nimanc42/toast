@@ -217,10 +217,13 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   
   // Save note mutation
   const saveMutation = useMutation({
-    mutationFn: async (data: { content?: string; audioUrl?: string; bundleTag?: string | null }) => {
+    mutationFn: async (data: { content: string; audioUrl?: string; bundleTag?: string | null }) => {
+      // Log what's actually being saved - for debugging
       console.log("Saving note with data:", data);
       console.log("User authenticated:", !!user);
       console.log("Auth token:", localStorage.getItem('authToken') ? "Present" : "Missing");
+      console.log("Current input type:", inputType);
+      console.log("Is speech-to-text active:", isListening);
       
       try {
         const res = await apiRequest("POST", "/api/notes", data);
@@ -290,35 +293,48 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     }
     
     try {
-      // Check if the user was using voice-to-text
-      if (isListening) {
-        // Stop listening first to finalize any pending transcription
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-          setIsListening(false);
-          // Give a moment for any final text to be processed
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
+      // Stop any active speech recognition
+      if (isListening && recognitionRef.current) {
+        recognitionRef.current.stop();
+        setIsListening(false);
+        // Small delay to ensure final transcript is processed
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
       
-      // Handle text mode - this will now include content from voice-to-text too
+      // Stop any active recording
+      if (isRecording) {
+        stopRecording();
+        // Wait for audioBlob to be created
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // TEXT MODE - Save text content (including any voice-to-text transcription)
       if (inputType === "text") {
-        // Save the text content exactly as shown in the textarea
+        // Verify we have text content to save
+        const trimmedText = textContent.trim();
+        
+        if (!trimmedText) {
+          toast({
+            title: "Empty note",
+            description: "Please add some content to your reflection.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        console.log("Saving text reflection:", trimmedText);
+        
+        // Save as a text reflection
         saveMutation.mutate({ 
-          content: textContent.trim(),
+          content: trimmedText,
           bundleTag: null
         });
       } 
-      // Handle audio recording mode
-      else {
-        // If currently recording, stop the recording first
-        if (isRecording) {
-          stopRecording();
-          // Wait a moment for audioBlob to be created
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+      // AUDIO MODE - Save audio recording
+      else if (inputType === "audio" && audioBlob) {
+        console.log("Saving audio reflection with URL:", audioUrl);
         
-        // At this point either we had an audioBlob or we just created one by stopping recording
+        // Save as an audio reflection
         saveMutation.mutate({ 
           content: "[Audio reflection]",
           audioUrl: audioUrl || "audio-url-placeholder",

@@ -313,11 +313,29 @@ export async function generateWeeklyToast(userId: number, userName: string = '')
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
   
-  // Get date range for weekly toast (using simplified approach for now)
-  const { start, end } = getWeeklyDateRange();
+  // Get user to access timezone and weekly toast day preferences
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
   
-  // Check if a toast already exists for this period
-  const toastExists = await checkToastExists(userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  
+  // Get date range for weekly toast using user preferences
+  const { start, end } = getDateWindow('weekly', user);
+  
+  // Check if a toast already exists for this period using user's preferences
+  const startDate = start.toJSDate();
+  const endDate = end.toJSDate();
+  
+  const toastExists = await db.query.toasts.findFirst({
+    where: and(
+      eq(toasts.userId, userId),
+      eq(toasts.type, 'weekly'),
+      between(toasts.createdAt, startDate, endDate)
+    )
+  });
   if (toastExists) {
     throw new Error('A toast has already been generated for this week');
   }
@@ -341,12 +359,12 @@ export async function generateWeeklyToast(userId: number, userName: string = '')
     noteContents = SAMPLE_NOTES;
     noteIds = SAMPLE_IDS;
   } else {
-    // Get real user notes for the date range
+    // Get real user notes for the date range - convert DateTime to JS Date
     userNotes = await db.select()
       .from(notes)
       .where(and(
         eq(notes.userId, userId),
-        between(notes.createdAt, start, end)
+        between(notes.createdAt, startDate, endDate)
       ));
     
     if (userNotes.length === 0) {
@@ -393,8 +411,8 @@ export async function generateWeeklyToast(userId: number, userName: string = '')
       audioUrl: null,
       noteIds,
       type: 'weekly',
-      intervalStart: start,
-      intervalEnd: end,
+      intervalStart: startDate,
+      intervalEnd: endDate,
       createdAt: new Date(),
       shared: false,
       shareUrl: null

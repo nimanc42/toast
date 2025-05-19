@@ -568,7 +568,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const voice = req.body.voice;
       
-      console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format`);
+      // Get user for timezone and weekly toast day preferences
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format with timezone: ${user.timezone || 'UTC'}, weeklyToastDay: ${user.weeklyToastDay || 0}`);
       
       // Update user voice preference if provided, but skip for test users
       const isTestUser = userId === CONFIG.TEST_USER.id;
@@ -592,9 +598,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Generate the weekly toast using the standardized format
-        // This will automatically get the user's notes from the database
-        const result = await generateWeeklyToast(userId, req.user?.name || '');
+        // Generate the weekly toast using the standardized format with user's preferences
+        // Pass the full user object to ensure timezone and weekly toast day preferences are used
+        const result = await generateWeeklyToast(userId, user.name);
         
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

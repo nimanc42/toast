@@ -368,10 +368,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           const { transcript } = await response.json();
           console.log("Transcription result:", transcript);
           
-          // Now save the reflection with both audio and transcript
+          // Save only the transcript without the audio URL
           saveMutation.mutate({ 
             content: transcript || "[Audio reflection]", // Use transcript if available, fallback otherwise
-            audioUrl: audioUrl || "audio-url-placeholder",
+            // Remove audioUrl to prevent UI from showing audio player
             bundleTag: null
           });
           

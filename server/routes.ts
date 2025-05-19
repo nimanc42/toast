@@ -27,7 +27,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
-import { generateWeeklyToast, TOAST_PROMPTS, ToastPromptStyle } from "./services/toast-generator";
+import { generateWeeklyToast, TOAST_SYSTEM_PROMPT } from "./services/toast-generator";
 import { CONFIG } from "./config";
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
@@ -690,38 +690,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noteContents = userNotes.map(note => note.content || '').filter(Boolean);
       const noteIds = userNotes.map(note => note.id);
       
-      // Use the imported TOAST_PROMPTS from toast-generator.ts
-      
-      // Safely select the prompt template based on the requested style
-      const validStyle = (['weekly', 'uplifting', 'reflective', 'structured'] as Array<ToastPromptStyle>).includes(toastStyle as ToastPromptStyle) 
-        ? toastStyle as ToastPromptStyle 
-        : 'weekly';
-      
-      // Get appropriate prompt template using specific styles from imported TOAST_PROMPTS
-      const promptTemplate = toastStyle === 'structured' 
-        ? TOAST_PROMPTS.structured 
-        : toastStyle === 'reflective'
-          ? TOAST_PROMPTS.reflective
-          : toastStyle === 'uplifting'
-            ? TOAST_PROMPTS.uplifting
-            : TOAST_PROMPTS.weekly;
-      
-      // Insert the user's reflections into the prompt template
+      // Format reflections
       const formattedReflections = noteContents.join('\n\n');
-      const userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
       
-      console.log(`[Toast Generator] Using '${validStyle}' toast style for regeneration`);
+      console.log(`[Toast Generator] Using standard toast format`);
       
       try {
-        // Generate toast content with OpenAI
+        // Generate toast content with OpenAI using the standard format
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const response = await openai.chat.completions.create({
           model: "gpt-4o", // the newest model as of May 13, 2024
           messages: [
-            { role: "system", content: TOAST_PROMPTS.system },
-            { role: "user", content: userPrompt }
+            { 
+              role: "system", 
+              content: TOAST_SYSTEM_PROMPT 
+            },
+            { 
+              role: "user", 
+              content: `You are writing a toast addressed directly to the user named ${user.name || 'Craig'}.` +
+                      " Use second-person \"you\" and celebrate their recent achievements and reflections." +
+                      " Mention specific positive actions or growth moments the user has shared." +
+                      " The tone should be heartfelt, sincere, and motivational, about 200 words." +
+                      `\n\nHere are the user's reflections:\n${formattedReflections}`
+            }
           ],
-          max_tokens: 400,
+          max_tokens: 300,
           temperature: 0.7,
         });
         

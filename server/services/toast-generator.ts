@@ -25,71 +25,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Toast types
 export type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
-// Define toast prompt type for type safety
-export type ToastPromptStyle = 'system' | 'weekly' | 'uplifting' | 'reflective' | 'structured';
+// Define toast prompt type for type safety - now using a single standard prompt format
+export type ToastPromptStyle = 'standard';
 
-// Toast prompt templates - easy to customize
-export const TOAST_PROMPTS: Record<ToastPromptStyle, string> = {
-  // System message that defines the AI's role and tone
-  system: "You are a warm, encouraging toastmaster who creates personal, meaningful celebrations.",
-  
-  // Main prompt template for generating weekly toasts - a more direct and personalized format
-  weekly: `
-You are a warm, encouraging toastmaster.  
-Write a short, uplifting weekly toast in SECOND PERSON, addressed directly to the user.
-• Use "you" / "your" throughout (no "he/she/they").  
-• Begin with a friendly greeting.  
-• Highlight the specific achievements and moments from this week's reflections.  
-• Express genuine pride and admiration (e.g., "I am so proud of you…").  
-• Keep the tone supportive, motivational, and personal—like a mentor speaking directly.  
-• Keep it under 90 seconds if read aloud.
-• End with a heartfelt "Cheers!" or similar closing.
-
-The reflections for this week are: 
-[REFLECTIONS]
-`,
-  
-  // More energetic and action-oriented style
-  uplifting: `
-You are a warm, encouraging toastmaster.  
-Write an ENERGETIC and MOTIVATING weekly toast in SECOND PERSON, addressed directly to the user.
-• Use "you" / "your" throughout (no "he/she/they").  
-• Begin with an enthusiastic greeting.  
-• Emphasize achievements, wins, and positive actions from the weekly reflections.
-• Use motivational language that inspires continued action.  
-• Keep the tone energetic, exciting, and forward-looking—like a coach celebrating a victory.  
-• Keep it under 90 seconds if read aloud.
-• End with an inspiring call to action or celebratory closing.
-
-The reflections for this week are:
-[REFLECTIONS]
-`,
-  
-  // More thoughtful and introspective style
-  reflective: `
-You are a warm, encouraging toastmaster.  
-Write a THOUGHTFUL, CONTEMPLATIVE weekly toast in SECOND PERSON, addressed directly to the user.
-• Use "you" / "your" throughout (no "he/she/they").  
-• Begin with a gentle, considerate greeting.  
-• Focus on personal growth, learning moments, and wisdom gained from the reflections.
-• Highlight insights rather than just achievements.
-• Create a reflective mood that encourages deeper thought.
-• Keep the tone warm, wise, and supportive—like a mentor sharing wisdom.  
-• Keep it under 90 seconds if read aloud.
-• End with a thoughtful closing that invites continued reflection.
-
-The reflections for this week are:
-[REFLECTIONS]
-`,
-
-  // New JSON-structured format for more precise control
-  structured: `
-You are writing a toast addressed directly to the user. Use second-person "you" and celebrate their recent achievements and reflections. Mention specific positive actions or growth moments the user has shared. The tone should be heartfelt, sincere, and motivational, about 200 words.
-
-The reflections for this week are:
-[REFLECTIONS]
-`
-};
+// Toast system message - consistent for all toast generation
+// Toast system message - consistent for all toast generation
+export const TOAST_SYSTEM_PROMPT = "You are a thoughtful, encouraging speaker crafting personalised toasts. Use warm, motivational, and supportive language.";
 
 /**
  * Get the date window for a specific range type based on user preferences
@@ -243,15 +184,13 @@ async function generateToastContentWithAI(noteContents: string[]): Promise<strin
 }
 
 /**
- * Generate personalized toast content using OpenAI with customizable style
+ * Generate personalized toast content using OpenAI with standardized format
  * @param noteContents Array of user's reflection notes for the period
- * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective, structured)
  * @param userName Optional user's name for personalized greeting
  * @returns Generated toast content
  */
 async function generateToastContent(
   noteContents: string[], 
-  toastStyle: ToastPromptStyle | string = 'weekly',
   userName: string = ''
 ): Promise<string> {
   if (!process.env.OPENAI_API_KEY || noteContents.length === 0) {
@@ -259,65 +198,33 @@ async function generateToastContent(
   }
 
   try {
-    // Check if the toast style is a valid style, otherwise use weekly
-    const validStyle = (Object.keys(TOAST_PROMPTS) as ToastPromptStyle[]).includes(toastStyle as ToastPromptStyle)
-      ? toastStyle as ToastPromptStyle
-      : 'weekly';
-    
-    // Get the appropriate prompt template
-    let promptTemplate = TOAST_PROMPTS[validStyle];
-    
-    // Insert the user's reflections into the prompt template
+    // Format the reflections
     const formattedReflections = noteContents.join('\n\n');
-    let userPrompt = promptTemplate.replace('[REFLECTIONS]', formattedReflections);
     
-    // If we have the user's name, personalize the prompt further
-    if (userName) {
-      userPrompt = `${userPrompt}\n\nPlease address the user by name: ${userName}`;
-    }
+    console.log(`[Toast Generator] Generating toast with standard format`);
     
-    console.log(`[Toast Generator] Using '${toastStyle}' toast style`);
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { 
+          role: "system", 
+          content: TOAST_SYSTEM_PROMPT
+        },
+        { 
+          role: "user", 
+          content: `You are writing a toast addressed directly to the user ${userName ? `named ${userName}` : ''}.` +
+                   " Use second-person \"you\" and celebrate their recent achievements and reflections." +
+                   " Mention specific positive actions or growth moments the user has shared." +
+                   " The tone should be heartfelt, sincere, and motivational, about 200 words." +
+                   `\n\nHere are the user's reflections:\n${formattedReflections}`
+        }
+      ],
+      max_tokens: 300,
+      temperature: 0.7,
+    });
     
-    // For the structured prompt style, use JSON format approach
-    if (validStyle === 'structured') {
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a thoughtful, encouraging speaker crafting personalised toasts. Use warm, motivational, and supportive language." 
-          },
-          { 
-            role: "user", 
-            content: `You are writing a toast addressed directly to the user ${userName ? `named ${userName}` : ''}.` +
-                     " Use second-person \"you\" and celebrate their recent achievements and reflections." +
-                     " Mention specific positive actions or growth moments the user has shared." +
-                     " The tone should be heartfelt, sincere, and motivational, about 200 words." +
-                     `\n\nHere are the user's reflections:\n${formattedReflections}`
-          }
-        ],
-        max_tokens: 300,
-        temperature: 0.7,
-      });
-      
-      return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
-    } 
-    // For regular styles, use the standard approach
-    else {
-      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: TOAST_PROMPTS.system },
-          { role: "user", content: userPrompt }
-        ],
-        max_tokens: 400,
-        temperature: 0.7,
-      });
-
-      return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
-    }
+    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
   } catch (error) {
     console.error("Error generating toast with OpenAI:", error);
     return generateFallbackToastContent(noteContents.length, []);
@@ -404,10 +311,9 @@ export async function generateToast(user: User, range: ToastRange): Promise<Toas
 /**
  * Generate a weekly toast for a user
  * @param userId ID of the user to generate toast for
- * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
  * @param userName Optional user's name for personalized greeting
  */
-export async function generateWeeklyToast(userId: number, toastStyle: string = 'weekly', userName: string = ''): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, userName: string = ''): Promise<Toast> {
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
   
@@ -475,10 +381,9 @@ export async function generateWeeklyToast(userId: number, toastStyle: string = '
     }
   }
   
-  // Generate toast content with the specified style and user's name if available
+  // Generate toast content with the user's name if available
   const content = await generateToastContent(
-    noteContents, 
-    toastStyle, 
+    noteContents,
     userInfo?.name || userName || ''
   );
   

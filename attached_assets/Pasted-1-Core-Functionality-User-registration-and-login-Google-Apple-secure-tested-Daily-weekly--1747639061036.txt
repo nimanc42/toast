@@ -1,0 +1,49 @@
+1. Core Functionality
+•	User registration and login (Google/Apple, secure, tested)
+•	Daily/weekly/monthly/yearly reflection input works as designed
+•	User can review/edit past entries (optional, but recommended)
+•	Toast generation (AI text + ElevenLabs audio) works without fail
+•	Toast can be played back, replayed, and (optionally) shared
+•	User can choose from multiple voices (and preferences are saved)
+•	Reflection-to-toast flow feels emotionally accurate and positive
+•	Message generation limits in place (to control costs)
+•	Toast frequency preference & time zone selection saved
+ 
+2. Reliability, Security & Resilience
+•	Session/auth persistence is robust (user stays logged in as expected)
+•	All errors (API, quota, DB) handled gracefully, with clear user messages
+•	Rate limits & abuse protections are active
+•	API keys and secrets stored securely
+•	Fallbacks or mocks for ElevenLabs when credits are exhausted
+•	Comprehensive logging for troubleshooting
+ 
+3. User Experience
+•	Onboarding flow introduces app purpose & how to use it
+•	UI is intuitive and responsive on mobile and desktop
+•	Celebratory “toast” moment feels uplifting and visually engaging
+•	Help/contact/support page available
+•	Accessibility features tested (screen reader support, colour contrast, etc.)
+ 
+4. Content and Feedback
+•	Toasts are unique, non-repetitive, and tailored to the user’s entries
+•	Emotional validation in responses is warm but authentic
+•	Kids’ version (“3 Stars and a Wish”) is appropriately designed (if launching)
+•	Beta testers provide positive emotional feedback and app feels “sticky”
+ 
+5. Compliance & Infrastructure
+•	Privacy policy and terms of use written and accessible
+•	User data securely stored and encrypted
+•	App passes basic penetration/security testing
+•	App deployed on reliable infrastructure (Replit, Vercel, etc.)
+•	Domain and branding are ready
+•	Analytics and error reporting set up
+ 
+6. Launch Readiness
+•	Final round of manual QA (all features)
+•	Production environment tested (not just dev/staging)
+•	Plan for handling support requests/feedback post-launch
+•	Marketing and launch announcement prepared
+•	Backup/restore tested for critical user data
+ 
+Would you like this in a Google Doc or project management format (e.g., Trello, Notion, etc)? Want any checkpoints broken down further?
+

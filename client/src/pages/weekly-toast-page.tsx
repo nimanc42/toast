@@ -78,8 +78,7 @@ export default function WeeklyToastPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ 
-          voice: selectedVoice,
-          toastStyle: selectedToastStyle
+          voice: selectedVoice
         })
       });
       
@@ -145,8 +144,7 @@ export default function WeeklyToastPage() {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ 
-          voice: selectedVoice,
-          toastStyle: selectedToastStyle
+          voice: selectedVoice
         })
       });
       
@@ -288,26 +286,7 @@ export default function WeeklyToastPage() {
                     </Select>
                   </div>
                   
-                  <div className="flex flex-col">
-                    <label htmlFor="toast-style-select" className="block text-sm font-medium text-white mb-1">
-                      Toast Style:
-                    </label>
-                    <Select value={selectedToastStyle} onValueChange={handleToastStyleChange}>
-                      <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
-                        <SelectValue placeholder="Select style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {toastStyleOptions.map(style => (
-                          <SelectItem key={style.id} value={style.id} className="text-gray-900">
-                            <div className="flex flex-col">
-                              <span>{style.name}</span>
-                              <span className="text-xs text-gray-500">{style.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Toast style selection removed: using standardized prompt format */}
                   
                   <TooltipProvider>
                     <Tooltip>

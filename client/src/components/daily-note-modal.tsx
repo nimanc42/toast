@@ -107,7 +107,17 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           
           // Update the text content with the transcript
           if (finalTranscript) {
-            setTextContent((prevText) => prevText + ' ' + finalTranscript);
+            // Trim any leading/trailing whitespace and ensure we don't add double spaces
+            const cleanTranscript = finalTranscript.trim();
+            
+            // If we already have text, add a space before the new content
+            setTextContent((prevText) => {
+              const prevTextTrimmed = prevText.trim();
+              if (prevTextTrimmed) {
+                return prevTextTrimmed + ' ' + cleanTranscript;
+              }
+              return cleanTranscript;
+            });
           } else {
             // If there's no final transcript, use the latest result as interim result
             const interimTranscript = event.results[event.results.length - 1][0].transcript;
@@ -115,7 +125,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               // Show interim results but don't save them to state yet
               const textElement = document.getElementById('reflectionInput');
               if (textElement) {
-                const displayText = textContent + ' ' + interimTranscript;
+                const displayText = textContent.trim() + ' ' + interimTranscript.trim();
                 // Add a placeholder display for interim results
                 textElement.setAttribute('placeholder', `${displayText}...`);
               }
@@ -280,14 +290,26 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     }
     
     try {
-      // Handle text mode
+      // Check if the user was using voice-to-text
+      if (isListening) {
+        // Stop listening first to finalize any pending transcription
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          setIsListening(false);
+          // Give a moment for any final text to be processed
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      // Handle text mode - this will now include content from voice-to-text too
       if (inputType === "text") {
+        // Save the text content exactly as shown in the textarea
         saveMutation.mutate({ 
-          content: textContent,
+          content: textContent.trim(),
           bundleTag: null
         });
       } 
-      // Handle audio mode
+      // Handle audio recording mode
       else {
         // If currently recording, stop the recording first
         if (isRecording) {

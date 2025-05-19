@@ -347,9 +347,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           
           // Create FormData to send the audio file with proper MIME type for Whisper
           const formData = new FormData();
-          // Create a new blob with the explicit audio/webm MIME type
-          const whisperCompatibleBlob = new Blob([audioBlob], { type: 'audio/webm' });
-          formData.append("file", whisperCompatibleBlob, "audio-reflection.webm");
+          // Use the original audioBlob directly - it should already have the correct MIME type
+          // from our MediaRecorder configuration (audio/webm;codecs=opus)
+          formData.append("file", audioBlob, "audio-reflection.webm");
+          console.log("Sending audio for transcription:", audioBlob.type, audioBlob.size);
           
           // Call the transcription API with authentication
           const response = await fetch("/api/transcribe", {

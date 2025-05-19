@@ -15,9 +15,16 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
  * @returns The transcription text
  */
 export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Promise<string> {
-  // Create a temporary file to store the audio
+  // Ensure filename has a supported audio extension for Whisper
+  const supportedExtensions = ['mp3', 'mp4', 'mpeg', 'mpga', 'wav', 'webm'];
+  const fileExt = path.extname(fileName).slice(1).toLowerCase();
+  const finalFileName = supportedExtensions.includes(fileExt) 
+    ? fileName 
+    : `audio-reflection.webm`; // Default to webm if extension not supported
+  
+  // Create a temporary file to store the audio with proper extension
   const tempDir = os.tmpdir();
-  const tempFilePath = path.join(tempDir, fileName);
+  const tempFilePath = path.join(tempDir, finalFileName);
   
   try {
     // Write the buffer to a temporary file with .webm extension to ensure proper format detection

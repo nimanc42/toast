@@ -43,7 +43,7 @@ router.post("/", ensureAuthenticated, upload.single("file"), async (req: Request
       });
     }
 
-    console.log(`Transcribing audio file: ${originalFilename} (${audioBuffer.length} bytes)`);
+    console.log(`Transcribing audio file: ${originalFilename} (${audioBuffer.length} bytes, type: ${req.file.mimetype})`);
 
     // Transcribe the audio
     const transcript = await transcribeAudio(audioBuffer, originalFilename);

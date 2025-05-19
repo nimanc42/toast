@@ -92,43 +92,20 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         recognition.interimResults = true; // Show results as they come in
         recognition.lang = 'en-US';
         
-        // Set up event handlers
+        // Set up simple and direct event handler for speech recognition results
         recognition.onresult = (event: SpeechRecognitionEvent) => {
-          let finalTranscript = '';
-          let interimTranscript = '';
+          // Access the last result (most recent) from the speech recognition
+          const lastResult = event.results[event.results.length - 1];
           
-          // Process each result from the speech recognition
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
+          // Check if this result is final
+          if (lastResult.isFinal) {
+            // Get the transcript text
+            const transcript = lastResult[0].transcript;
+            console.log("Final transcript received:", transcript);
             
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript;
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-          
-          // Get the textarea element
-          const textElement = document.getElementById('reflectionInput') as HTMLTextAreaElement;
-          
-          // If we have a final transcript, add it to the text content
-          if (finalTranscript) {
-            console.log("Final transcript received:", finalTranscript);
-            const trimmedTranscript = finalTranscript.trim();
-            
-            // Update the text content state with the final transcript
-            setTextContent(prev => {
-              const prevTrimmed = prev.trim();
-              return prevTrimmed ? `${prevTrimmed} ${trimmedTranscript}` : trimmedTranscript;
-            });
-          }
-          
-          // If we have an interim transcript, show it in the placeholder
-          if (interimTranscript && textElement) {
-            // Create placeholder text that includes both current text and interim results
-            const currentText = textElement.value || "";
-            const placeholderText = `${currentText} ${interimTranscript}...`;
-            textElement.placeholder = placeholderText;
+            // Simply append this text to our existing text
+            const newText = textContent ? `${textContent} ${transcript}` : transcript;
+            setTextContent(newText);
           }
         };
         
@@ -337,9 +314,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         
         console.log("Saving text reflection:", trimmedText);
         
-        // Save as a text reflection
+        // Save as a text reflection (not audio)
         saveMutation.mutate({ 
           content: trimmedText,
+          // Note: No audioUrl property here because this is a text reflection
           bundleTag: null
         });
       } 
@@ -422,7 +400,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           <div className="relative">
             <Textarea
               id="reflectionInput"
-              placeholder="Type your reflection here..."
+              placeholder={isListening ? "Listening for your speech..." : "Type your reflection here..."}
               rows={4}
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}

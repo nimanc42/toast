@@ -59,10 +59,13 @@ export function getDateWindow(range: ToastRange, user: User) {
         mostRecentDay = mostRecentDay.minus({ weeks: 1 });
       }
       
+      // For toasts, we want to summarize the week leading up to the toast day
       // The start date is 7 days before the most recent preferred day
       const start = mostRecentDay.minus({ days: 7 }).startOf('day');
-      // The end date is the day before the most recent preferred day
-      const end = mostRecentDay.minus({ days: 1 }).endOf('day');
+      // The end date is the day before the most recent preferred day (or end of yesterday if today)
+      const end = mostRecentDay <= now 
+        ? mostRecentDay.endOf('day')  // If today is toast day, include today
+        : mostRecentDay.minus({ days: 1 }).endOf('day');  // Otherwise end at day before toast day
       
       console.log(`[Toast Generator] Weekly window for user ${user.id}: ${start.toFormat('yyyy-MM-dd')} to ${end.toFormat('yyyy-MM-dd')} (preferred day: ${targetDow})`);
       

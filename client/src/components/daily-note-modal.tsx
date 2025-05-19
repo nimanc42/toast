@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,54 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mic, MicOff } from "lucide-react";
+
+// TypeScript definitions for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+  error: any;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionEvent) => void;
+  onend: () => void;
+}
+
+// Extend the Window interface
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+    mozSpeechRecognition?: new () => SpeechRecognition;
+    msSpeechRecognition?: new () => SpeechRecognition;
+  }
+}
 
 interface DailyNoteModalProps {
   isOpen: boolean;
@@ -17,8 +64,111 @@ interface DailyNoteModalProps {
 export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps) {
   const [inputType, setInputType] = useState<"text" | "audio">("text");
   const [textContent, setTextContent] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Speech recognition reference
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // Initialize speech recognition when component mounts
+  useEffect(() => {
+    // Check if the browser supports SpeechRecognition
+    if (typeof window !== 'undefined') {
+      // Check for various implementations across browsers
+      const SpeechRecognitionAPI = (
+        window.SpeechRecognition || 
+        window.webkitSpeechRecognition || 
+        // @ts-ignore - handle vendor prefixed versions
+        window.mozSpeechRecognition || 
+        // @ts-ignore
+        window.msSpeechRecognition
+      );
+      
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        // Set up event handlers
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          const transcript = Array.from(Array.prototype.slice.call(event.results))
+            .map(result => (result as SpeechRecognitionResult)[0])
+            .map(result => result.transcript)
+            .join('');
+          
+          setTextContent(transcript);
+        };
+        
+        recognition.onerror = (event: SpeechRecognitionEvent) => {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+          toast({
+            title: "Speech Recognition Error",
+            description: `Error: ${event.error}. Please try again or type manually.`,
+            variant: "destructive",
+          });
+        };
+        
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+        
+        recognitionRef.current = recognition;
+      } else {
+        setSpeechSupported(false);
+        console.warn("Speech Recognition API not supported in this browser");
+      }
+    }
+    
+    // Cleanup function
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors when stopping
+        }
+      }
+    };
+  }, [toast]);
+  
+  // Function to toggle speech recognition
+  const toggleSpeechRecognition = () => {
+    if (!speechSupported) {
+      toast({
+        title: "Not Supported",
+        description: "Speech recognition is not supported in your browser. Please try Chrome, Edge, or Safari.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isListening) {
+      // Stop listening
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
+    } else {
+      // Start listening
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+        } catch (error) {
+          console.error("Failed to start speech recognition:", error);
+          toast({
+            title: "Failed to start",
+            description: "Could not start speech recognition. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+    }
+  };
   
   // Audio recorder hook
   const {
@@ -180,14 +330,49 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         
         {/* Text Input Section */}
         {inputType === "text" && (
-          <div>
+          <div className="relative">
             <Textarea
+              id="reflectionInput"
               placeholder="Type your reflection here..."
               rows={4}
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
-              className="mb-4"
+              className={`mb-4 ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
             />
+            
+            {/* Voice to Text Button */}
+            <div className="absolute right-3 bottom-6">
+              <Button
+                type="button"
+                size="icon"
+                variant={isListening ? "default" : "outline"}
+                className={`h-8 w-8 rounded-full ${isListening ? 'bg-blue-500 text-white hover:bg-blue-600' : 'text-gray-600'}`}
+                onClick={toggleSpeechRecognition}
+                title={isListening ? "Stop listening" : "Start voice to text"}
+                disabled={!speechSupported}
+              >
+                {isListening ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            
+            {/* Speech Recognition Status */}
+            {isListening && (
+              <div className="mt-1 text-sm text-blue-600 animate-pulse flex items-center">
+                <div className="w-2 h-2 bg-blue-600 rounded-full mr-2 animate-ping"></div>
+                Listening... Speak clearly
+              </div>
+            )}
+            
+            {/* Unsupported Browser Warning */}
+            {!speechSupported && (
+              <div className="mt-1 text-xs text-orange-600">
+                Speech recognition is not supported in your browser. Please try Chrome, Edge, or Safari.
+              </div>
+            )}
           </div>
         )}
         

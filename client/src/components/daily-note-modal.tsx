@@ -76,10 +76,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   useEffect(() => {
     // Check if the browser supports SpeechRecognition
     if (typeof window !== 'undefined') {
-      // Check for various implementations across browsers
+      // Check for various implementations across browsers - Safari and Chrome primarily use webkitSpeechRecognition
       const SpeechRecognitionAPI = (
-        window.SpeechRecognition || 
         window.webkitSpeechRecognition || 
+        window.SpeechRecognition || 
         // @ts-ignore - handle vendor prefixed versions
         window.mozSpeechRecognition || 
         // @ts-ignore
@@ -88,18 +88,39 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       
       if (SpeechRecognitionAPI) {
         const recognition = new SpeechRecognitionAPI();
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.continuous = false; // Set to false for more reliable results on mobile
+        recognition.interimResults = true; // Show results as they come in
         recognition.lang = 'en-US';
         
         // Set up event handlers
         recognition.onresult = (event: SpeechRecognitionEvent) => {
-          const transcript = Array.from(Array.prototype.slice.call(event.results))
-            .map(result => (result as SpeechRecognitionResult)[0])
-            .map(result => result.transcript)
-            .join('');
+          let finalTranscript = '';
           
-          setTextContent(transcript);
+          // Process each result from the speech recognition
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            }
+          }
+          
+          // Update the text content with the transcript
+          if (finalTranscript) {
+            setTextContent((prevText) => prevText + ' ' + finalTranscript);
+          } else {
+            // If there's no final transcript, use the latest result as interim result
+            const interimTranscript = event.results[event.results.length - 1][0].transcript;
+            if (interimTranscript) {
+              // Show interim results but don't save them to state yet
+              const textElement = document.getElementById('reflectionInput');
+              if (textElement) {
+                const displayText = textContent + ' ' + interimTranscript;
+                // Add a placeholder display for interim results
+                textElement.setAttribute('placeholder', `${displayText}...`);
+              }
+            }
+          }
         };
         
         recognition.onerror = (event: SpeechRecognitionEvent) => {

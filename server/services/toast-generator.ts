@@ -25,10 +25,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Toast types
 export type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
-// Define toast prompt type for type safety - now using a single standard prompt format
-export type ToastPromptStyle = 'standard';
-
-// Toast system message - consistent for all toast generation
 // Toast system message - consistent for all toast generation
 export const TOAST_SYSTEM_PROMPT = "You are a thoughtful, encouraging speaker crafting personalised toasts. Use warm, motivational, and supportive language.";
 

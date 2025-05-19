@@ -696,41 +696,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Toast Generator] Using standard toast format`);
       
       try {
-        // Generate toast content with OpenAI using the standard format
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o", // the newest model as of May 13, 2024
-          messages: [
-            { 
-              role: "system", 
-              content: TOAST_SYSTEM_PROMPT 
-            },
-            { 
-              role: "user", 
-              content: `You are writing a toast addressed directly to the user named ${user.name || 'Craig'}.` +
-                      " Use second-person \"you\" and celebrate their recent achievements and reflections." +
-                      " Mention specific positive actions or growth moments the user has shared." +
-                      " The tone should be heartfelt, sincere, and motivational, about 200 words." +
-                      `\n\nHere are the user's reflections:\n${formattedReflections}`
-            }
-          ],
-          max_tokens: 300,
-          temperature: 0.7,
-        });
+        // Use the standardized toast generator function with updated prompt format
+        const toast = await generateWeeklyToast(userId, req.user?.name || '');
         
-        const content = response.choices[0].message.content || "Here's to your week of reflection and growth!";
-        
-        // Create a new toast
-        const newToast = await storage.createToast({
-          userId,
-          content,
-          noteIds,
-          type: 'weekly'
-        });
+        // The toast content and creation is now handled within generateWeeklyToast
         
         // Now generate audio with the selected voice
         const voiceId = getVoiceId(voice || 'motivational');
-        const ttsResult = await generateSpeech(content, voiceId, userId);
+        const ttsResult = await generateSpeech(toast.content, voiceId, userId);
         
         let audioUrl = null;
         
@@ -759,7 +732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Update toast with audio URL
-        const updatedToast = await storage.updateToast(newToast.id, { audioUrl });
+        const updatedToast = await storage.updateToast(toast.id, { audioUrl });
         
         // Log analytics for toast regeneration
         if (storage.logUserActivity) {

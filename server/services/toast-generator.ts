@@ -165,34 +165,9 @@ export function getThemesFromNotes(noteContents: string[]): string[] {
  * @returns Generated toast content
  */
 async function generateToastContentWithAI(noteContents: string[]): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) {
-    // Fallback if no API key is available
-    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
-  }
-
-  try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are a motivational coach who creates personalized weekly celebrations based on reflection notes. Keep the tone warm, encouraging, and celebratory. Highlight patterns, progress, and growth. Keep responses under 200 words."
-        },
-        {
-          role: "user",
-          content: `Create a personalized celebratory toast based on these reflection notes from the past week:\n\n${noteContents.join('\n\n')}`
-        }
-      ],
-      max_tokens: 400,
-      temperature: 0.7,
-    });
-
-    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
-  } catch (error) {
-    console.error("Error generating toast with OpenAI:", error);
-    return generateFallbackToastContent(noteContents.length, getThemesFromNotes(noteContents));
-  }
+  // This function is deprecated - forward to the standardized implementation
+  console.log('[Toast Generator] Using standardized toast format implementation');
+  return generateToastContent(noteContents);
 }
 
 /**

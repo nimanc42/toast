@@ -349,10 +349,13 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           const formData = new FormData();
           formData.append("file", audioBlob, "reflection.webm");
           
-          // Call the transcription API
+          // Call the transcription API with authentication
           const response = await fetch("/api/transcribe", {
             method: "POST",
-            body: formData
+            body: formData,
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            }
           });
           
           if (!response.ok) {
@@ -388,7 +391,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           toast({
             title: "Transcription unavailable",
             description: "We couldn't transcribe your audio, but your recording has been saved.",
-            variant: "warning"
+            variant: "destructive"
           });
         } finally {
           setIsTranscribing(false);
@@ -626,14 +629,19 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         )}
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isTranscribing || saveMutation.isPending}>
             Cancel
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={saveMutation.isPending}
+            disabled={isTranscribing || saveMutation.isPending}
           >
-            {saveMutation.isPending ? (
+            {isTranscribing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Transcribing...
+              </>
+            ) : saveMutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...

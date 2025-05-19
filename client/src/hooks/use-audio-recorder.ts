@@ -56,8 +56,9 @@ export const useAudioRecorder = (options?: UseAudioRecorderOptions): UseAudioRec
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       
-      // Create media recorder
-      const mediaRecorder = new MediaRecorder(stream);
+      // Create media recorder with specific mime type for compatibility with OpenAI Whisper
+      const recorderOptions = { mimeType: 'audio/webm;codecs=opus' };
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
       mediaRecorderRef.current = mediaRecorder;
       
       // Set up data handling
@@ -67,16 +68,17 @@ export const useAudioRecorder = (options?: UseAudioRecorderOptions): UseAudioRec
         }
       };
       
-      // Handle recording stop
+      // Handle recording stop - ensure proper audio mime type for Whisper compatibility 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: 'audio/webm;codecs=opus' });
         const url = URL.createObjectURL(blob);
         
         setAudioBlob(blob);
         setAudioUrl(url);
         setIsRecording(false);
         
-        if (options?.onRecordingComplete) {
+        // Call the callback if provided
+        if (options && 'onRecordingComplete' in options && typeof options.onRecordingComplete === 'function') {
           options.onRecordingComplete(blob);
         }
         

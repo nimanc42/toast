@@ -31,9 +31,10 @@ router.post("/", ensureAuthenticated, upload.single("file"), async (req: Request
       return res.status(500).json({ message: "Transcription service is not available" });
     }
 
-    // Get the file buffer and original name
+    // Get the file buffer and ensure proper filename with extension
     const audioBuffer = req.file.buffer;
-    const originalFilename = req.file.originalname || "audio.webm";
+    // Force .webm extension for OpenAI Whisper compatibility
+    const originalFilename = "audio-reflection.webm";
 
     // Use testing mode placeholder if enabled
     if (CONFIG.TESTING_MODE) {

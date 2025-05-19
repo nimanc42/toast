@@ -345,9 +345,11 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             description: "We're converting your audio to text. This may take a moment.",
           });
           
-          // Create FormData to send the audio file
+          // Create FormData to send the audio file with proper MIME type for Whisper
           const formData = new FormData();
-          formData.append("file", audioBlob, "reflection.webm");
+          // Create a new blob with the explicit audio/webm MIME type
+          const whisperCompatibleBlob = new Blob([audioBlob], { type: 'audio/webm' });
+          formData.append("file", whisperCompatibleBlob, "audio-reflection.webm");
           
           // Call the transcription API with authentication
           const response = await fetch("/api/transcribe", {

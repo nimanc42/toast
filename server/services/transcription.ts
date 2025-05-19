@@ -20,15 +20,18 @@ export async function transcribeAudio(audioBuffer: Buffer, fileName: string): Pr
   const tempFilePath = path.join(tempDir, fileName);
   
   try {
-    // Write the buffer to a temporary file
+    // Write the buffer to a temporary file with .webm extension to ensure proper format detection
     fs.writeFileSync(tempFilePath, audioBuffer);
     
-    // Create a readable stream for the file
-    const fileStream = fs.createReadStream(tempFilePath);
+    console.log(`Saved audio file to ${tempFilePath}, size: ${audioBuffer.length} bytes`);
+    
+    // Create a File object that Whisper can process directly
+    const file = fs.createReadStream(tempFilePath);
     
     // Use OpenAI's Whisper model to transcribe the audio
+    // The key is passing the file stream directly without manipulating it
     const transcription = await openai.audio.transcriptions.create({
-      file: fileStream,
+      file: file,
       model: "whisper-1", // Use the Whisper model for transcription
       language: "en", // Set to English language
       response_format: "text" // Get plain text response

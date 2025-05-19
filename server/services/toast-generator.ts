@@ -26,7 +26,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export type ToastRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 // Define toast prompt type for type safety
-export type ToastPromptStyle = 'system' | 'weekly' | 'uplifting' | 'reflective';
+export type ToastPromptStyle = 'system' | 'weekly' | 'uplifting' | 'reflective' | 'structured';
 
 // Toast prompt templates - easy to customize
 export const TOAST_PROMPTS: Record<ToastPromptStyle, string> = {
@@ -77,6 +77,14 @@ Write a THOUGHTFUL, CONTEMPLATIVE weekly toast in SECOND PERSON, addressed direc
 • Keep the tone warm, wise, and supportive—like a mentor sharing wisdom.  
 • Keep it under 90 seconds if read aloud.
 • End with a thoughtful closing that invites continued reflection.
+
+The reflections for this week are:
+[REFLECTIONS]
+`,
+
+  // New JSON-structured format for more precise control
+  structured: `
+You are writing a toast addressed directly to the user. Use second-person "you" and celebrate their recent achievements and reflections. Mention specific positive actions or growth moments the user has shared. The tone should be heartfelt, sincere, and motivational, about 200 words.
 
 The reflections for this week are:
 [REFLECTIONS]
@@ -237,7 +245,7 @@ async function generateToastContentWithAI(noteContents: string[]): Promise<strin
 /**
  * Generate personalized toast content using OpenAI with customizable style
  * @param noteContents Array of user's reflection notes for the period
- * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective)
+ * @param toastStyle Optional style of toast to generate (weekly, uplifting, reflective, structured)
  * @param userName Optional user's name for personalized greeting
  * @returns Generated toast content
  */
@@ -270,18 +278,46 @@ async function generateToastContent(
     
     console.log(`[Toast Generator] Using '${toastStyle}' toast style`);
     
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: TOAST_PROMPTS.system },
-        { role: "user", content: userPrompt }
-      ],
-      max_tokens: 400,
-      temperature: 0.7,
-    });
+    // For the structured prompt style, use JSON format approach
+    if (validStyle === 'structured') {
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { 
+            role: "system", 
+            content: "You are a thoughtful, encouraging speaker crafting personalised toasts. Use warm, motivational, and supportive language." 
+          },
+          { 
+            role: "user", 
+            content: `You are writing a toast addressed directly to the user ${userName ? `named ${userName}` : ''}.` +
+                     " Use second-person \"you\" and celebrate their recent achievements and reflections." +
+                     " Mention specific positive actions or growth moments the user has shared." +
+                     " The tone should be heartfelt, sincere, and motivational, about 200 words." +
+                     `\n\nHere are the user's reflections:\n${formattedReflections}`
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.7,
+      });
+      
+      return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
+    } 
+    // For regular styles, use the standard approach
+    else {
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: TOAST_PROMPTS.system },
+          { role: "user", content: userPrompt }
+        ],
+        max_tokens: 400,
+        temperature: 0.7,
+      });
 
-    return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
+      return response.choices[0].message.content || generateFallbackToastContent(noteContents.length, []);
+    }
   } catch (error) {
     console.error("Error generating toast with OpenAI:", error);
     return generateFallbackToastContent(noteContents.length, []);

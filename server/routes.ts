@@ -690,33 +690,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noteContents = userNotes.map(note => note.content || '').filter(Boolean);
       const noteIds = userNotes.map(note => note.id);
       
-      // Define toast prompt templates - mirrors the structure in toast-generator-v2.ts
-      const TOAST_PROMPTS = {
-        system: "You are a warm, inspirational toastmaster. You create heartfelt, personalized celebrations based on people's reflection notes.",
-        weekly: `Write a heartfelt, motivating weekly toast for this user based on their reflections below.
-          - Make it sound like an uplifting, personal speech.
-          - Keep it positive and encouraging, but genuine.
-          - Keep it under 90 seconds if read aloud.
-          - The reflections for this week are: [REFLECTIONS]`,
-        uplifting: `Create an energetic, uplifting toast that celebrates this user's achievements and growth.
-          - Use motivational language that inspires continued action.
-          - Acknowledge both big and small wins from their reflections.
-          - Keep it concise and impactful, under 90 seconds when read aloud.
-          - The reflections for this week are: [REFLECTIONS]`,
-        reflective: `Craft a thoughtful, contemplative toast that highlights insights from this user's reflections.
-          - Focus on personal growth, learning moments, and wisdom gained.
-          - Create a reflective mood that encourages deeper thought.
-          - Keep it concise yet meaningful, under 90 seconds when read aloud.
-          - The reflections for this week are: [REFLECTIONS]`
-      };
+      // Use the imported TOAST_PROMPTS from toast-generator.ts
       
       // Safely select the prompt template based on the requested style
-      const validStyle = (['weekly', 'uplifting', 'reflective'] as Array<ToastPromptStyle>).includes(toastStyle as ToastPromptStyle) 
+      const validStyle = (['weekly', 'uplifting', 'reflective', 'structured'] as Array<ToastPromptStyle>).includes(toastStyle as ToastPromptStyle) 
         ? toastStyle as ToastPromptStyle 
         : 'weekly';
       
-      // Get appropriate prompt template
-      const promptTemplate = TOAST_PROMPTS[validStyle];
+      // Get appropriate prompt template using specific styles from imported TOAST_PROMPTS
+      const promptTemplate = toastStyle === 'structured' 
+        ? TOAST_PROMPTS.structured 
+        : toastStyle === 'reflective'
+          ? TOAST_PROMPTS.reflective
+          : toastStyle === 'uplifting'
+            ? TOAST_PROMPTS.uplifting
+            : TOAST_PROMPTS.weekly;
       
       // Insert the user's reflections into the prompt template
       const formattedReflections = noteContents.join('\n\n');

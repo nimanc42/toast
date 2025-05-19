@@ -14,8 +14,11 @@ export function TestingModeBanner() {
   
   // Check if testing mode is enabled either via server or local storage
   const isTestingMode = Boolean(
-    (configStatus && 'testingMode' in configStatus && configStatus.testingMode) || 
-    localStorage.getItem('testingMode') === 'true'
+    localStorage.getItem('testingMode') === 'true' ||
+    (configStatus && 
+     typeof configStatus === 'object' && 
+     Object.prototype.hasOwnProperty.call(configStatus, 'testingMode') && 
+     configStatus.testingMode)
   );
   
   // Don't show anything if not in testing mode or if dismissed

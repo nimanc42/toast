@@ -1,69 +1,42 @@
-import { useAuth } from "@/hooks/use-auth";
-import { FlaskConical, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { useEffect, useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 
 export function TestingModeBanner() {
-  const { isTestingMode, logoutMutation } = useAuth();
-  const { toast } = useToast();
+  const [isDismissed, setIsDismissed] = useState(false);
   
-  if (!isTestingMode) return null;
+  // Query to check if testing mode is enabled
+  const { data: configStatus } = useQuery({
+    queryKey: ['/api/config/status'],
+    staleTime: 60000, // 1 minute
+  });
   
-  const exitTestingMode = async () => {
-    try {
-      // First clear the testing mode flag in local storage
-      localStorage.removeItem('testingMode');
-      
-      // Then perform a logout to clear the session
-      logoutMutation.mutate(undefined, {
-        onSuccess: () => {
-          toast({
-            title: "Testing Mode Disabled",
-            description: "You've exited Testing Mode. App will now use the regular database.",
-            variant: "default",
-          });
-          
-          // Refresh the page to ensure a clean state
-          setTimeout(() => {
-            window.location.href = '/auth';
-          }, 1000);
-        },
-        onError: (error) => {
-          toast({
-            title: "Error Disabling Testing Mode",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      });
-    } catch (error) {
-      console.error("Error exiting testing mode:", error);
-      toast({
-        title: "Error",
-        description: "Failed to exit Testing Mode. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Check if testing mode is enabled either via server or local storage
+  const isTestingMode = Boolean(
+    (configStatus && 'testingMode' in configStatus && configStatus.testingMode) || 
+    localStorage.getItem('testingMode') === 'true'
+  );
+  
+  // Don't show anything if not in testing mode or if dismissed
+  if (!isTestingMode || isDismissed) {
+    return null;
+  }
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-yellow-500/80 text-yellow-950 py-1 px-4 z-40 flex items-center justify-between shadow-md">
-      <div className="flex items-center">
-        <FlaskConical className="w-4 h-4 mr-2" />
-        <span className="font-medium text-sm">
-          Testing Mode: No data is being saved to the database
-        </span>
+    <Alert className="sticky top-0 z-50 bg-yellow-50 border-yellow-300 shadow-md">
+      <div className="flex justify-between items-center">
+        <AlertDescription className="text-yellow-800 font-medium">
+          🧪 Testing Mode Active - No changes will be saved to the database
+        </AlertDescription>
+        <button
+          onClick={() => setIsDismissed(true)}
+          className="text-yellow-700 hover:text-yellow-900"
+          aria-label="Dismiss"
+        >
+          <X size={18} />
+        </button>
       </div>
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="bg-yellow-600 hover:bg-yellow-700 text-white border-yellow-700 ml-4"
-        onClick={exitTestingMode}
-      >
-        <XCircle className="w-3 h-3 mr-1" />
-        Exit Testing Mode
-      </Button>
-    </div>
+    </Alert>
   );
 }

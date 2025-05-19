@@ -27,7 +27,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
-import { generateWeeklyToast } from "./services/toast-generator-v2";
+import { generateWeeklyToast, TOAST_PROMPTS, ToastPromptStyle } from "./services/toast-generator";
 import { CONFIG } from "./config";
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
@@ -711,9 +711,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Safely select the prompt template based on the requested style
-      const validToastStyles = ['weekly', 'uplifting', 'reflective'];
-      const validStyle = validToastStyles.includes(toastStyle) ? toastStyle : 'weekly';
-      const promptTemplate = TOAST_PROMPTS[validStyle] || TOAST_PROMPTS.weekly;
+      const validStyle = (['weekly', 'uplifting', 'reflective'] as Array<ToastPromptStyle>).includes(toastStyle as ToastPromptStyle) 
+        ? toastStyle as ToastPromptStyle 
+        : 'weekly';
+      
+      // Get appropriate prompt template
+      const promptTemplate = TOAST_PROMPTS[validStyle];
       
       // Insert the user's reflections into the prompt template
       const formattedReflections = noteContents.join('\n\n');

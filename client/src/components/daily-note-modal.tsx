@@ -259,6 +259,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   
   // Handle saving the note
   const handleSave = async () => {
+    // For text mode, require content
     if (inputType === "text" && !textContent.trim()) {
       toast({
         title: "Empty note",
@@ -268,7 +269,8 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       return;
     }
     
-    if (inputType === "audio" && !audioBlob) {
+    // For audio mode in "not recording" state with no blob, show error
+    if (inputType === "audio" && !isRecording && !audioBlob) {
       toast({
         title: "No recording",
         description: "Please record an audio reflection first.",
@@ -277,26 +279,36 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       return;
     }
     
-    // Handle saving the reflection
-    if (inputType === "text") {
-      // Save text reflection
-      saveMutation.mutate({ 
-        content: textContent,
-        bundleTag: null // TODO (BundledAway): use actual bundle tag when feature is activated
-      });
-    } else if (inputType === "audio") {
-      // For recording mode, using a mock audio URL for now
-      // In a real implementation, we would upload the audio blob to storage
-      // The key is sending some content even for audio recordings
-      if (isRecording) {
-        // If still recording, stop first
-        stopRecording();
+    try {
+      // Handle text mode
+      if (inputType === "text") {
+        saveMutation.mutate({ 
+          content: textContent,
+          bundleTag: null
+        });
+      } 
+      // Handle audio mode
+      else {
+        // If currently recording, stop the recording first
+        if (isRecording) {
+          stopRecording();
+          // Wait a moment for audioBlob to be created
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // At this point either we had an audioBlob or we just created one by stopping recording
+        saveMutation.mutate({ 
+          content: "[Audio reflection]",
+          audioUrl: audioUrl || "audio-url-placeholder",
+          bundleTag: null
+        });
       }
-      
-      saveMutation.mutate({ 
-        content: "[Audio reflection]",
-        audioUrl: "audio-url-placeholder",
-        bundleTag: null
+    } catch (error) {
+      console.error("Error in handleSave:", error);
+      toast({
+        title: "Error saving reflection",
+        description: "There was a problem saving your reflection. Please try again.",
+        variant: "destructive",
       });
     }
   };

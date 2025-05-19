@@ -72,6 +72,14 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   // Speech recognition reference
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   
+  // Reference to track the current text content for speech recognition
+  const textContentRef = useRef(textContent);
+  
+  // Keep the ref updated with the latest textContent value
+  useEffect(() => {
+    textContentRef.current = textContent;
+  }, [textContent]);
+  
   // Initialize speech recognition when component mounts
   useEffect(() => {
     // Check if the browser supports SpeechRecognition
@@ -103,8 +111,11 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             const transcript = lastResult[0].transcript;
             console.log("Final transcript received:", transcript);
             
-            // Simply append this text to our existing text
-            const newText = textContent ? `${textContent} ${transcript}` : transcript;
+            // Use the ref to get the current text content for more reliable updates
+            const currentText = textContentRef.current;
+            const newText = currentText ? `${currentText} ${transcript}` : transcript;
+            
+            // Update the state with the new text
             setTextContent(newText);
           }
         };
@@ -162,13 +173,13 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       setIsListening(false);
     } else {
       console.log("Starting speech recognition");
-      // Start listening
-      if (recognitionRef.current) {
+      // Start listening - but prevent starting if already listening
+      if (recognitionRef.current && !isListening) {
         try {
           // Reset the input placeholder
           const textElement = document.getElementById('reflectionInput') as HTMLTextAreaElement;
           if (textElement) {
-            textElement.placeholder = "Type your reflection here...";
+            textElement.placeholder = "Listening... Start speaking!";
           }
           
           // Start recognition
@@ -400,7 +411,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           <div className="relative">
             <Textarea
               id="reflectionInput"
-              placeholder={isListening ? "Listening for your speech..." : "Type your reflection here..."}
+              placeholder={isListening ? "Listening... Start speaking!" : "Type your reflection here..."}
               rows={4}
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}

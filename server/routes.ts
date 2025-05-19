@@ -995,7 +995,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Calculate next toast date using user's timezone
           const now = DateTime.now().setZone(timezone);
-          // Convert weeklyToastDay (0-6) to Luxon format (1-7)
+          // Convert weeklyToastDay (0-6) to Luxon format (1-7, where 7 is Sunday)
           const luxonDay = preferredDay === 0 ? 7 : preferredDay;
           // Get next occurrence of preferred day
           let nextDate = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 });

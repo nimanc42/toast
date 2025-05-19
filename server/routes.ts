@@ -650,7 +650,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const voice = req.body.voice;
       
-      console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format`);
+      // Get user for timezone and weekly toast day preferences
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format with timezone: ${user.timezone || 'UTC'}, weeklyToastDay: ${user.weeklyToastDay || 0}`);
       
       // Always update user voice preference if provided
       if (voice) {

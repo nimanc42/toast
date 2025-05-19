@@ -99,11 +99,32 @@ export default function SettingsPage() {
   // Update preferences mutation
   const updateMutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
-      const res = await apiRequest("PUT", "/api/preferences", values);
-      return res.json();
+      // First update voice preferences
+      const voicePrefsRes = await apiRequest("PUT", "/api/preferences", {
+        voiceStyle: values.voiceStyle,
+        toastDay: values.toastDay,
+        toastTone: values.toastTone,
+        dailyReminder: values.dailyReminder,
+        toastNotification: values.toastNotification,
+        emailNotifications: values.emailNotifications,
+      });
+      
+      // Then update user settings (timezone and weekly toast day)
+      const userSettingsRes = await apiRequest("PUT", "/api/user/settings", {
+        timezone: values.timezone,
+        weeklyToastDay: values.weeklyToastDay,
+      });
+      
+      // Return combined data
+      return {
+        voicePreferences: await voicePrefsRes.json(),
+        userSettings: await userSettingsRes.json()
+      };
     },
     onSuccess: () => {
+      // Invalidate both queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/settings"] });
       toast({
         title: "Settings updated",
         description: "Your preferences have been saved successfully.",

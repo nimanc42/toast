@@ -5,6 +5,7 @@ import { setupAuth, ensureAuthenticated } from "./auth";
 import { registerSocialRoutes } from "./routes/social";
 import gamificationRoutes from "./routes/gamification";
 import userSettingsRoutes from "./routes/user-settings";
+import transcriptionRoutes from "./routes/transcription";
 import googleAuth from './auth-google';
 import { 
   sendVerification, 

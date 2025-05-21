@@ -63,7 +63,7 @@ export default function WeeklyToastPage() {
   ];
   
   // Fetch voice preference
-  const { data: voicePreference } = useQuery({
+  const { data: voicePreference } = useQuery<VoicePreference>({
     queryKey: ["/api/preferences"]
   });
   
@@ -318,7 +318,7 @@ export default function WeeklyToastPage() {
         // Main content - either actual toast, generated toast, or demo toast
         <main className="flex-grow bg-gradient-to-b from-secondary-600 to-primary-700">
           <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 lg:px-8 text-white">
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
               <div className="inline-block p-3 rounded-full bg-white bg-opacity-10 mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
@@ -336,6 +336,56 @@ export default function WeeklyToastPage() {
                   <>Your weekly toast will be automatically generated on your selected day.</>
                 )}
               </p>
+              
+              {/* Voice Preference Section */}
+              <div className="max-w-2xl mx-auto mt-8 mb-4 bg-white bg-opacity-10 rounded-lg p-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-left">
+                    <h3 className="text-lg font-medium mb-1">Voice Preference</h3>
+                    <p className="text-sm opacity-80">Choose your preferred narrator</p>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+                    <Select
+                      value={selectedVoice}
+                      onValueChange={handleVoiceChange}
+                    >
+                      <SelectTrigger className="bg-white bg-opacity-95 border-0 w-full sm:w-48 text-gray-800">
+                        <SelectValue placeholder="Select voice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {voiceOptions.map(voice => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            {voice.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button 
+                      onClick={playVoicePreview} 
+                      disabled={previewPlaying}
+                      className="w-full sm:w-auto bg-white text-primary-600 hover:bg-white hover:bg-opacity-90"
+                    >
+                      {previewPlaying ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Playing...
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                          </svg>
+                          Preview Voice
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
               
               {/* Toast Status Message */}
               <div className="mt-4 text-center">

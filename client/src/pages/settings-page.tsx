@@ -179,9 +179,99 @@ export default function SettingsPage() {
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
                   {/* Voice Preferences Section */}
+                  {/* Weekly Toast Automation Section */}
+                  <div className="px-4 py-5 sm:px-6 border-b border-gray-200 bg-blue-50">
+                    <h2 className="text-lg font-medium text-gray-900">Weekly Toast Automation</h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Your weekly toast is now automatically generated! Set your preferences below to control when it happens.
+                    </p>
+                  </div>
+                  
+                  <div className="px-4 py-5 sm:p-6 border-b border-gray-200 bg-blue-50">
+                    <div className="space-y-6">
+                      {/* Weekly Toast Day Preference */}
+                      <FormField
+                        control={form.control}
+                        name="weeklyToastDay"
+                        render={({ field }) => (
+                          <FormItem className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                            <FormLabel className="text-blue-700 font-medium">Weekly Toast Day</FormLabel>
+                            <FormControl>
+                              <Select 
+                                onValueChange={(value) => field.onChange(parseInt(value))}
+                                value={field.value.toString()}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select a day" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0">Sunday</SelectItem>
+                                  <SelectItem value="1">Monday</SelectItem>
+                                  <SelectItem value="2">Tuesday</SelectItem>
+                                  <SelectItem value="3">Wednesday</SelectItem>
+                                  <SelectItem value="4">Thursday</SelectItem>
+                                  <SelectItem value="5">Friday</SelectItem>
+                                  <SelectItem value="6">Saturday</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              Your weekly toast will be automatically generated on this day of the week
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      {/* Timezone Selection - Highlighted */}
+                      <FormField
+                        control={form.control}
+                        name="timezone"
+                        render={({ field }) => (
+                          <FormItem className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                            <FormLabel className="text-blue-700 font-medium">Your Timezone</FormLabel>
+                            <FormControl>
+                              <Select 
+                                onValueChange={field.onChange}
+                                value={field.value}
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue placeholder="Select your timezone" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                  {(() => {
+                                    // Get timezones available in the browser
+                                    try {
+                                      return Intl.supportedValuesOf('timeZone').map(tz => (
+                                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                      ));
+                                    } catch (e) {
+                                      // Fallback for browsers that don't support Intl.supportedValuesOf
+                                      return [
+                                        "UTC", "America/New_York", "America/Chicago", 
+                                        "America/Denver", "America/Los_Angeles", "Europe/London",
+                                        "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
+                                      ].map(tz => (
+                                        <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                      ));
+                                    }
+                                  })()}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormDescription>
+                              Your timezone is used to accurately generate your toast on your preferred day
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-                    <h2 className="text-lg font-medium text-gray-900">Voice & Toast Preferences</h2>
-                    <p className="mt-1 text-sm text-gray-500">Customize how your weekly toasts are generated and delivered</p>
+                    <h2 className="text-lg font-medium text-gray-900">Voice & Other Preferences</h2>
+                    <p className="mt-1 text-sm text-gray-500">Customize how your weekly toasts sound and other delivery options</p>
                   </div>
                   
                   <div className="px-4 py-5 sm:p-6 border-b border-gray-200">

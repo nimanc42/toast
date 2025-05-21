@@ -258,7 +258,7 @@ export default function WeeklyToastPage() {
                 {latestToast ? (
                   <>Here's your weekly toast celebrating your progress!</>
                 ) : (
-                  <>Create your weekly toast to celebrate your progress!</>
+                  <>Your weekly toast will be automatically generated on your selected day.</>
                 )}
               </p>
               
@@ -296,6 +296,10 @@ export default function WeeklyToastPage() {
                     <p className="text-sm opacity-80 max-w-md">
                       Based on your settings, your toast will be created on your preferred day of the week.
                       Continue adding daily reflections to make your toast more meaningful.
+                    </p>
+                    <p className="text-xs mt-2 p-2 bg-blue-800/30 rounded-md max-w-md">
+                      <strong>New!</strong> Toast generation is now fully automated. Your weekly toast will appear 
+                      here on your selected day without any manual action needed.
                     </p>
                     <div className="mt-3">
                       <Link href="/settings">

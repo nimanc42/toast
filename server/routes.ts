@@ -1114,6 +1114,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Admin route to manually trigger toast generation job (for testing)
+  app.post("/api/admin/run-toast-generation", ensureAuthenticated, async (req, res) => {
+    // Check if user is an admin or in development mode
+    const userId = (req.user as any).id || (req.user as any).userId;
+    if (!userId) {
+      return res.status(400).json({ message: "Invalid user" });
+    }
+    
+    const isAdmin = userId === 1; // Simple admin check - user ID 1 is admin
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    
+    if (!isAdmin && !isDevelopment) {
+      return res.status(403).json({ message: "Unauthorized: Admin access required" });
+    }
+
+    try {
+      // Run the immediate toast generation job
+      const result = await runImmediateToastGeneration();
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Error triggering toast generation:", error);
+      return res.status(500).json({
+        message: "Failed to trigger toast generation",
+        error: error?.message || "Unknown error"
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   

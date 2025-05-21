@@ -226,8 +226,8 @@ export default function WeeklyToastPage() {
         <main className="flex-grow bg-gradient-to-b from-secondary-600 to-primary-700">
           <div className="max-w-4xl mx-auto px-4 py-16 sm:px-6 lg:px-8 text-white">
             <div className="text-center mb-8">
-              <div className="inline-block p-3 rounded-full bg-white bg-opacity-10 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <div className="inline-block p-3 rounded-full bg-white bg-opacity-20 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
                   <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
                   <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -235,8 +235,8 @@ export default function WeeklyToastPage() {
                   <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold font-accent mb-4">Your Personalized Toast</h1>
-              <p className="text-xl font-light max-w-xl mx-auto mb-4">
+              <h1 className="text-3xl font-bold font-accent mb-4 text-white">Your Personalized Toast</h1>
+              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-white">
                 {latestToast ? (
                   <>Here's your weekly toast celebrating your progress!</>
                 ) : (
@@ -251,12 +251,12 @@ export default function WeeklyToastPage() {
                 {latestToast ? (
                   <div className="flex flex-col items-center">
                     <div className="bg-white/20 rounded-lg p-3 mb-4 inline-block">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                       </svg>
                     </div>
-                    <p className="text-lg mb-2">Your weekly toast is ready!</p>
-                    <p className="text-sm opacity-80 max-w-md">
+                    <p className="text-lg mb-2 text-white">Your weekly toast is ready!</p>
+                    <p className="text-sm text-white opacity-90 max-w-md">
                       Your next toast will be automatically generated based on your weekly preferences in your settings.
                     </p>
                     <div className="mt-3">

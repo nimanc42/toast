@@ -261,7 +261,7 @@ export default function WeeklyToastPage() {
                     </p>
                     <div className="mt-3">
                       <Link href="/settings">
-                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white">
+                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white text-white">
                           Adjust Toast Preferences
                         </Button>
                       </Link>
@@ -270,18 +270,18 @@ export default function WeeklyToastPage() {
                 ) : (
                   <div className="flex flex-col items-center">
                     <div className="bg-white/20 rounded-lg p-3 mb-4 inline-block">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="12" y1="8" x2="12" y2="12"></line>
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
                     </div>
-                    <p className="text-lg mb-2">Your weekly toast will be generated automatically</p>
-                    <p className="text-sm opacity-80 max-w-md">
+                    <p className="text-lg mb-2 text-white">Your weekly toast will be generated automatically</p>
+                    <p className="text-sm text-white opacity-90 max-w-md">
                       Based on your settings, your toast will be created on your preferred day of the week.
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>
-                    <p className="text-xs mt-2 p-2 bg-blue-800/30 rounded-md max-w-md">
+                    <p className="text-xs mt-2 p-2 bg-blue-800/30 rounded-md max-w-md text-white">
                       <strong>New!</strong> Toast generation is now fully automated. Your weekly toast will appear 
                       here on your selected day without any manual action needed.
                     </p>

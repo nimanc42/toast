@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import AudioPlayer from "@/components/audio-player";
@@ -7,14 +7,13 @@ import ShareToast from "@/components/share-toast";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2, RefreshCcw, InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
-// Define types to fix type errors
+// Define type to fix type errors
 interface Toast {
   id: number;
   content: string;
@@ -26,19 +25,11 @@ interface Toast {
   shareUrl?: string;
 }
 
-interface VoicePreference {
-  id?: number;
-  userId?: number;
-  voiceStyle: string;
-}
-
 export default function WeeklyToastPage() {
   // All hooks at the top level
-  const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [previewPlaying, setPreviewPlaying] = useState(false);
   const { toast } = useToast();
   
   // Demo toast state for when no toast exists
@@ -51,48 +42,6 @@ export default function WeeklyToastPage() {
     shareCode: "demo",
     shared: false,
     shareUrl: "/shared/demo"
-  });
-  
-  // Voice options with descriptions
-  const voiceOptions = [
-    { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
-    { id: "david", name: "David", description: "British Gentleman" },
-    { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
-    { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
-    { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
-  ];
-  
-  // Fetch voice preference
-  const { data: voicePreference } = useQuery<VoicePreference>({
-    queryKey: ["/api/preferences"]
-  });
-  
-  // Update selected voice when preferences load
-  useEffect(() => {
-    if (voicePreference && voicePreference.voiceStyle) {
-      setSelectedVoice(voicePreference.voiceStyle);
-    }
-  }, [voicePreference]);
-  
-  // Update voice preference mutation
-  const updateVoiceMutation = useMutation({
-    mutationFn: async (voice: string) => {
-      return await apiRequest("/api/preferences", "POST", { voiceStyle: voice });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
-      toast({
-        title: "Voice preference updated",
-        description: "Your preferred voice has been updated successfully."
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error updating voice preference",
-        description: "There was an error updating your voice preference. Please try again.",
-        variant: "destructive"
-      });
-    }
   });
   
   // Using standardized toast format - no style selection needed
@@ -152,9 +101,7 @@ export default function WeeklyToastPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ 
-          voice: selectedVoice
-        })
+        body: JSON.stringify({})
       });
       
       if (res.ok) {
@@ -337,55 +284,7 @@ export default function WeeklyToastPage() {
                 )}
               </p>
               
-              {/* Voice Preference Section */}
-              <div className="max-w-2xl mx-auto mt-8 mb-4 bg-white bg-opacity-10 rounded-lg p-4">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="text-left">
-                    <h3 className="text-lg font-medium mb-1">Voice Preference</h3>
-                    <p className="text-sm opacity-80">Choose your preferred narrator</p>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-                    <Select
-                      value={selectedVoice}
-                      onValueChange={handleVoiceChange}
-                    >
-                      <SelectTrigger className="bg-white bg-opacity-95 border-0 w-full sm:w-48 text-gray-800">
-                        <SelectValue placeholder="Select voice" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {voiceOptions.map(voice => (
-                          <SelectItem key={voice.id} value={voice.id}>
-                            {voice.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    <Button 
-                      onClick={playVoicePreview} 
-                      disabled={previewPlaying}
-                      className="w-full sm:w-auto bg-white text-primary-600 hover:bg-white hover:bg-opacity-90"
-                    >
-                      {previewPlaying ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Playing...
-                        </>
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                          </svg>
-                          Preview Voice
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+
               
               {/* Toast Status Message */}
               <div className="mt-4 text-center">

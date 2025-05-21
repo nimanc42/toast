@@ -299,7 +299,7 @@ export default function WeeklyToastPage() {
             
             {/* Toast Preview Card */}
             <div 
-              className="bg-white rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" 
+              className="bg-gray-100 rounded-lg shadow-xl overflow-hidden text-gray-800 animate-[celebrate_0.8s_ease-in-out_forwards]" 
               style={{ animationDelay: "0.2s" }}
               id="demo-toast-container"
             >
@@ -317,9 +317,9 @@ export default function WeeklyToastPage() {
               <div className="p-6">
                 <h3 className="font-medium text-lg mb-4 text-gray-800">Your Toast Transcript</h3>
                 
-                <div className="space-y-4 text-gray-700">
+                <div className="space-y-4 text-gray-800 font-medium">
                   {toastToDisplay.content.split('\n').map((paragraph, index) => (
-                    <p key={index} className="text-gray-700">{paragraph}</p>
+                    <p key={index} className="text-gray-800 font-medium">{paragraph}</p>
                   ))}
                 </div>
               </div>

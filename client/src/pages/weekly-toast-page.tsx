@@ -287,7 +287,7 @@ export default function WeeklyToastPage() {
                     </p>
                     <div className="mt-3">
                       <Link href="/settings">
-                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white">
+                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white text-white">
                           Adjust Toast Preferences
                         </Button>
                       </Link>

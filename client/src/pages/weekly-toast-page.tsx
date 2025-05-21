@@ -315,11 +315,11 @@ export default function WeeklyToastPage() {
               
               {/* Toast Transcript */}
               <div className="p-6">
-                <h3 className="font-medium text-lg mb-4">Your Toast Transcript</h3>
+                <h3 className="font-medium text-lg mb-4 text-gray-800">Your Toast Transcript</h3>
                 
                 <div className="space-y-4 text-gray-700">
                   {toastToDisplay.content.split('\n').map((paragraph, index) => (
-                    <p key={index}>{paragraph}</p>
+                    <p key={index} className="text-gray-700">{paragraph}</p>
                   ))}
                 </div>
               </div>

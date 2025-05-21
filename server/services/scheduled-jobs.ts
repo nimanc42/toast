@@ -143,8 +143,8 @@ export async function runImmediateToastGeneration() {
   try {
     await processAutomaticToastGeneration();
     return { success: true, message: 'Immediate toast generation completed' };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error running immediate toast generation:', error);
-    return { success: false, message: `Error: ${error.message || 'Unknown error'}` };
+    return { success: false, message: `Error: ${error?.message || 'Unknown error'}` };
   }
 }

@@ -30,6 +30,7 @@ import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
 import { generateWeeklyToast, TOAST_SYSTEM_PROMPT } from "./services/toast-generator";
 import { CONFIG } from "./config";
+import { runImmediateToastGeneration } from './services/scheduled-jobs';
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
 

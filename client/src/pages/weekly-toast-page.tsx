@@ -262,111 +262,51 @@ export default function WeeklyToastPage() {
                 )}
               </p>
               
-              {/* Generate or Regenerate button */}
-              {latestToast ? (
-                <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <div className="flex flex-col">
-                    <label htmlFor="voice-select" className="block text-sm font-medium text-white mb-1">
-                      Voice:
-                    </label>
-                    <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-                      <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
-                        <SelectValue placeholder="Select voice" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {voiceOptions.map(voice => (
-                          <SelectItem key={voice.id} value={voice.id} className="text-gray-900">
-                            <div className="flex flex-col">
-                              <span>{voice.name}</span>
-                              <span className="text-xs text-gray-500">{voice.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Toast style selection removed: using standardized prompt format */}
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          onClick={regenerateToast} 
-                          disabled={regenerating}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          {regenerating ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Regenerating...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCcw className="mr-2 h-4 w-4" />
-                              Regenerate Toast
-                            </>
-                          )}
+              {/* Toast Status Message */}
+              <div className="mt-4 text-center">
+                {latestToast ? (
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white/20 rounded-lg p-3 mb-4 inline-block">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+                      </svg>
+                    </div>
+                    <p className="text-lg mb-2">Your weekly toast is ready!</p>
+                    <p className="text-sm opacity-80 max-w-md">
+                      Your next toast will be automatically generated based on your weekly preferences in your settings.
+                    </p>
+                    <div className="mt-3">
+                      <Link href="/settings">
+                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white">
+                          Adjust Toast Preferences
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Generate a new toast with your latest reflections</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              ) : (
-                <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <div className="flex flex-col">
-                    <label htmlFor="voice-generate" className="block text-sm font-medium text-white mb-1">
-                      Voice:
-                    </label>
-                    <Select value={selectedVoice} onValueChange={handleVoiceChange}>
-                      <SelectTrigger className="w-[200px] mt-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60">
-                        <SelectValue placeholder="Select voice" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {voiceOptions.map(voice => (
-                          <SelectItem key={voice.id} value={voice.id} className="text-gray-900">
-                            <div className="flex flex-col">
-                              <span>{voice.name}</span>
-                              <span className="text-xs text-gray-500">{voice.description}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      </Link>
+                    </div>
                   </div>
-                  
-                  {/* Toast style selection removed - using standardized format */}
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          onClick={generateToast} 
-                          disabled={loading}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          {loading ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              Generate This Week's Toast
-                            </>
-                          )}
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <div className="bg-white/20 rounded-lg p-3 mb-4 inline-block">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                      </svg>
+                    </div>
+                    <p className="text-lg mb-2">Your weekly toast will be generated automatically</p>
+                    <p className="text-sm opacity-80 max-w-md">
+                      Based on your settings, your toast will be created on your preferred day of the week.
+                      Continue adding daily reflections to make your toast more meaningful.
+                    </p>
+                    <div className="mt-3">
+                      <Link href="/settings">
+                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white">
+                          Adjust Toast Preferences
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Create a toast based on your recent reflections</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              )}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Toast Preview Card */}

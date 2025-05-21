@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
@@ -8,12 +8,14 @@ import NoteHistory from "@/components/note-history";
 import FriendsList from "@/components/friends-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Define the Stats type to fix TypeScript errors
+// Define types to fix TypeScript errors
 interface Stats {
   streak: number;
   weeklyNotesCount: number;
@@ -21,10 +23,100 @@ interface Stats {
   nextToastDate: string;
 }
 
+interface VoicePreference {
+  id?: number;
+  userId?: number;
+  voiceStyle: string;
+}
+
 export default function HomePage() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState("motivational");
+  const [previewPlaying, setPreviewPlaying] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Voice options with descriptions
+  const voiceOptions = [
+    { id: "motivational", name: "Rachel", description: "Energetic and motivational" },
+    { id: "david", name: "David", description: "British Gentleman" },
+    { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
+    { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
+    { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
+  ];
+
+  // Fetch voice preference
+  const { data: voicePreference } = useQuery<VoicePreference>({
+    queryKey: ["/api/preferences"]
+  });
+  
+  // Update voice preference when preferences load
+  useEffect(() => {
+    if (voicePreference && voicePreference.voiceStyle) {
+      setSelectedVoice(voicePreference.voiceStyle);
+    }
+  }, [voicePreference]);
+  
+  // Update voice preference mutation
+  const updateVoiceMutation = useMutation({
+    mutationFn: async (voice: string) => {
+      return await apiRequest("/api/preferences", "POST", { voiceStyle: voice });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
+      toast({
+        title: "Voice preference updated",
+        description: "Your preferred voice has been updated successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating voice preference",
+        description: "There was an error updating your voice preference. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Handle voice selection
+  const handleVoiceChange = (value: string) => {
+    setSelectedVoice(value);
+    // Save the preference
+    updateVoiceMutation.mutate(value);
+  };
+  
+  // Play a voice preview
+  const playVoicePreview = () => {
+    setPreviewPlaying(true);
+    // Create a sample message
+    const sampleMessage = "This is your weekly toast preview. I hope you're having a wonderful day!";
+    
+    // Use text-to-speech API to play the sample
+    const audio = new Audio(`/api/voice/preview?voice=${selectedVoice}&text=${encodeURIComponent(sampleMessage)}`);
+    
+    audio.onended = () => {
+      setPreviewPlaying(false);
+    };
+    
+    audio.onerror = () => {
+      setPreviewPlaying(false);
+      toast({
+        title: "Error playing preview",
+        description: "There was an error playing the voice preview.",
+        variant: "destructive"
+      });
+    };
+    
+    audio.play().catch(err => {
+      console.error("Error playing audio:", err);
+      setPreviewPlaying(false);
+      toast({
+        title: "Error playing preview",
+        description: "There was an error playing the voice preview.",
+        variant: "destructive"
+      });
+    });
+  };
 
   // Fetch user stats
   const { data: stats, isLoading: isLoadingStats } = useQuery<Stats>({
@@ -164,6 +256,55 @@ export default function HomePage() {
                         {stats?.weeklyNotesCount || 0}/{stats?.totalNotesNeeded || 7}
                       </text>
                     </svg>
+                  </div>
+                  
+                  {/* Voice Preference Section */}
+                  <div className="mb-6 bg-amber-50 rounded-lg p-4 max-w-md mx-auto">
+                    <div className="flex flex-col items-start mb-3">
+                      <h3 className="text-base font-medium mb-1 text-amber-800">Voice Preference</h3>
+                      <p className="text-sm text-amber-700 opacity-80">Choose your preferred narrator voice</p>
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 items-center">
+                      <Select
+                        value={selectedVoice}
+                        onValueChange={handleVoiceChange}
+                      >
+                        <SelectTrigger className="bg-white border-amber-200 w-full">
+                          <SelectValue placeholder="Select voice" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {voiceOptions.map(voice => (
+                            <SelectItem key={voice.id} value={voice.id}>
+                              {voice.name} <span className="text-gray-500 text-sm">({voice.description})</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button 
+                        onClick={playVoicePreview} 
+                        disabled={previewPlaying}
+                        variant="outline"
+                        className="w-full sm:w-auto border-amber-300 text-amber-800 hover:bg-amber-100"
+                      >
+                        {previewPlaying ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Playing...
+                          </>
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                            </svg>
+                            Preview Voice
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                   
                   <Button 

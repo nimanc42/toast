@@ -52,45 +52,7 @@ export default function WeeklyToastPage() {
     retry: false
   });
 
-  // Handle voice selection
-  const handleVoiceChange = (value: string) => {
-    setSelectedVoice(value);
-    // Save the preference
-    updateVoiceMutation.mutate(value);
-  };
-  
-  // Play a voice preview
-  const playVoicePreview = () => {
-    setPreviewPlaying(true);
-    // Create a sample message
-    const sampleMessage = "This is your weekly toast preview. I hope you're having a wonderful day!";
-    
-    // Use text-to-speech API to play the sample
-    const audio = new Audio(`/api/voice/preview?voice=${selectedVoice}&text=${encodeURIComponent(sampleMessage)}`);
-    
-    audio.onended = () => {
-      setPreviewPlaying(false);
-    };
-    
-    audio.onerror = () => {
-      setPreviewPlaying(false);
-      toast({
-        title: "Error playing preview",
-        description: "There was an error playing the voice preview.",
-        variant: "destructive"
-      });
-    };
-    
-    audio.play().catch(err => {
-      console.error("Error playing audio:", err);
-      setPreviewPlaying(false);
-      toast({
-        title: "Error playing preview",
-        description: "There was an error playing the voice preview.",
-        variant: "destructive"
-      });
-    });
-  };
+  // Toast generation is now handled automatically by the system
   
   // Generate toast handler
   const generateToast = async () => {
@@ -165,9 +127,7 @@ export default function WeeklyToastPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ 
-          voice: selectedVoice
-        })
+        body: JSON.stringify({})
       });
       
       if (res.ok) {

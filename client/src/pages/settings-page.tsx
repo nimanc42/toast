@@ -17,7 +17,6 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 
 // Create a schema for the form
 const settingsFormSchema = z.object({
-  voiceStyle: z.enum(["motivational", "friendly", "poetic", "david"]),
   toastDay: z.enum(["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]),
   toastTone: z.enum(["auto", "uplifting", "reflective", "humorous"]),
   dailyReminder: z.boolean().default(true),
@@ -34,7 +33,6 @@ export default function SettingsPage() {
   
   // Define types for API responses
   type VoicePreferencesResponse = {
-    voiceStyle: string;
     toastDay: string;
     toastTone: string;
     dailyReminder: boolean;
@@ -61,7 +59,6 @@ export default function SettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
-      voiceStyle: "motivational",
       toastDay: "Sunday",
       toastTone: "auto",
       dailyReminder: true,

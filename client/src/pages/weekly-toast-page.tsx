@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Link } from "wouter";
@@ -14,7 +14,7 @@ import { Loader2, RefreshCcw, InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-// Define a Toast type to fix type errors
+// Define types to fix type errors
 interface Toast {
   id: number;
   content: string;
@@ -26,12 +26,19 @@ interface Toast {
   shareUrl?: string;
 }
 
+interface VoicePreference {
+  id?: number;
+  userId?: number;
+  voiceStyle: string;
+}
+
 export default function WeeklyToastPage() {
   // All hooks at the top level
   const [selectedVoice, setSelectedVoice] = useState("motivational");
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
   const { toast } = useToast();
   
   // Demo toast state for when no toast exists
@@ -55,6 +62,39 @@ export default function WeeklyToastPage() {
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
   
+  // Fetch voice preference
+  const { data: voicePreference } = useQuery({
+    queryKey: ["/api/preferences"]
+  });
+  
+  // Update selected voice when preferences load
+  useEffect(() => {
+    if (voicePreference && voicePreference.voiceStyle) {
+      setSelectedVoice(voicePreference.voiceStyle);
+    }
+  }, [voicePreference]);
+  
+  // Update voice preference mutation
+  const updateVoiceMutation = useMutation({
+    mutationFn: async (voice: string) => {
+      return await apiRequest("/api/preferences", "POST", { voiceStyle: voice });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
+      toast({
+        title: "Voice preference updated",
+        description: "Your preferred voice has been updated successfully."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating voice preference",
+        description: "There was an error updating your voice preference. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
   // Using standardized toast format - no style selection needed
   
   // Fetch the latest toast
@@ -66,6 +106,41 @@ export default function WeeklyToastPage() {
   // Handle voice selection
   const handleVoiceChange = (value: string) => {
     setSelectedVoice(value);
+    // Save the preference
+    updateVoiceMutation.mutate(value);
+  };
+  
+  // Play a voice preview
+  const playVoicePreview = () => {
+    setPreviewPlaying(true);
+    // Create a sample message
+    const sampleMessage = "This is your weekly toast preview. I hope you're having a wonderful day!";
+    
+    // Use text-to-speech API to play the sample
+    const audio = new Audio(`/api/voice/preview?voice=${selectedVoice}&text=${encodeURIComponent(sampleMessage)}`);
+    
+    audio.onended = () => {
+      setPreviewPlaying(false);
+    };
+    
+    audio.onerror = () => {
+      setPreviewPlaying(false);
+      toast({
+        title: "Error playing preview",
+        description: "There was an error playing the voice preview.",
+        variant: "destructive"
+      });
+    };
+    
+    audio.play().catch(err => {
+      console.error("Error playing audio:", err);
+      setPreviewPlaying(false);
+      toast({
+        title: "Error playing preview",
+        description: "There was an error playing the voice preview.",
+        variant: "destructive"
+      });
+    });
   };
   
   // Generate toast handler

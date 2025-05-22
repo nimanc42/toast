@@ -98,11 +98,9 @@ export default function HomePage() {
     // Voice preference will be saved when user navigates away or clicks save
   };
   
-  // Play a voice preview using the sample MP3 files without API calls
+  // Play a voice preview using the sample MP3 files
   const playVoicePreview = (e: React.MouseEvent) => {
-    // Prevent default to ensure we don't trigger any other events
     e.preventDefault();
-    e.stopPropagation();
     
     // Get the audio element from the DOM
     const audio = document.getElementById('voicePreview') as HTMLAudioElement;
@@ -115,7 +113,7 @@ export default function HomePage() {
       return;
     }
     
-    // Get the source from voice sample mapping
+    // Get the source path from our mapping
     const src = voiceSampleMap[selectedVoice];
     if (!src) {
       toast({
@@ -125,9 +123,6 @@ export default function HomePage() {
       });
       return;
     }
-    
-    // Set the playing state
-    setPreviewPlaying(true);
     
     // Set up event handlers
     audio.onended = () => {
@@ -143,8 +138,9 @@ export default function HomePage() {
       });
     };
     
-    // Set the source to the corresponding MP3 file from our mapping
+    // Set the source and play
     audio.src = src;
+    setPreviewPlaying(true);
     
     // Play the audio
     audio.play().catch(err => {

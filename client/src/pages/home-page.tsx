@@ -85,16 +85,25 @@ export default function HomePage() {
     updateVoiceMutation.mutate(value);
   };
   
-  // Play a voice preview using the sample MP3 files
-  const playVoicePreview = () => {
-    // Set the playing state
-    setPreviewPlaying(true);
+  // Play a voice preview using the sample MP3 files without API calls
+  const playVoicePreview = (e: React.MouseEvent) => {
+    // Prevent default to ensure we don't trigger any other events
+    e.preventDefault();
+    e.stopPropagation();
     
     // Get the audio element from the DOM
     const audio = document.getElementById('voicePreview') as HTMLAudioElement;
     
-    // If already playing, pause it first
-    audio.pause();
+    // If already playing, pause it
+    if (previewPlaying) {
+      audio.pause();
+      audio.currentTime = 0;
+      setPreviewPlaying(false);
+      return;
+    }
+    
+    // Set the playing state
+    setPreviewPlaying(true);
     
     // Set up event handlers
     audio.onended = () => {
@@ -299,7 +308,7 @@ export default function HomePage() {
                       </Select>
                       
                       <Button 
-                        onClick={playVoicePreview} 
+                        onClick={(e) => playVoicePreview(e)} 
                         disabled={previewPlaying}
                         variant="outline"
                         className="w-full sm:w-auto border-amber-300 text-amber-800 hover:bg-amber-100"

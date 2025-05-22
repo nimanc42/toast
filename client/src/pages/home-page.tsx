@@ -85,36 +85,44 @@ export default function HomePage() {
     updateVoiceMutation.mutate(value);
   };
   
-  // Create an audio element reference for voice previews
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Play a voice preview
+  // Play a voice preview using the sample MP3 files
   const playVoicePreview = () => {
-    // If already playing, stop it
-    if (previewPlaying && audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setPreviewPlaying(false);
-      return;
-    }
-    
-    // Set the loading state
+    // Set the playing state
     setPreviewPlaying(true);
     
-    // For demonstration purposes, use a simulated delay instead of actual audio
-    // In a production environment, this would play the actual voice sample file
+    // Get the audio element from the DOM
+    const audio = document.getElementById('voicePreview') as HTMLAudioElement;
     
-    // Simulate voice sample playback with a delay
-    setTimeout(() => {
-      // Show a success message after "playback" completes
-      toast({
-        title: "Voice preview",
-        description: `${getVoiceName(selectedVoice)} voice selected for your weekly toast.`
-      });
-      
-      // Reset the playing state
+    // If already playing, pause it first
+    audio.pause();
+    
+    // Set up event handlers
+    audio.onended = () => {
       setPreviewPlaying(false);
-    }, 2000); // 2 second simulated playback
+    };
+    
+    audio.onerror = () => {
+      setPreviewPlaying(false);
+      toast({
+        title: "Preview not available",
+        description: `Preview not available yet for "${getVoiceName(selectedVoice)}" voice.`,
+        variant: "destructive"
+      });
+    };
+    
+    // Set the source to the corresponding MP3 file
+    audio.src = `/voice-samples/${selectedVoice}.mp3`;
+    
+    // Play the audio
+    audio.play().catch(err => {
+      console.error("Error playing voice sample:", err);
+      setPreviewPlaying(false);
+      toast({
+        title: "Preview not available",
+        description: `Preview not available yet for "${getVoiceName(selectedVoice)}" voice.`,
+        variant: "destructive"
+      });
+    });
   };
   
   // Helper to get voice name for display in messages
@@ -271,6 +279,9 @@ export default function HomePage() {
                     </div>
                     
                     <div className="flex flex-col sm:flex-row gap-3 items-center">
+                      {/* Hidden audio element for voice preview */}
+                      <audio id="voicePreview" style={{ display: 'none' }}></audio>
+                      
                       <Select
                         value={selectedVoice}
                         onValueChange={handleVoiceChange}

@@ -43,6 +43,7 @@ export default function HomePage() {
     { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
     { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
     { id: "Tx7VLgfksXHVnoY6jDGU", name: "Sam", description: "ElevenLabs voice" },
+    { id: "zcAOhNBS3c14rBihAFp1", name: "Giovanni", description: "Italian accent" },
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
 

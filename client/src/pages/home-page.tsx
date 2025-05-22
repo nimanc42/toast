@@ -47,6 +47,17 @@ export default function HomePage() {
     { id: "ZF6FPAbjXT4488VcRRnw", name: "Amelia", description: "Warm female voice" },
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
+  
+  // Voice sample file mapping
+  const voiceSampleMap: Record<string, string> = {
+    "motivational": "/voice-samples/Rachel.mp3",
+    "david": "/voice-samples/David Antfield.mp3",
+    "ranger": "/voice-samples/Ranger.mp3",
+    "grandpa": "/voice-samples/Grandpa.mp3",
+    "Tx7VLgfksXHVnoY6jDGU": "/voice-samples/Sam.mp3",
+    "zcAOhNBS3c14rBihAFp1": "/voice-samples/Giovanni.mp3",
+    "ZF6FPAbjXT4488VcRRnw": "/voice-samples/Amelia.mp3"
+  };
 
   // Fetch voice preference
   const { data: voicePreference } = useQuery<VoicePreference>({
@@ -105,6 +116,17 @@ export default function HomePage() {
       return;
     }
     
+    // Get the source from voice sample mapping
+    const src = voiceSampleMap[selectedVoice];
+    if (!src) {
+      toast({
+        title: "Preview not available",
+        description: `Preview not available for "${getVoiceName(selectedVoice)}" voice.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Set the playing state
     setPreviewPlaying(true);
     
@@ -117,13 +139,13 @@ export default function HomePage() {
       setPreviewPlaying(false);
       toast({
         title: "Preview not available",
-        description: `Preview not available yet for "${getVoiceName(selectedVoice)}" voice.`,
+        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
         variant: "destructive"
       });
     };
     
-    // Set the source to the corresponding MP3 file
-    audio.src = `/voice-samples/${selectedVoice}.mp3`;
+    // Set the source to the corresponding MP3 file from our mapping
+    audio.src = src;
     
     // Play the audio
     audio.play().catch(err => {
@@ -131,7 +153,7 @@ export default function HomePage() {
       setPreviewPlaying(false);
       toast({
         title: "Preview not available",
-        description: `Preview not available yet for "${getVoiceName(selectedVoice)}" voice.`,
+        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
         variant: "destructive"
       });
     });

@@ -1,0 +1,62 @@
+Wire up the new voice-sample MP3s to the Preview Voice button
+============================================================
+
+1.  File paths
+    • All samples are now in  /public/voice-samples/ 
+      (e.g. /voice-samples/David Antfield.mp3, Giovanni.mp3, Amelia.mp3, etc.)
+
+2.  Front-end changes   (client/src/pages/weekly-toast-page.tsx)
+
+    a)  Keep a single hidden <audio id="voicePreview" /> element near the bottom
+        of the component (or in a common layout).
+
+    b)  When the dropdown changes, store the selected voice’s “file key”.
+        Example mapping (can be an object at top of file):
+        ```ts
+        const voiceSampleMap: Record<string,string> = {
+          "David": "/voice-samples/David Antfield.mp3",
+          "Giovanni": "/voice-samples/Giovanni.mp3",
+          "Amelia": "/voice-samples/Amelia.mp3",
+          "Maeve": "/voice-samples/Maeve.mp3",
+          "Ranger": "/voice-samples/Ranger.mp3",
+          "Grandpa": "/voice-samples/Grandpa.mp3",
+        };
+        ```
+
+    c)  Preview button handler:
+        ```ts
+        const handlePreview = async () => {
+          const src = voiceSampleMap[selectedVoice];
+          if (!src) {
+            toast.error(`Preview not available for "${selectedVoice}"`);
+            return;
+          }
+          try {
+            const audio = document.getElementById("voicePreview") as HTMLAudioElement;
+            audio.pause();            // stop any current playback
+            audio.src = src;
+            await audio.play();
+          } catch {
+            toast.error(`Could not play sample for "${selectedVoice}" voice.`);
+          }
+        };
+        ```
+
+    d)  Disable the button while audio is loading/playing (optional):
+        ```ts
+        const [isPlaying, setIsPlaying] = useState(false);
+        ...
+        audio.onended = () => setIsPlaying(false);
+        ...
+        <Button onClick={handlePreview} disabled={isPlaying}>Preview Voice</Button>
+        ```
+
+3.  No backend call
+    • Ensure the preview function **does not** hit any API or change user preferences.
+      It should only play the static MP3.
+
+4.  Test
+    • Select each voice → click Preview Voice → correct sample plays without
+      “Error playing sample” banner.
+
+Let me know when this is in place or if any samples fail to load so we can fix the path.

@@ -44,6 +44,7 @@ export default function HomePage() {
     { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
     { id: "Tx7VLgfksXHVnoY6jDGU", name: "Sam", description: "ElevenLabs voice" },
     { id: "zcAOhNBS3c14rBihAFp1", name: "Giovanni", description: "Italian accent" },
+    { id: "ZF6FPAbjXT4488VcRRnw", name: "Amelia", description: "Warm female voice" },
     { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
   ];
 

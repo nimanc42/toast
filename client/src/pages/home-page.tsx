@@ -315,44 +315,69 @@ export default function HomePage() {
                       {/* Hidden audio element for voice preview */}
                       <audio id="voicePreview" style={{ display: 'none' }}></audio>
                       
-                      <Select
-                        value={selectedVoice}
-                        onValueChange={handleVoiceChange}
-                      >
-                        <SelectTrigger className="bg-white border-amber-200 w-full">
-                          <SelectValue placeholder="Select voice" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {voiceOptions.map(voice => (
-                            <SelectItem key={voice.id} value={voice.id}>
-                              {voice.name} <span className="text-gray-500 text-sm">({voice.description})</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Button 
-                        onClick={(e) => playVoicePreview(e)} 
-                        disabled={previewPlaying}
-                        variant="outline"
-                        className="w-full sm:w-auto border-amber-300 text-amber-800 hover:bg-amber-100"
-                      >
-                        {previewPlaying ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Playing...
-                          </>
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
-                            </svg>
-                            Preview Voice
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                        <Select
+                          value={selectedVoice}
+                          onValueChange={handleVoiceChange}
+                        >
+                          <SelectTrigger className="bg-white border-amber-200 w-full">
+                            <SelectValue placeholder="Select voice" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {voiceOptions.map(voice => (
+                              <SelectItem key={voice.id} value={voice.id}>
+                                {voice.name} <span className="text-gray-500 text-sm">({voice.description})</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={(e) => playVoicePreview(e)} 
+                            disabled={previewPlaying}
+                            variant="outline"
+                            className="border-amber-300 text-amber-800 hover:bg-amber-100"
+                          >
+                            {previewPlaying ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Playing...
+                              </>
+                            ) : (
+                              <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                                </svg>
+                                Preview Voice
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button
+                            onClick={() => updateVoiceMutation.mutate(selectedVoice)}
+                            disabled={updateVoiceMutation.isPending}
+                            variant="outline" 
+                            className="border-green-300 text-green-800 hover:bg-green-100"
+                          >
+                            {updateVoiceMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                Save Voice
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   

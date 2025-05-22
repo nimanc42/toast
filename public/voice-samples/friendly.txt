@@ -1,3 +1,0 @@
-This is a placeholder for a friendly voice sample MP3 file. 
-In a production environment, this would be replaced with an actual audio recording of the friendly voice style saying:
-"Hey there! I noticed you've been keeping up with your daily reflections. That's awesome progress!"

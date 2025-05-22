@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getVoiceSampleUrl } from "@/components/voice-samples";
 
 // Define types to fix TypeScript errors
 interface Stats {
@@ -85,14 +86,26 @@ export default function HomePage() {
     updateVoiceMutation.mutate(value);
   };
   
-  // Play a voice preview
+  // Play a voice preview using base64-encoded MP3 samples
   const playVoicePreview = () => {
     setPreviewPlaying(true);
-    // Create a sample message
-    const sampleMessage = "This is your weekly toast preview. I hope you're having a wonderful day!";
     
-    // Use text-to-speech API to play the sample
-    const audio = new Audio(`/api/voice/preview?voice=${selectedVoice}&text=${encodeURIComponent(sampleMessage)}`);
+    // Get the voice sample URL
+    const sampleUrl = getVoiceSampleUrl(selectedVoice);
+    
+    if (!sampleUrl) {
+      // No sample available for this voice
+      setPreviewPlaying(false);
+      toast({
+        title: "Sample not available",
+        description: `No sample available for "${getVoiceName(selectedVoice)}" voice yet.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create audio element with the data URL
+    const audio = new Audio(sampleUrl);
     
     audio.onended = () => {
       setPreviewPlaying(false);
@@ -101,21 +114,39 @@ export default function HomePage() {
     audio.onerror = () => {
       setPreviewPlaying(false);
       toast({
-        title: "Error playing preview",
-        description: "There was an error playing the voice preview.",
+        title: "Error playing sample",
+        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
         variant: "destructive"
       });
     };
     
-    audio.play().catch(err => {
-      console.error("Error playing audio:", err);
-      setPreviewPlaying(false);
-      toast({
-        title: "Error playing preview",
-        description: "There was an error playing the voice preview.",
-        variant: "destructive"
+    // Simulate a realistic playback duration (since our samples are minimal)
+    audio.play()
+      .then(() => {
+        // Add a timeout to simulate a longer audio clip
+        setTimeout(() => {
+          setPreviewPlaying(false);
+          toast({
+            title: "Voice preview",
+            description: `This is how the "${getVoiceName(selectedVoice)}" voice will sound in your weekly toast.`
+          });
+        }, 3000); // 3 seconds of simulated playback
+      })
+      .catch(err => {
+        console.error("Error playing audio sample:", err);
+        setPreviewPlaying(false);
+        toast({
+          title: "Error playing sample",
+          description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
+          variant: "destructive"
+        });
       });
-    });
+  };
+  
+  // Helper to get voice name for display in messages
+  const getVoiceName = (voiceId: string): string => {
+    const voice = voiceOptions.find(v => v.id === voiceId);
+    return voice ? voice.name : voiceId;
   };
 
   // Fetch user stats

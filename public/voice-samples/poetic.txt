@@ -1,3 +1,0 @@
-This is a placeholder for a poetic voice sample MP3 file. 
-In a production environment, this would be replaced with an actual audio recording of the poetic voice style saying:
-"Through days of reflection and moments of thought, your journey unfolds with the wisdom you've sought."

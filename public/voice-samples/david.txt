@@ -1,3 +1,0 @@
-This is a placeholder for a david voice sample MP3 file. 
-In a production environment, this would be replaced with an actual audio recording of the david voice style saying:
-"Looking at your reflections from this week, I notice themes of growth and perseverance. Well done!"

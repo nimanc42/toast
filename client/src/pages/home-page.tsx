@@ -92,11 +92,10 @@ export default function HomePage() {
     }
   });
   
-  // Handle voice selection
+  // Handle voice selection - only updates local state, doesn't call API
   const handleVoiceChange = (value: string) => {
     setSelectedVoice(value);
-    // Save the preference
-    updateVoiceMutation.mutate(value);
+    // Voice preference will be saved when user navigates away or clicks save
   };
   
   // Play a voice preview using the sample MP3 files without API calls

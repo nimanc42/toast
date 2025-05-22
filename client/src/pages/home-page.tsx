@@ -136,6 +136,10 @@ export default function HomePage() {
     // Set the source
     audio.src = src;
     
+    // Add debugging logs
+    console.log("Preview src:", src);
+    console.log("Audio element:", audio);
+    
     // Set up event handlers AFTER setting the source
     audio.onended = () => setPreviewPlaying(false);
     
@@ -151,13 +155,13 @@ export default function HomePage() {
     // Set playing state and play the audio
     setPreviewPlaying(true);
     
-    // Play the audio
+    // Play the audio with improved error handling
     audio.play().catch(err => {
-      console.error("Error playing voice sample:", err);
+      console.error(err);
       setPreviewPlaying(false);
       toast({
-        title: "Preview not available",
-        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
+        title: "Playback error",
+        description: err.message,
         variant: "destructive"
       });
     });

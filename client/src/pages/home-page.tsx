@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { format } from "date-fns";
 import Header from "@/components/header";
@@ -14,7 +14,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { getVoiceSampleUrl } from "@/components/voice-samples";
 
 // Define types to fix TypeScript errors
 interface Stats {
@@ -86,61 +85,56 @@ export default function HomePage() {
     updateVoiceMutation.mutate(value);
   };
   
-  // Play a voice preview using base64-encoded MP3 samples
+  // Create an audio element reference for voice previews
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Play a voice preview using MP3 samples
   const playVoicePreview = () => {
-    setPreviewPlaying(true);
-    
-    // Get the voice sample URL
-    const sampleUrl = getVoiceSampleUrl(selectedVoice);
-    
-    if (!sampleUrl) {
-      // No sample available for this voice
+    // If already playing, stop it
+    if (previewPlaying && audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       setPreviewPlaying(false);
-      toast({
-        title: "Sample not available",
-        description: `No sample available for "${getVoiceName(selectedVoice)}" voice yet.`,
-        variant: "destructive"
-      });
       return;
     }
     
-    // Create audio element with the data URL
-    const audio = new Audio(sampleUrl);
+    // Set the loading state
+    setPreviewPlaying(true);
     
-    audio.onended = () => {
-      setPreviewPlaying(false);
-    };
+    // Get the sample file path
+    const samplePath = `/voice-samples/${selectedVoice}.mp3`;
     
-    audio.onerror = () => {
-      setPreviewPlaying(false);
-      toast({
-        title: "Error playing sample",
-        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
-        variant: "destructive"
-      });
-    };
-    
-    // Simulate a realistic playback duration (since our samples are minimal)
-    audio.play()
-      .then(() => {
-        // Add a timeout to simulate a longer audio clip
-        setTimeout(() => {
-          setPreviewPlaying(false);
-          toast({
-            title: "Voice preview",
-            description: `This is how the "${getVoiceName(selectedVoice)}" voice will sound in your weekly toast.`
-          });
-        }, 3000); // 3 seconds of simulated playback
-      })
-      .catch(err => {
-        console.error("Error playing audio sample:", err);
+    // If we don't have an audio element yet, create one
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      
+      // Set up event handlers
+      audioRef.current.onended = () => {
+        setPreviewPlaying(false);
+      };
+      
+      audioRef.current.onerror = () => {
         setPreviewPlaying(false);
         toast({
-          title: "Error playing sample",
-          description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
+          title: "Preview not available",
+          description: `Preview not available yet for this voice.`,
           variant: "destructive"
         });
+      };
+    }
+    
+    // Set the source and play
+    audioRef.current.src = samplePath;
+    
+    audioRef.current.play().catch(err => {
+      console.error("Error playing voice sample:", err);
+      setPreviewPlaying(false);
+      toast({
+        title: "Preview not available",
+        description: `Preview not available yet for this voice.`,
+        variant: "destructive"
       });
+    });
   };
   
   // Helper to get voice name for display in messages

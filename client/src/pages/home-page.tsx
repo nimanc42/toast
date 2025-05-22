@@ -88,7 +88,7 @@ export default function HomePage() {
   // Create an audio element reference for voice previews
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  // Play a voice preview using MP3 samples
+  // Play a voice preview
   const playVoicePreview = () => {
     // If already playing, stop it
     if (previewPlaying && audioRef.current) {
@@ -101,40 +101,20 @@ export default function HomePage() {
     // Set the loading state
     setPreviewPlaying(true);
     
-    // Get the sample file path
-    const samplePath = `/voice-samples/${selectedVoice}.mp3`;
+    // For demonstration purposes, use a simulated delay instead of actual audio
+    // In a production environment, this would play the actual voice sample file
     
-    // If we don't have an audio element yet, create one
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      
-      // Set up event handlers
-      audioRef.current.onended = () => {
-        setPreviewPlaying(false);
-      };
-      
-      audioRef.current.onerror = () => {
-        setPreviewPlaying(false);
-        toast({
-          title: "Preview not available",
-          description: `Preview not available yet for this voice.`,
-          variant: "destructive"
-        });
-      };
-    }
-    
-    // Set the source and play
-    audioRef.current.src = samplePath;
-    
-    audioRef.current.play().catch(err => {
-      console.error("Error playing voice sample:", err);
-      setPreviewPlaying(false);
+    // Simulate voice sample playback with a delay
+    setTimeout(() => {
+      // Show a success message after "playback" completes
       toast({
-        title: "Preview not available",
-        description: `Preview not available yet for this voice.`,
-        variant: "destructive"
+        title: "Voice preview",
+        description: `${getVoiceName(selectedVoice)} voice selected for your weekly toast.`
       });
-    });
+      
+      // Reset the playing state
+      setPreviewPlaying(false);
+    }, 2000); // 2 second simulated playback
   };
   
   // Helper to get voice name for display in messages

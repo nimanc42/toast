@@ -50,13 +50,14 @@ export default function HomePage() {
   
   // Voice sample file mapping
   const voiceSampleMap: Record<string, string> = {
-    "motivational": "/voice-samples/Rachel.mp3",
-    "david": "/voice-samples/David Antfield.mp3",
-    "ranger": "/voice-samples/Ranger.mp3",
-    "grandpa": "/voice-samples/Grandpa.mp3",
-    "Tx7VLgfksXHVnoY6jDGU": "/voice-samples/Sam.mp3",
-    "zcAOhNBS3c14rBihAFp1": "/voice-samples/Giovanni.mp3",
-    "ZF6FPAbjXT4488VcRRnw": "/voice-samples/Amelia.mp3"
+    "motivational": "/voice-samples/rachel.mp3",
+    "david": "/voice-samples/david-antfield.mp3",
+    "ranger": "/voice-samples/ranger.mp3",
+    "grandpa": "/voice-samples/grandpa.mp3",
+    "Tx7VLgfksXHVnoY6jDGU": "/voice-samples/sam.mp3",
+    "zcAOhNBS3c14rBihAFp1": "/voice-samples/giovanni.mp3",
+    "ZF6FPAbjXT4488VcRRnw": "/voice-samples/amelia.mp3",
+    "custom": "/voice-samples/rachel.mp3" // Fallback for custom voice
   };
 
   // Fetch voice preference

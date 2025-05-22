@@ -1,0 +1,3 @@
+This is a placeholder for a motivational voice sample MP3 file. 
+In a production environment, this would be replaced with an actual audio recording of the motivational voice style saying:
+"Great job on your reflections this week! Your dedication to growth is truly inspiring."

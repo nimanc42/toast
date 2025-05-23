@@ -27,19 +27,19 @@ interface OnboardingModalProps {
   user: UserType | null;
 }
 
-// Voice sample data
+// Voice sample data with actual MP3 filenames
 const VOICE_OPTIONS = [
-  { id: 'david', name: 'David', description: 'Clear and professional male voice' },
-  { id: 'ranger', name: 'Ranger', description: 'Deep, authoritative male voice' },
-  { id: 'grandpa', name: 'Grandpa', description: 'Warm, friendly elderly male voice' },
-  { id: 'sam', name: 'Sam', description: 'Mature male voice with character' },
-  { id: 'giovanni', name: 'Giovanni', description: 'Italian-accented male voice' },
-  { id: 'amelia', name: 'Amelia', description: 'Young female voice with energy' },
-  { id: 'maeve', name: 'Maeve', description: 'Mature female voice with warmth' },
-  { id: 'rachel', name: 'Rachel', description: 'Clear and articulate female voice' },
+  { id: 'david', name: 'David', description: 'Clear and professional male voice', filename: 'david-antfield.mp3' },
+  { id: 'ranger', name: 'Ranger', description: 'Deep, authoritative male voice', filename: 'ranger.mp3' },
+  { id: 'grandpa', name: 'Grandpa', description: 'Warm, friendly elderly male voice', filename: 'grandpa.mp3' },
+  { id: 'sam', name: 'Sam', description: 'Mature male voice with character', filename: 'sam.mp3' },
+  { id: 'giovanni', name: 'Giovanni', description: 'Italian-accented male voice', filename: 'giovanni.mp3' },
+  { id: 'amelia', name: 'Amelia', description: 'Young female voice with energy', filename: 'amelia.mp3' },
+  { id: 'maeve', name: 'Maeve', description: 'Mature female voice with warmth', filename: 'maeve.mp3' },
+  { id: 'rachel', name: 'Rachel', description: 'Clear and articulate female voice', filename: 'rachel.mp3' },
 ];
 
-export default function OnboardingModal({ isOpen, onClose, user }: OnboardingModalProps) {
+export default function OnboardingModal({ isOpen, onClose, user }: OnboardingModalProps): JSX.Element {
   const [selectedVoice, setSelectedVoice] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
@@ -120,20 +120,24 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
     }
 
     if (audioElement) {
-      // Set the source to the voice sample MP3
-      audioElement.src = `/voice-samples/${selectedVoice}.mp3`;
-      audioElement.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(err => {
-          console.error("Error playing sample:", err);
-          toast({
-            title: "Could not play sample",
-            description: "There was an error playing the voice sample. Please try again.",
-            variant: "destructive",
+      // Find the voice in our options to get the correct filename
+      const selectedVoiceObj = VOICE_OPTIONS.find(v => v.id === selectedVoice);
+      if (selectedVoiceObj) {
+        // Set the source to the voice sample MP3 with the correct filename
+        audioElement.src = `/voice-samples/${selectedVoiceObj.filename}`;
+        audioElement.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.error("Error playing sample:", err);
+            toast({
+              title: "Could not play sample",
+              description: "There was an error playing the voice sample. Please try again.",
+              variant: "destructive",
+            });
           });
-        });
+      }
     }
   };
 

@@ -662,39 +662,19 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter className="flex-col space-y-2">
-          <div className="flex justify-end space-x-2">
+        <DialogFooter className="flex-col space-y-2 sm:space-y-0">
+          <div className="flex w-full gap-2">
             <Button 
-              onClick={() => {
-                setReviewWithAudio(false);
-                setReviewDialogOpen(true);
-                handleSave();
-              }}
+              onClick={onClose} 
+              variant="outline" 
+              className="flex-1"
               disabled={isTranscribing || saveMutation.isPending}
-              className="bg-amber-600 hover:bg-amber-700"
             >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Save and Read Review
-            </Button>
-            <Button 
-              onClick={() => {
-                setReviewWithAudio(true);
-                setReviewDialogOpen(true);
-                handleSave();
-              }}
-              disabled={isTranscribing || saveMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Volume2 className="mr-2 h-4 w-4" />
-              Save and Hear Review
-            </Button>
-          </div>
-          <div className="flex justify-between space-x-2">
-            <Button variant="outline" onClick={onClose} disabled={isTranscribing || saveMutation.isPending}>
               Cancel
             </Button>
             <Button 
               onClick={() => handleSave()}
+              className="flex-1"
               disabled={isTranscribing || saveMutation.isPending}
             >
               {isTranscribing ? (
@@ -710,6 +690,32 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               ) : (
                 "Save Reflection"
               )}
+            </Button>
+          </div>
+          <div className="flex w-full gap-2">
+            <Button 
+              onClick={() => {
+                setReviewWithAudio(false);
+                setReviewDialogOpen(true);
+                handleSave();
+              }}
+              disabled={isTranscribing || saveMutation.isPending}
+              className="flex-1 bg-amber-600 hover:bg-amber-700"
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Save and Read Review
+            </Button>
+            <Button 
+              onClick={() => {
+                setReviewWithAudio(true);
+                setReviewDialogOpen(true);
+                handleSave();
+              }}
+              disabled={isTranscribing || saveMutation.isPending}
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+            >
+              <Volume2 className="mr-2 h-4 w-4" />
+              Save and Hear Review
             </Button>
           </div>
         </DialogFooter>

@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", resetPassword);
   app.post("/api/auth/resend-verification", resendVerification);
   
-  // Onboarding routes
+  // Onboarding route
   app.post("/api/user/complete-onboarding", ensureAuthenticated, completeOnboarding);
   
   // Google OAuth authentication routes

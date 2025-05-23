@@ -131,8 +131,8 @@ export default function ReflectionReviewDialog({
     } else if (audioUrl) {
       // Play existing audio if available
       playAudio(audioUrl);
-    } else if (reviewContent) {
-      // Generate new audio if no audio is available
+    } else if (reviewContent && !ttsMutation.isPending) {
+      // Generate new audio if no audio is available and not already requesting
       ttsMutation.mutate(reviewContent);
     }
   };
@@ -146,11 +146,23 @@ export default function ReflectionReviewDialog({
   
   // Automatically play audio when review content is available and autoPlayAudio is true
   useEffect(() => {
-    if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending) {
-      // Generate and play the audio
-      ttsMutation.mutate(reviewContent);
+    let autoPlayTimeout: NodeJS.Timeout | null = null;
+    
+    if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending && !audioUrl) {
+      // Add a small delay to prevent rapid requests
+      autoPlayTimeout = setTimeout(() => {
+        // Generate and play the audio
+        ttsMutation.mutate(reviewContent);
+      }, 500);
     }
-  }, [autoPlayAudio, reviewContent, isPlayingAudio, ttsMutation.isPending]);
+    
+    // Clean up timeout if component unmounts or dependencies change
+    return () => {
+      if (autoPlayTimeout) {
+        clearTimeout(autoPlayTimeout);
+      }
+    };
+  }, [autoPlayAudio, reviewContent, isPlayingAudio, ttsMutation.isPending, audioUrl]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

@@ -726,6 +726,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           }}
           noteId={savedNoteId}
           noteContent={textContent}
+          autoPlayAudio={reviewWithAudio}
         />
       </DialogContent>
     </Dialog>

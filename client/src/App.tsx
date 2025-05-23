@@ -9,6 +9,7 @@ import { TestingModeBanner } from "@/components/testing-mode-banner";
 // WebSocket temporarily disabled
 // import { WebSocketProvider } from "@/hooks/websocket-provider";
 import { NewBadgeNotification } from "@/components/new-badge-notification";
+import OnboardingController from "@/components/onboarding-controller";
 import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import AuthCallback from "@/pages/auth-callback";
@@ -50,6 +51,7 @@ function App() {
           <Toaster />
           <NewBadgeNotification />
           <TestingModeBanner />
+          <OnboardingController />
           <Router />
         </TooltipProvider>
       </AuthProvider>

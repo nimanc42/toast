@@ -6,12 +6,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Play, Volume2 } from "lucide-react";
-import { User } from "@shared/schema";
+// Using the same user type from auth context
+type UserType = {
+  id: number;
+  username: string;
+  name: string;
+  email: string;
+  verified: boolean;
+  externalId?: string | null;
+  externalProvider?: string | null;
+  weeklyToastDay?: number | null;
+  timezone?: string | null;
+  firstLogin: boolean;
+  createdAt: Date;
+};
 
 interface OnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: User | null;
+  user: UserType | null;
 }
 
 // Voice sample data

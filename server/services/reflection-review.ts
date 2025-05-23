@@ -14,11 +14,11 @@ export async function generateReflectionReview(text: string): Promise<string> {
       messages: [
         { 
           role: "system", 
-          content: "You are a skilled counselor using reflective listening. When given a user reflection, you respond with a single short summary that validates their feelings. Do NOT ask follow-up questions." 
+          content: "You are a compassionate counselor using reflective listening. When given a user's reflection, you should: 1) Echo back key points they shared, 2) Validate their emotions with empathy, and 3) Keep your response warm, supportive, and concise without asking follow-up questions."
         },
         { 
           role: "user", 
-          content: `User reflection:\n"${text}"\n\nPlease reflect back their feelings and summarize.` 
+          content: `User reflection:\n"${text}"` 
         }
       ],
       max_tokens: 150,

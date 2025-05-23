@@ -14,6 +14,7 @@ import {
   resetPassword, 
   resendVerification 
 } from "./routes/auth-email";
+import { completeOnboarding } from "./routes/onboarding";
 // WebSocket temporarily disabled for debugging
 import WebSocket from 'ws';
 import { DateTime } from 'luxon';
@@ -198,6 +199,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/forgot-password", forgotPassword);
   app.post("/api/auth/reset-password", resetPassword);
   app.post("/api/auth/resend-verification", resendVerification);
+  
+  // Onboarding routes
+  app.post("/api/user/complete-onboarding", ensureAuthenticated, completeOnboarding);
   
   // Google OAuth authentication routes
   // Endpoint to check if Google auth is configured

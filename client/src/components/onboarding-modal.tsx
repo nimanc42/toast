@@ -157,7 +157,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
   // Don't show the modal for returning users
   if (user && !user.firstLogin) {
-    return null;
+    return <></>;
   }
 
   const isPending = saveMutation.isPending || completeOnboardingMutation.isPending;

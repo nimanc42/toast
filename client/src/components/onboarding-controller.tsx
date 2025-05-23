@@ -6,7 +6,7 @@ import OnboardingModal from "./onboarding-modal";
  * Controller component that manages showing the onboarding modal
  * for first-time users
  */
-export default function OnboardingController() {
+export default function OnboardingController(): JSX.Element {
   const { user, isLoading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   

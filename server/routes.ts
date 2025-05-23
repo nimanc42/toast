@@ -33,6 +33,7 @@ import { CONFIG } from "./config";
 import { runImmediateToastGeneration } from './services/scheduled-jobs';
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
+import { generateReflectionReview } from "./services/reflection-review";
 
 /**
  * Extract main themes from note contents
@@ -478,6 +479,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete note" });
+    }
+  });
+  
+  // Generate a reflection review for a specific note
+  app.post("/api/notes/:id/review", ensureAuthenticated, async (req, res) => {
+    try {
+      const noteId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      
+      // Fetch the note and ensure it belongs to the user
+      const note = await storage.getNoteById(noteId);
+      
+      if (!note) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      
+      if (note.userId !== userId) {
+        return res.status(403).json({ message: "You don't have permission to review this note" });
+      }
+      
+      // Check for OpenAI API key
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(503).json({ message: "Review service is currently unavailable" });
+      }
+      
+      // Generate the review using OpenAI
+      const review = await generateReflectionReview(note.content);
+      
+      // Return the review
+      res.json({ review });
+    } catch (error) {
+      console.error("Error generating reflection review:", error);
+      res.status(500).json({ message: "Failed to generate reflection review" });
     }
   });
 

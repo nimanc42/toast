@@ -321,14 +321,26 @@ export async function generateSpeech(
  */
 export function getVoiceId(voiceStyle: string): string {
   const voiceMap: Record<string, string> = {
+    // Original voices
     'motivational': 'EXAVITQu4vr4xnSDxMaL', // Rachel
     'friendly': '21m00Tcm4TlvDq8ikWAM',     // Adam
     'poetic': 'AZnzlk1XvdvUeBnXmlld',       // Domi
     'custom': 'Dnd9VXpAjEGXiRGBf1O6',       // Custom voice added by user
+    
+    // Individual voices we have samples for
     'david': 'jvcMcno3QtjOzGtfpjoI',        // David voice
     'ranger': 'qNkzaJoHLLdpvgh5tISm',       // Ranger voice
-    'grandpa': 'NOpBlnGInO9m6vDvFkFC'       // Grandpa voice
+    'grandpa': 'NOpBlnGInO9m6vDvFkFC',      // Grandpa voice
+    'sam': 'Tx7VLgfksXHVnoY6jDGU',          // Sam voice
+    'giovanni': 'zcAOhNBS3c14rBihAFp1',     // Giovanni voice
+    'amelia': 'ZF6FPAbjXT4488VcRRnw',       // Amelia voice
+    'maeve': 'UwdJWMIQkTCJhLgSE82b',        // Maeve voice
+    'rachel': 'EXAVITQu4vr4xnSDxMaL'        // Rachel voice
   };
   
-  return voiceMap[voiceStyle] || DEFAULT_VOICE_ID;
+  console.log(`[TTS] Getting voice ID for style: ${voiceStyle}`);
+  const voiceId = voiceMap[voiceStyle] || DEFAULT_VOICE_ID;
+  console.log(`[TTS] Selected voice ID: ${voiceId}`);
+  
+  return voiceId;
 }

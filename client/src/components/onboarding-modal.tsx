@@ -67,8 +67,8 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
   // Save voice preference mutation
   const saveMutation = useMutation({
-    mutationFn: async (data: { voiceStyle: string }) => {
-      const res = await apiRequest("PUT", "/api/preferences", data);
+    mutationFn: async (voiceStyle: string) => {
+      const res = await apiRequest("PUT", "/api/preferences", { voiceStyle });
       const preferenceData = await res.json();
       return preferenceData;
     },
@@ -96,7 +96,9 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
         title: "Welcome to A Toast To You!",
         description: "Your voice preference has been saved. Enjoy your journey!",
       });
+      // Make sure we refresh the user data so voice preference is up-to-date
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });
       onClose();
     },
     onError: (error: Error) => {
@@ -142,7 +144,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   };
 
   // Handle continuing to the app
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!selectedVoice) {
       toast({
         title: "Voice selection required",
@@ -152,7 +154,15 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       return;
     }
 
-    saveMutation.mutate({ voiceStyle: selectedVoice });
+    try {
+      // First save the voice preference
+      await saveMutation.mutateAsync({ voiceStyle: selectedVoice });
+      
+      // Note: The onboarding completion and user data refresh is handled
+      // in the saveMutation.onSuccess callback
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+    }
   };
 
   // Don't show the modal for returning users

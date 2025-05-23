@@ -662,62 +662,52 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter className="flex-col space-y-2 sm:space-y-0">
-          <div className="flex w-full gap-2">
-            <Button 
-              onClick={onClose} 
-              variant="outline" 
-              className="flex-1"
-              disabled={isTranscribing || saveMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => handleSave()}
-              className="flex-1"
-              disabled={isTranscribing || saveMutation.isPending}
-            >
-              {isTranscribing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Transcribing...
-                </>
-              ) : saveMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Reflection"
-              )}
-            </Button>
-          </div>
-          <div className="flex w-full gap-2">
-            <Button 
-              onClick={() => {
-                setReviewWithAudio(false);
-                setReviewDialogOpen(true);
-                handleSave();
-              }}
-              disabled={isTranscribing || saveMutation.isPending}
-              className="flex-1 bg-amber-600 hover:bg-amber-700"
-            >
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Save and Read Review
-            </Button>
-            <Button 
-              onClick={() => {
-                setReviewWithAudio(true);
-                setReviewDialogOpen(true);
-                handleSave();
-              }}
-              disabled={isTranscribing || saveMutation.isPending}
-              className="flex-1 bg-blue-600 hover:bg-blue-700"
-            >
-              <Volume2 className="mr-2 h-4 w-4" />
-              Save and Hear Review
-            </Button>
-          </div>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isTranscribing || saveMutation.isPending}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={() => handleSave()}
+            disabled={isTranscribing || saveMutation.isPending}
+          >
+            {isTranscribing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Transcribing...
+              </>
+            ) : saveMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Reflection"
+            )}
+          </Button>
+          <Button 
+            onClick={() => {
+              setReviewWithAudio(false);
+              setReviewDialogOpen(true);
+              handleSave();
+            }}
+            disabled={isTranscribing || saveMutation.isPending}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Save and Read Review
+          </Button>
+          <Button 
+            onClick={() => {
+              setReviewWithAudio(true);
+              setReviewDialogOpen(true);
+              handleSave();
+            }}
+            disabled={isTranscribing || saveMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Volume2 className="mr-2 h-4 w-4" />
+            Save and Hear Review
+          </Button>
         </DialogFooter>
         
         {/* Reflection Review Dialog */}

@@ -75,7 +75,7 @@ export default function HomePage() {
   // Update voice preference mutation
   const updateVoiceMutation = useMutation({
     mutationFn: async (voice: string) => {
-      return await apiRequest("/api/preferences", "POST", { voiceStyle: voice });
+      return await apiRequest("/api/preferences", "PUT", { voiceStyle: voice });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/preferences"] });

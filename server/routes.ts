@@ -1149,6 +1149,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API endpoint to generate speech for reflection reviews
+  app.post("/api/tts/review", ensureAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { text } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ error: "No text provided for speech generation" });
+      }
+      
+      // Get the user's voice preference
+      const voicePreference = await storage.getVoicePreferenceByUserId(userId);
+      let voiceStyle = voicePreference?.voiceStyle || "sam"; // Default to 'sam' if no preference
+      
+      // Get the ElevenLabs voice ID from the user's preference
+      const voiceId = getVoiceId(voiceStyle);
+      
+      // Generate speech with ElevenLabs
+      const result = await generateSpeech(text, voiceId, userId);
+      
+      if (typeof result === 'string') {
+        return res.json({ audioUrl: result });
+      } else if (result && 'error' in result) {
+        return res.status(400).json({ error: result.error, resetTime: result.resetTime });
+      } else {
+        return res.status(500).json({ error: "Failed to generate speech" });
+      }
+    } catch (error) {
+      console.error("Error generating speech for review:", error);
+      return res.status(500).json({ error: "An error occurred while generating speech" });
+    }
+  });
+  
   // Admin route to manually trigger toast generation job (for testing)
   app.post("/api/admin/run-toast-generation", ensureAuthenticated, async (req, res) => {
     // Check if user is an admin or in development mode

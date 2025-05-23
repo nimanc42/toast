@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle, MessageCircle } from "lucide-react";
+import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle, MessageCircle, Volume2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -29,6 +29,8 @@ export default function NoteHistory() {
   const [editedContent, setEditedContent] = useState("");
   const [reviewContent, setReviewContent] = useState("");
   const [isReviewing, setIsReviewing] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Define the Note type
@@ -123,6 +125,9 @@ export default function NoteHistory() {
       setReviewContent(review);
       setIsReviewing(false);
       setReviewDialogOpen(true);
+      // Reset audio state when opening a new review
+      setAudioUrl(null);
+      setIsPlayingAudio(false);
     },
     onError: (error: Error) => {
       setIsReviewing(false);
@@ -133,6 +138,90 @@ export default function NoteHistory() {
       });
     }
   });
+  
+  // Text-to-speech mutation for reading reviews aloud
+  const ttsMutation = useMutation({
+    mutationFn: async (text: string) => {
+      const res = await apiRequest("POST", "/api/tts/review", { text });
+      const data = await res.json();
+      return data.audioUrl;
+    },
+    onSuccess: (url) => {
+      setAudioUrl(url);
+      playAudio(url);
+    },
+    onError: (error: Error) => {
+      console.error("TTS error:", error);
+      toast({
+        title: "Voice generation failed",
+        description: "Unable to generate voice for this review. Please try again.",
+        variant: "destructive",
+      });
+      setIsPlayingAudio(false);
+    }
+  });
+  
+  // Function to play audio with the review content
+  const playAudio = (url: string) => {
+    // Create or get the audio element
+    let audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
+    
+    if (!audioElement) {
+      audioElement = document.createElement("audio");
+      audioElement.id = "reviewAudio";
+      audioElement.style.display = "none";
+      document.body.appendChild(audioElement);
+    }
+    
+    // Set up event listeners
+    audioElement.onended = () => {
+      setIsPlayingAudio(false);
+    };
+    
+    audioElement.onerror = () => {
+      setIsPlayingAudio(false);
+      toast({
+        title: "Audio playback error",
+        description: "There was an error playing the audio.",
+        variant: "destructive",
+      });
+    };
+    
+    // Set source and play
+    audioElement.src = url;
+    audioElement.play()
+      .then(() => {
+        setIsPlayingAudio(true);
+      })
+      .catch(err => {
+        console.error("Playback error:", err);
+        setIsPlayingAudio(false);
+        toast({
+          title: "Audio playback failed",
+          description: err.message,
+          variant: "destructive",
+        });
+      });
+  };
+  
+  // Read the reflection review aloud
+  const handleReadAloud = () => {
+    if (isPlayingAudio && audioUrl) {
+      // Stop the current audio if playing
+      const audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+      setIsPlayingAudio(false);
+    } else if (audioUrl) {
+      // Play existing audio if available
+      playAudio(audioUrl);
+    } else if (reviewContent) {
+      // Generate new audio if no audio is available
+      ttsMutation.mutate(reviewContent);
+    }
+  };
   
   // Handle requesting a reflection review
   const handleRequestReview = (note: Note) => {
@@ -466,7 +555,30 @@ export default function NoteHistory() {
             </div>
           )}
           
-          <DialogFooter>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              onClick={handleReadAloud}
+              variant="outline"
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              disabled={ttsMutation.isPending || !reviewContent}
+            >
+              {isPlayingAudio ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Playing...
+                </>
+              ) : ttsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Volume2 className="mr-2 h-4 w-4" />
+                  Read Aloud
+                </>
+              )}
+            </Button>
             <Button 
               onClick={() => setReviewDialogOpen(false)}
               className="bg-amber-500 hover:bg-amber-600 text-white"

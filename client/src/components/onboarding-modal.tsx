@@ -67,8 +67,16 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
   // Save voice preference mutation
   const saveMutation = useMutation({
-    mutationFn: async (voiceStyle: string) => {
-      const res = await apiRequest("PUT", "/api/preferences", { voiceStyle });
+    mutationFn: async (data: { voiceStyle: string }) => {
+      // Include all required fields from the voice preference schema
+      const res = await apiRequest("PUT", "/api/preferences", {
+        voiceStyle: data.voiceStyle,
+        toastDay: "Sunday", // Default values
+        toastTone: "auto",
+        dailyReminder: true,
+        toastNotification: true,
+        emailNotifications: false
+      });
       const preferenceData = await res.json();
       return preferenceData;
     },
@@ -162,6 +170,11 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       // in the saveMutation.onSuccess callback
     } catch (error) {
       console.error("Error completing onboarding:", error);
+      toast({
+        title: "Error saving preferences",
+        description: "There was a problem saving your voice preference. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 

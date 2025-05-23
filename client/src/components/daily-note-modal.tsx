@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Mic, MicOff, MessageSquare, Volume2 } from "lucide-react";
+import ReflectionReviewDialog from "./reflection-review-dialog";
 
 // TypeScript definitions for Web Speech API
 interface SpeechRecognitionEvent extends Event {
@@ -75,9 +76,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   const [speechSupported, setSpeechSupported] = useState(true);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [reviewContent, setReviewContent] = useState("");
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [reviewAudioUrl, setReviewAudioUrl] = useState<string | null>(null);
+  const [reviewWithAudio, setReviewWithAudio] = useState(false);
   const [savedNoteId, setSavedNoteId] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -252,16 +251,26 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     onSuccess: (data) => {
       console.log("Save successful:", data);
       
-      // Reset form
+      // Store the saved note ID for potential review
+      setSavedNoteId(data.id);
+      
+      // If user requested a review, open the review dialog
+      if (reviewDialogOpen) {
+        // The review dialog will handle itself - already open
+        return;
+      }
+      
+      // Otherwise, just close and reset as usual
       setTextContent("");
       clearRecording();
-      // Close modal
       onClose();
+      
       // Show success message
       toast({
         title: "Note saved!",
         description: "Your daily reflection has been recorded.",
       });
+      
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notes/today"] });
@@ -285,7 +294,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   };
   
   // Handle saving the note
-  const handleSave = async () => {
+  const handleSave = async (withReview = false, withAudio = false) => {
     // For text mode, require content
     if (inputType === "text" && !textContent.trim()) {
       toast({
@@ -320,6 +329,12 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         stopRecording();
         // Wait for audioBlob to be created
         await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Set review preferences if applicable
+      if (withReview) {
+        setReviewDialogOpen(true);
+        setReviewWithAudio(withAudio);
       }
       
       // TEXT MODE - Save text content (including any voice-to-text transcription)
@@ -388,10 +403,12 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           });
           
           // Show success toast for transcription
-          toast({
-            title: "Audio transcribed",
-            description: "Your audio has been successfully converted to text.",
-          });
+          if (!withReview) {
+            toast({
+              title: "Audio transcribed",
+              description: "Your audio has been successfully converted to text.",
+            });
+          }
         } catch (error) {
           console.error("Error during transcription:", error);
           
@@ -403,11 +420,13 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           });
           
           // Show warning toast for failed transcription
-          toast({
-            title: "Transcription unavailable",
-            description: "We couldn't transcribe your audio, but your recording has been saved.",
-            variant: "destructive"
-          });
+          if (!withReview) {
+            toast({
+              title: "Transcription unavailable",
+              description: "We couldn't transcribe your audio, but your recording has been saved.",
+              variant: "destructive"
+            });
+          }
         } finally {
           setIsTranscribing(false);
         }
@@ -643,12 +662,12 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={onClose} disabled={isTranscribing || saveMutation.isPending}>
             Cancel
           </Button>
           <Button 
-            onClick={handleSave}
+            onClick={() => handleSave()}
             disabled={isTranscribing || saveMutation.isPending}
           >
             {isTranscribing ? (
@@ -665,7 +684,49 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               "Save Reflection"
             )}
           </Button>
+          <Button 
+            onClick={() => {
+              setReviewWithAudio(false);
+              setReviewDialogOpen(true);
+              handleSave();
+            }}
+            disabled={isTranscribing || saveMutation.isPending}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Save and Read Review
+          </Button>
+          <Button 
+            onClick={() => {
+              setReviewWithAudio(true);
+              setReviewDialogOpen(true);
+              handleSave();
+            }}
+            disabled={isTranscribing || saveMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Volume2 className="mr-2 h-4 w-4" />
+            Save and Hear Review
+          </Button>
         </DialogFooter>
+        
+        {/* Reflection Review Dialog */}
+        <ReflectionReviewDialog
+          isOpen={reviewDialogOpen}
+          onClose={() => {
+            setReviewDialogOpen(false);
+            setTextContent("");
+            clearRecording();
+            onClose();
+            
+            // Invalidate queries to refresh data
+            queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/notes/today"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+          }}
+          noteId={savedNoteId}
+          noteContent={textContent}
+        />
       </DialogContent>
     </Dialog>
   );

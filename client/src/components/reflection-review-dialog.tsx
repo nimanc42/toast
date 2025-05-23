@@ -11,13 +11,15 @@ interface ReflectionReviewDialogProps {
   onClose: () => void;
   noteId: number | null;
   noteContent: string;
+  autoPlayAudio?: boolean;
 }
 
 export default function ReflectionReviewDialog({ 
   isOpen, 
   onClose, 
   noteId, 
-  noteContent 
+  noteContent,
+  autoPlayAudio = false
 }: ReflectionReviewDialogProps) {
   const [reviewContent, setReviewContent] = useState("");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -141,6 +143,14 @@ export default function ReflectionReviewDialog({
       reviewMutation.mutate(noteId);
     }
   }, [isOpen, noteId]);
+  
+  // Automatically play audio when review content is available and autoPlayAudio is true
+  useEffect(() => {
+    if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending) {
+      // Generate and play the audio
+      ttsMutation.mutate(reviewContent);
+    }
+  }, [autoPlayAudio, reviewContent, isPlayingAudio, ttsMutation.isPending]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

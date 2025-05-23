@@ -17,6 +17,7 @@ app.use(express.urlencoded({ extended: false }));
 
 // Serve static files from the public directory
 app.use('/audio', express.static(path.join(process.cwd(), 'public', 'audio')));
+app.use('/voice-samples', express.static(path.join(process.cwd(), 'public', 'voice-samples')));
 
 app.use((req, res, next) => {
   const start = Date.now();

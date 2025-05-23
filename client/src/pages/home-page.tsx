@@ -36,11 +36,8 @@ export default function HomePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Voice options with descriptions
+  // Voice options with descriptions - only including voices that have audio files
   const voiceOptions = [
-    { id: "motivational", name: "Motivational", description: "Energetic and inspiring" },
-    { id: "friendly", name: "Friendly", description: "Warm and casual" },
-    { id: "poetic", name: "Poetic", description: "Artistic and flowing" },
     { id: "david", name: "David", description: "British Gentleman" },
     { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
     { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
@@ -48,15 +45,11 @@ export default function HomePage() {
     { id: "giovanni", name: "Giovanni", description: "Italian accent" },
     { id: "amelia", name: "Amelia", description: "Warm female voice" },
     { id: "maeve", name: "Maeve", description: "Irish accent" },
-    { id: "rachel", name: "Rachel", description: "Energetic narrator" },
-    { id: "custom", name: "Custom Voice", description: "Your custom ElevenLabs voice" }
+    { id: "rachel", name: "Rachel", description: "Energetic narrator" }
   ];
   
-  // Voice sample file mapping
+  // Voice sample file mapping - only including files that actually exist
   const voiceSampleMap = {
-    motivational: "/voice-samples/motivational.mp3",
-    friendly:     "/voice-samples/friendly.mp3",
-    poetic:       "/voice-samples/poetic.mp3",
     david:        "/voice-samples/david-antfield.mp3",
     ranger:       "/voice-samples/ranger.mp3",
     grandpa:      "/voice-samples/grandpa.mp3",
@@ -64,8 +57,7 @@ export default function HomePage() {
     giovanni:     "/voice-samples/giovanni.mp3",
     amelia:       "/voice-samples/amelia.mp3",
     maeve:        "/voice-samples/maeve.mp3",
-    rachel:       "/voice-samples/rachel.mp3",
-    custom:       "/voice-samples/custom.mp3"
+    rachel:       "/voice-samples/rachel.mp3"
   };
 
   // Fetch voice preference

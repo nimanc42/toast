@@ -59,9 +59,6 @@ export default function Header() {
               <Link href="/weekly-toast" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Weekly Toast
               </Link>
-              <Link href="/analytics" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
-                Analytics
-              </Link>
               <Link href="/settings" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Settings
               </Link>
@@ -88,11 +85,6 @@ export default function Header() {
                     <div className="font-medium">{user?.name}</div>
                     <div className="text-gray-500 truncate">{user?.email}</div>
                   </div>
-                  <DropdownMenuItem asChild>
-                    <Link href="/analytics" className="w-full">
-                      Analytics
-                    </Link>
-                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="w-full">
                       Settings

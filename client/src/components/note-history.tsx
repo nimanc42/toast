@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle } from "lucide-react";
+import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle, MessageCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -24,8 +24,11 @@ export default function NoteHistory() {
   const [showAll, setShowAll] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<{ id: number, content: string } | null>(null);
   const [editedContent, setEditedContent] = useState("");
+  const [reviewContent, setReviewContent] = useState("");
+  const [isReviewing, setIsReviewing] = useState(false);
   const { toast } = useToast();
   
   // Define the Note type
@@ -109,6 +112,35 @@ export default function NoteHistory() {
     },
   });
   
+  // Reflection review mutation
+  const reviewMutation = useMutation({
+    mutationFn: async (noteId: number) => {
+      const res = await apiRequest("POST", `/api/notes/${noteId}/review`);
+      const data = await res.json();
+      return data.review;
+    },
+    onSuccess: (review) => {
+      setReviewContent(review);
+      setIsReviewing(false);
+      setReviewDialogOpen(true);
+    },
+    onError: (error: Error) => {
+      setIsReviewing(false);
+      toast({
+        title: "Review generation failed",
+        description: "Unable to generate a review for your reflection.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle requesting a reflection review
+  const handleRequestReview = (note: Note) => {
+    setCurrentNote({ id: note.id, content: note.content });
+    setIsReviewing(true);
+    reviewMutation.mutate(note.id);
+  };
+
   // Handle audio playback
   const handlePlayAudio = (audioUrl: string) => {
     // In a real implementation, we would play the audio file here
@@ -270,6 +302,19 @@ export default function NoteHistory() {
                     <Button 
                       variant="ghost" 
                       size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-amber-500"
+                      onClick={() => handleRequestReview(note)}
+                      disabled={isReviewing && currentNote?.id === note.id}
+                    >
+                      {isReviewing && currentNote?.id === note.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MessageCircle className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
                       className="h-8 w-8 text-gray-400 hover:text-red-500"
                       onClick={() => handleDelete(note.id, note.content || "")}
                     >
@@ -392,6 +437,45 @@ export default function NoteHistory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reflection Review Dialog */}
+      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-amber-700">I hear you saying...</DialogTitle>
+          </DialogHeader>
+          
+          <div className="my-4">
+            {reviewContent ? (
+              <div className="bg-amber-50 p-4 rounded-md border border-amber-200">
+                <p className="text-amber-800">{reviewContent}</p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+              </div>
+            )}
+          </div>
+          
+          {currentNote && (
+            <div className="mt-2 mb-4">
+              <h4 className="text-sm font-medium text-gray-500 mb-1">Your original reflection:</h4>
+              <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                <p className="text-sm text-gray-700">{currentNote.content}</p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button 
+              onClick={() => setReviewDialogOpen(false)}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

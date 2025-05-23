@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   externalProvider: text("external_provider"), // Name of the provider (google, apple, etc.)
   weeklyToastDay: integer("weekly_toast_day").default(0), // 0 = Sunday, 6 = Saturday
   timezone: text("timezone").default("UTC"),
+  firstLogin: boolean("first_login").notNull().default(true), // Track if this is the first time a user logs in
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

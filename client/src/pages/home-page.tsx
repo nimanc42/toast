@@ -103,13 +103,8 @@ export default function HomePage() {
   const playVoicePreview = (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Get the audio element from the DOM
-    const audio = document.getElementById('voicePreview') as HTMLAudioElement;
-    
-    // If already playing, pause it
+    // If already playing, stop it
     if (previewPlaying) {
-      audio.pause();
-      audio.currentTime = 0;
       setPreviewPlaying(false);
       return;
     }
@@ -125,17 +120,18 @@ export default function HomePage() {
       return;
     }
     
-    // Set the source
-    audio.src = src;
+    // Create a new Audio object instead of using the DOM element
+    // This helps avoid cross-origin issues
+    const soundPlayer = new Audio(src);
     
     // Add debugging logs
     console.log("Preview src:", src);
-    console.log("Audio element:", audio);
     
-    // Set up event handlers AFTER setting the source
-    audio.onended = () => setPreviewPlaying(false);
+    // Set up event handlers
+    soundPlayer.onended = () => setPreviewPlaying(false);
     
-    audio.onerror = () => {
+    soundPlayer.onerror = () => {
+      console.error("Audio error occurred");
       setPreviewPlaying(false);
       toast({
         title: "Preview not available",
@@ -148,7 +144,7 @@ export default function HomePage() {
     setPreviewPlaying(true);
     
     // Play the audio with improved error handling
-    audio.play().catch(err => {
+    soundPlayer.play().catch(err => {
       console.error(err);
       setPreviewPlaying(false);
       toast({

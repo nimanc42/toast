@@ -27,16 +27,12 @@ interface OnboardingModalProps {
   user: UserType | null;
 }
 
-// Voice sample data with actual MP3 filenames
+// Voice sample data with actual MP3 filenames - matching design
 const VOICE_OPTIONS = [
-  { id: 'david', name: 'David', description: 'Clear and professional male voice', filename: 'david-antfield.mp3' },
-  { id: 'ranger', name: 'Ranger', description: 'Deep, authoritative male voice', filename: 'ranger.mp3' },
-  { id: 'grandpa', name: 'Grandpa', description: 'Warm, friendly elderly male voice', filename: 'grandpa.mp3' },
-  { id: 'sam', name: 'Sam', description: 'Mature male voice with character', filename: 'sam.mp3' },
-  { id: 'giovanni', name: 'Giovanni', description: 'Italian-accented male voice', filename: 'giovanni.mp3' },
-  { id: 'amelia', name: 'Amelia', description: 'Young female voice with energy', filename: 'amelia.mp3' },
-  { id: 'maeve', name: 'Maeve', description: 'Mature female voice with warmth', filename: 'maeve.mp3' },
-  { id: 'rachel', name: 'Rachel', description: 'Clear and articulate female voice', filename: 'rachel.mp3' },
+  { id: 'motivational', name: 'Motivational Coach', description: 'Energetic, encouraging tone', filename: 'sam.mp3' },
+  { id: 'friendly', name: 'Friendly Conversationalist', description: 'Warm, casual tone', filename: 'grandpa.mp3' },
+  { id: 'poetic', name: 'Poetic Narrator', description: 'Thoughtful, eloquent tone', filename: 'rachel.mp3' },
+  { id: 'david', name: 'David', description: 'Professional, articulate tone', filename: 'david-antfield.mp3' },
 ];
 
 export default function OnboardingModal({ isOpen, onClose, user }: OnboardingModalProps): JSX.Element {
@@ -47,16 +43,9 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
   // Initialize audio element
   useEffect(() => {
-    // Create audio element once during component initialization
     const audio = new Audio();
-    
-    // Set crossOrigin to anonymous to avoid CORS issues
-    audio.crossOrigin = "anonymous";
-    
-    // Event handlers
     audio.onended = () => setIsPlaying(false);
-    audio.onerror = (e) => {
-      console.error("Audio error:", e);
+    audio.onerror = () => {
       setIsPlaying(false);
       toast({
         title: "Audio Error",
@@ -64,10 +53,8 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
         variant: "destructive",
       });
     };
-    
     setAudioElement(audio);
 
-    // Cleanup function
     return () => {
       audio.pause();
       audio.src = "";
@@ -131,7 +118,6 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   const playVoiceSample = () => {
     if (!selectedVoice) return;
     
-    // If already playing, stop playback
     if (isPlaying && audioElement) {
       audioElement.pause();
       audioElement.currentTime = 0;
@@ -140,45 +126,23 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
     }
 
     if (audioElement) {
-      try {
-        // Find the voice in our options to get the correct filename
-        const selectedVoiceObj = VOICE_OPTIONS.find(v => v.id === selectedVoice);
-        if (selectedVoiceObj) {
-          // Set the source to the voice sample MP3 with the correct filename
-          const samplePath = `/voice-samples/${selectedVoiceObj.filename}`;
-          console.log("Playing sample from:", samplePath);
-          
-          // Reset any previous audio state
-          audioElement.pause();
-          audioElement.currentTime = 0;
-          
-          // Set new source and load
-          audioElement.src = samplePath;
-          audioElement.load();
-          
-          // Play with proper error handling
-          audioElement.play()
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(err => {
-              console.error("Error playing sample:", err);
-              setIsPlaying(false);
-              toast({
-                title: "Could not play sample",
-                description: "There was an error playing the voice sample. Please try again.",
-                variant: "destructive",
-              });
+      // Find the voice in our options to get the correct filename
+      const selectedVoiceObj = VOICE_OPTIONS.find(v => v.id === selectedVoice);
+      if (selectedVoiceObj) {
+        // Set the source to the voice sample MP3 with the correct filename
+        audioElement.src = `/voice-samples/${selectedVoiceObj.filename}`;
+        audioElement.play()
+          .then(() => {
+            setIsPlaying(true);
+          })
+          .catch(err => {
+            console.error("Error playing sample:", err);
+            toast({
+              title: "Could not play sample",
+              description: "There was an error playing the voice sample. Please try again.",
+              variant: "destructive",
             });
-        }
-      } catch (error) {
-        console.error("Voice sample playback error:", error);
-        setIsPlaying(false);
-        toast({
-          title: "Playback Error",
-          description: "Something went wrong with the voice preview. Please try again.",
-          variant: "destructive",
-        });
+          });
       }
     }
   };

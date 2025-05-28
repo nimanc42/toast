@@ -281,7 +281,7 @@ export default function WeeklyToastPage() {
                       Based on your settings, your toast will be created on your preferred day of the week.
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>
-                    <p className="text-xs mt-2 p-2 bg-blue-800/30 rounded-md max-w-md text-white">
+                    <p className="text-xs mt-2 p-2 bg-blue-900/80 rounded-md max-w-md text-white">
                       <strong>New!</strong> Toast generation is now fully automated. Your weekly toast will appear 
                       here on your selected day without any manual action needed.
                     </p>

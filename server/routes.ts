@@ -1185,11 +1185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const voicePreference = await storage.getVoicePreferenceByUserId(userId);
       const voiceStyle = voicePreference?.voiceStyle || "rachel"; // Default to 'rachel' if no preference
       
-      // Get the ElevenLabs voice ID from the voice catalogue
-      const elevenLabsVoiceId = getElevenLabsVoiceId(voiceStyle);
-      
-      console.log(`[TTS] Getting voice ID for style: ${voiceStyle}`);
-      console.log(`[TTS] Selected voice ID: ${elevenLabsVoiceId}`);
+      // Get the ElevenLabs voice ID using your custom voice mapping
+      const elevenLabsVoiceId = getVoiceId(voiceStyle);
       
       // Generate speech with ElevenLabs using your actual voice samples
       const result = await generateSpeech(text, elevenLabsVoiceId, userId);

@@ -443,7 +443,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Today's Reflection</DialogTitle>
           <DialogDescription>
@@ -503,7 +503,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               rows={3}
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
-              className={`mb-4 min-h-[80px] max-h-[100px] ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
+              className={`mb-6 min-h-[80px] max-h-[100px] ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
             />
             
             {/* Voice to Text Button */}
@@ -662,7 +662,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter className="flex flex-col gap-3 pt-4">
+        <DialogFooter className="flex flex-col gap-4 pt-6">
           <div className="flex flex-row gap-3">
             <Button 
               variant="outline" 
@@ -699,7 +699,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               handleSave();
             }}
             disabled={isTranscribing || saveMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 w-full"
+            className="bg-blue-600 hover:bg-blue-700 w-full py-3"
           >
             <Volume2 className="mr-2 h-4 w-4" />
             Save and Hear Review

@@ -235,8 +235,8 @@ export default function WeeklyToastPage() {
                   <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold font-accent mb-4 text-white">Your Personalized Toast</h1>
-              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-white">
+              <h1 className="text-3xl font-bold font-accent mb-4 text-gray-900">Your Personalized Toast</h1>
+              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-gray-800">
                 {latestToast ? (
                   <>Here's your weekly toast celebrating your progress!</>
                 ) : (
@@ -276,8 +276,8 @@ export default function WeeklyToastPage() {
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
                     </div>
-                    <p className="text-lg mb-2 text-white">Your weekly toast will be generated automatically</p>
-                    <p className="text-sm text-white opacity-90 max-w-md">
+                    <p className="text-lg mb-2 text-gray-900">Your weekly toast will be generated automatically</p>
+                    <p className="text-sm text-gray-800 max-w-md">
                       Based on your settings, your toast will be created on your preferred day of the week.
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>

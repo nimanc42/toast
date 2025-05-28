@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,19 +27,23 @@ interface OnboardingModalProps {
   user: UserType | null;
 }
 
-// Voice sample data with actual MP3 filenames - matching design
-const VOICE_OPTIONS = [
-  { id: 'motivational', name: 'Motivational Coach', description: 'Energetic, encouraging tone', filename: 'sam.mp3' },
-  { id: 'friendly', name: 'Friendly Conversationalist', description: 'Warm, casual tone', filename: 'grandpa.mp3' },
-  { id: 'poetic', name: 'Poetic Narrator', description: 'Thoughtful, eloquent tone', filename: 'rachel.mp3' },
-  { id: 'david', name: 'David', description: 'Professional, articulate tone', filename: 'david-antfield.mp3' },
-];
+interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+  sampleUrl: string;
+}
 
 export default function OnboardingModal({ isOpen, onClose, user }: OnboardingModalProps): JSX.Element {
   const [selectedVoice, setSelectedVoice] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+
+  // Fetch available voices from API
+  const { data: voices, isLoading: voicesLoading } = useQuery<VoiceOption[]>({
+    queryKey: ["/api/voices"]
+  });
 
   // Initialize audio element
   useEffect(() => {
@@ -116,7 +120,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
 
   // Play voice sample
   const playVoiceSample = () => {
-    if (!selectedVoice) return;
+    if (!selectedVoice || !voices) return;
     
     if (isPlaying && audioElement) {
       audioElement.pause();
@@ -126,11 +130,11 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
     }
 
     if (audioElement) {
-      // Find the voice in our options to get the correct filename
-      const selectedVoiceObj = VOICE_OPTIONS.find(v => v.id === selectedVoice);
+      // Find the voice in our options to get the correct sample URL
+      const selectedVoiceObj = voices.find((v: VoiceOption) => v.id === selectedVoice);
       if (selectedVoiceObj) {
-        // Set the source to the voice sample MP3 with the correct filename
-        audioElement.src = `/voice-samples/${selectedVoiceObj.filename}`;
+        // Set the source to the voice sample URL
+        audioElement.src = selectedVoiceObj.sampleUrl;
         audioElement.play()
           .then(() => {
             setIsPlaying(true);
@@ -201,11 +205,11 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
                 <SelectValue placeholder="Select a voice" />
               </SelectTrigger>
               <SelectContent>
-                {VOICE_OPTIONS.map((voice) => (
+                {voices?.map((voice: VoiceOption) => (
                   <SelectItem key={voice.id} value={voice.id}>
                     {voice.name} - {voice.description}
                   </SelectItem>
-                ))}
+                )) || []}
               </SelectContent>
             </Select>
           </div>
@@ -213,7 +217,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
           <div className="flex items-center space-x-2">
             <Button
               onClick={playVoiceSample}
-              disabled={!selectedVoice || isPending}
+              disabled={!selectedVoice || saveMutation.isPending || voicesLoading}
               variant="outline"
               size="sm"
               className="w-full"

@@ -1177,21 +1177,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get the user's voice preference
       const voicePreference = await storage.getVoicePreferenceByUserId(userId);
-      let voiceStyle = voicePreference?.voiceStyle || "sam"; // Default to 'sam' if no preference
+      const voiceStyle = voicePreference?.voiceStyle || "rachel"; // Default to 'rachel' if no preference
       
-      // Get the ElevenLabs voice ID from the user's preference
-      const voiceId = getVoiceId(voiceStyle);
+      // Get the OpenAI TTS voice name from the voice catalogue
+      const ttsVoice = getTTSVoiceForId(voiceStyle);
       
-      // Generate speech with ElevenLabs
-      const result = await generateSpeech(text, voiceId, userId);
+      console.log(`[TTS] Getting voice ID for style: ${voiceStyle}`);
+      console.log(`[TTS] Selected voice ID: ${ttsVoice}`);
       
-      if (typeof result === 'string') {
-        return res.json({ audioUrl: result });
-      } else if (result && 'error' in result) {
-        return res.status(400).json({ error: result.error, resetTime: result.resetTime });
+      // Initialize OpenAI client
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+
+      // Generate speech with OpenAI TTS
+      const mp3Response = await openai.audio.speech.create({
+        model: 'tts-1',
+        voice: ttsVoice as any,
+        input: text,
+      });
+
+      // Convert response to buffer
+      const buffer = Buffer.from(await mp3Response.arrayBuffer());
+      
+      // Generate unique filename
+      const filename = `review-${Date.now()}.mp3`;
+      
+      console.log('[TTS] Using Supabase Storage for audio file');
+      
+      // Upload to Supabase Storage
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      // Check if bucket exists, create if it doesn't
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const audioBucket = buckets?.find(bucket => bucket.name === 'audio');
+      
+      if (!audioBucket) {
+        console.log('Creating audio bucket...');
+        const { error: bucketError } = await supabase.storage.createBucket('audio', {
+          public: true,
+          allowedMimeTypes: ['audio/mpeg'],
+          fileSizeLimit: 10485760 // 10MB
+        });
+        
+        if (bucketError) {
+          console.error('Error creating bucket:', bucketError);
+          return res.status(500).json({ error: "Failed to create storage bucket" });
+        }
       } else {
-        return res.status(500).json({ error: "Failed to generate speech" });
+        console.log('Bucket audio exists');
       }
+      
+      // Upload the file
+      console.log(`Uploading file: ${filename}`);
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('audio')
+        .upload(filename, buffer, {
+          contentType: 'audio/mpeg',
+          cacheControl: '3600'
+        });
+      
+      if (uploadError) {
+        console.error('Error uploading to Supabase:', uploadError);
+        return res.status(500).json({ error: "Failed to upload audio file" });
+      }
+      
+      console.log(`File uploaded successfully: ${uploadData.path}`);
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio')
+        .getPublicUrl(uploadData.path);
+      
+      console.log(`Public URL: ${publicUrl}`);
+      console.log(`[TTS] Audio uploaded to Supabase: ${publicUrl}`);
+      
+      return res.json({ audioUrl: publicUrl });
     } catch (error) {
       console.error("Error generating speech for review:", error);
       return res.status(500).json({ error: "An error occurred while generating speech" });

@@ -29,6 +29,13 @@ interface VoicePreference {
   voiceStyle: string;
 }
 
+interface VoiceOption {
+  id: string;
+  name: string;
+  description: string;
+  sampleUrl: string;
+}
+
 export default function HomePage() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("motivational");
@@ -36,17 +43,10 @@ export default function HomePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Voice options with descriptions - only including voices that have audio files
-  const voiceOptions = [
-    { id: "david", name: "David", description: "British Gentleman" },
-    { id: "ranger", name: "Ranger", description: "Deep Ruggered" },
-    { id: "grandpa", name: "Grandpa", description: "Wise Elder" },
-    { id: "sam", name: "Sam", description: "ElevenLabs voice" },
-    { id: "giovanni", name: "Giovanni", description: "Italian accent" },
-    { id: "amelia", name: "Amelia", description: "Warm female voice" },
-    { id: "maeve", name: "Maeve", description: "Irish accent" },
-    { id: "rachel", name: "Rachel", description: "Energetic narrator" }
-  ];
+  // Fetch available voices from API
+  const { data: voiceOptions } = useQuery<VoiceOption[]>({
+    queryKey: ["/api/voices"]
+  });
   
   // Voice sample file mapping - only including files that actually exist
   const voiceSampleMap = {

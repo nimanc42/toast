@@ -29,6 +29,7 @@ import {
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { generateSpeech, getVoiceId, checkElevenLabsCredits } from "./services/elevenlabs";
+import { getAvailableVoices, getTTSVoiceForId } from "./services/voice-catalogue";
 import { generateWeeklyToast, TOAST_SYSTEM_PROMPT } from "./services/toast-generator";
 import { CONFIG } from "./config";
 import { runImmediateToastGeneration } from './services/scheduled-jobs';
@@ -1099,6 +1100,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? "Testing mode is enabled. Message generation restriction is bypassed." 
         : "Production mode is active. Normal message generation restrictions apply."
     });
+  });
+
+  // API endpoint to get available voices
+  app.get("/api/voices", (req, res) => {
+    try {
+      const voices = getAvailableVoices();
+      res.json(voices);
+    } catch (error) {
+      console.error("Error fetching voices:", error);
+      res.status(500).json({ message: "Failed to fetch available voices" });
+    }
   });
   
   // Special route for testing mode

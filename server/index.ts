@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { checkDatabaseConnection } from "./db";
 import { initializeScheduledJobs } from "./services/scheduled-jobs";
+import { initializeVoiceCatalogue } from "./services/voice-catalogue";
 
 // Check for Supabase credentials
 const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = process.env;
@@ -58,6 +59,9 @@ app.use((req, res, next) => {
       log('Failed to connect to the database. Make sure DATABASE_URL is set correctly.');
       process.exit(1);
     }
+    
+    // Initialize voice catalogue
+    initializeVoiceCatalogue();
     
     // Initialize scheduled jobs after confirming database connection
     initializeScheduledJobs();

@@ -433,32 +433,6 @@ export default function SettingsPage() {
                                     </div>
                                   </FormLabel>
                                 </FormItem>
-                                
-                                <FormItem className="relative">
-                                  <FormControl>
-                                    <RadioGroupItem
-                                      value="david"
-                                      className="sr-only peer"
-                                      id="voice-david"
-                                    />
-                                  </FormControl>
-                                  <FormLabel
-                                    htmlFor="voice-david"
-                                    className="flex p-3 bg-white border border-gray-300 rounded-lg cursor-pointer focus:outline-none hover:bg-gray-50 peer-data-[state=checked]:ring-2 peer-data-[state=checked]:ring-primary-500 peer-data-[state=checked]:border-transparent"
-                                  >
-                                    <div className="w-10 h-10 mr-3 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 18.5c4.142 0 7.5-3.134 7.5-7s-3.358-7-7.5-7c-4.142 0-7.5 3.134-7.5 7s3.358 7 7.5 7z"></path>
-                                        <path d="M8.5 12h7"></path>
-                                        <path d="M12 15.5v-7"></path>
-                                      </svg>
-                                    </div>
-                                    <div>
-                                      <span className="block text-sm font-medium text-gray-900">David</span>
-                                      <span className="block text-sm text-gray-500">Professional, articulate tone</span>
-                                    </div>
-                                  </FormLabel>
-                                </FormItem>
                               </RadioGroup>
                             </FormControl>
                             <FormMessage />

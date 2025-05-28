@@ -92,13 +92,17 @@ export default function ReflectionReviewDialog({
       setIsPlayingAudio(false);
     };
     
-    audioElement.onerror = () => {
+    audioElement.onerror = (e) => {
       setIsPlayingAudio(false);
-      toast({
-        title: "Audio playback error",
-        description: "There was an error playing the audio.",
-        variant: "destructive",
-      });
+      // Only show error if it's a real error, not just normal state changes
+      if (audioElement.networkState === audioElement.NETWORK_NO_SOURCE || 
+          audioElement.error?.code === audioElement.error?.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+        toast({
+          title: "Audio playback error",
+          description: "There was an error playing the audio.",
+          variant: "destructive",
+        });
+      }
     };
     
     // Set source and play
@@ -110,11 +114,14 @@ export default function ReflectionReviewDialog({
       .catch(err => {
         console.error("Playback error:", err);
         setIsPlayingAudio(false);
-        toast({
-          title: "Audio playback failed",
-          description: "Could not play the audio. Please try again.",
-          variant: "destructive",
-        });
+        // Only show toast for actual playback failures, not user interaction issues
+        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
+          toast({
+            title: "Audio playback failed",
+            description: "Could not play the audio. Please try again.",
+            variant: "destructive",
+          });
+        }
       });
   };
 

@@ -109,9 +109,9 @@ export default function HomePage() {
       return;
     }
     
-    // Get the source path from our mapping
-    const src = voiceSampleMap[selectedVoice as keyof typeof voiceSampleMap];
-    if (!src) {
+    // Find the selected voice in our options
+    const selectedVoiceObj = voiceOptions?.find(voice => voice.id === selectedVoice);
+    if (!selectedVoiceObj) {
       toast({
         title: "Preview not available",
         description: `Preview not available for "${getVoiceName(selectedVoice)}" voice.`,
@@ -120,12 +120,11 @@ export default function HomePage() {
       return;
     }
     
-    // Create a new Audio object instead of using the DOM element
-    // This helps avoid cross-origin issues
-    const soundPlayer = new Audio(src);
+    // Create a new Audio object using the sample URL from the voice data
+    const soundPlayer = new Audio(selectedVoiceObj.sampleUrl);
     
     // Add debugging logs
-    console.log("Preview src:", src);
+    console.log("Preview src:", selectedVoiceObj.sampleUrl);
     
     // Set up event handlers
     soundPlayer.onended = () => setPreviewPlaying(false);
@@ -157,7 +156,7 @@ export default function HomePage() {
   
   // Helper to get voice name for display in messages
   const getVoiceName = (voiceId: string): string => {
-    const voice = voiceOptions.find(v => v.id === voiceId);
+    const voice = voiceOptions?.find(v => v.id === voiceId);
     return voice ? voice.name : voiceId;
   };
 
@@ -321,11 +320,11 @@ export default function HomePage() {
                             <SelectValue placeholder="Select voice" />
                           </SelectTrigger>
                           <SelectContent>
-                            {voiceOptions.map(voice => (
+                            {voiceOptions?.map(voice => (
                               <SelectItem key={voice.id} value={voice.id}>
                                 {voice.name} <span className="text-gray-500 text-sm">({voice.description})</span>
                               </SelectItem>
-                            ))}
+                            )) || []}
                           </SelectContent>
                         </Select>
                         

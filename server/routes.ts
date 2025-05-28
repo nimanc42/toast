@@ -751,38 +751,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // The toast content and creation is now handled within generateWeeklyToast
         
-        // Now generate audio with the selected voice
-        const voiceId = getVoiceId(voice || 'motivational');
-        const ttsResult = await generateSpeech(toast.content, voiceId, userId);
+        // Now generate audio with the selected voice using voice catalogue
+        const ttsVoice = getTTSVoiceForId(voice || 'rachel');
         
-        let audioUrl = null;
+        // Generate speech with OpenAI TTS using the voice catalogue
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const mp3Response = await openai.audio.speech.create({
+          model: 'tts-1',
+          voice: ttsVoice as any,
+          input: toast.content,
+        });
+
+        const buffer = Buffer.from(await mp3Response.arrayBuffer());
+        const filename = `toast-${Date.now()}.mp3`;
         
-        // Handle various response types from the TTS service
-        if (typeof ttsResult === 'string') {
-          // Success case - got a URL to the audio file
-          console.log(`[Toast Generator] Audio generated successfully: ${ttsResult}`);
-          audioUrl = ttsResult;
-        } 
-        else if (ttsResult && typeof ttsResult === 'object' && 'error' in ttsResult) {
-          // Error case with specific message
-          console.warn(`[Toast Generator] Audio generation error: ${ttsResult.error}`);
-          
-          // Provide user-friendly error message
-          audioUrl = 'Error: ' + (
-            ttsResult.error.includes('Rate limit') ? 'Rate limit reached. Please try again later.' :
-            ttsResult.error.includes('quota exceeded') ? 'Voice generation quota exceeded. Please try again later.' :
-            ttsResult.error.includes('timeout') ? 'Voice generation timed out. Please try again later.' :
-            'Unable to generate audio at this time.'
-          );
-        } 
-        else {
-          // Null or unexpected response
-          console.log('[Toast Generator] Failed to generate audio');
-          audioUrl = 'Error: Audio generation failed. Please try again later.';
+        // Upload to Supabase Storage
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('audio')
+          .upload(filename, buffer, {
+            contentType: 'audio/mpeg',
+            cacheControl: '3600'
+          });
+        
+        if (uploadError) {
+          console.error('Error uploading weekly toast audio:', uploadError);
+          throw new Error('Failed to upload audio file');
         }
         
+        const { data: { publicUrl } } = supabase.storage
+          .from('audio')
+          .getPublicUrl(uploadData.path);
+        
         // Update toast with audio URL
-        const updatedToast = await storage.updateToast(toast.id, { audioUrl });
+        const updatedToast = await storage.updateToast(toast.id, { audioUrl: publicUrl });
         
         // Log analytics for toast regeneration
         if (storage.logUserActivity) {

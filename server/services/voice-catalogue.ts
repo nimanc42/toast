@@ -9,16 +9,16 @@ export interface VoiceCatalogueEntry {
   ttsVoice: string; // OpenAI TTS voice name
 }
 
-// Voice mapping configuration
-const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoice: string }> = {
-  'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova' },
-  'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo' },
-  'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx' },
-  'grandpa': { name: 'Grandpa', description: 'Wise and comforting', ttsVoice: 'echo' },
-  'maeve': { name: 'Maeve', description: 'Gentle and soothing', ttsVoice: 'shimmer' },
-  'rachel': { name: 'Rachel', description: 'Friendly and upbeat', ttsVoice: 'alloy' },
-  'ranger': { name: 'Ranger', description: 'Strong and motivational', ttsVoice: 'onyx' },
-  'sam': { name: 'Sam', description: 'Casual and relatable', ttsVoice: 'nova' },
+// Voice mapping configuration with ElevenLabs voice IDs
+const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoice: string; elevenLabsId: string }> = {
+  'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
+  'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: 'onwK6e5Y_E_1OucFyMDw' },
+  'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx', elevenLabsId: 'zcAOhNBS3c14rBihAFp1' },
+  'grandpa': { name: 'Grandpa', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },
+  'maeve': { name: 'Maeve', description: 'Gentle and soothing', ttsVoice: 'shimmer', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
+  'rachel': { name: 'Rachel', description: 'Friendly and upbeat', ttsVoice: 'alloy', elevenLabsId: '21m00Tcm4TlvDq8ikWAM' },
+  'ranger': { name: 'Ranger', description: 'Strong and motivational', ttsVoice: 'onyx', elevenLabsId: 'MF3mGyEYCl7XYWbV9V6O' },
+  'sam': { name: 'Sam', description: 'Casual and relatable', ttsVoice: 'nova', elevenLabsId: 'yoZ06aMxZJJ28mfd3POQ' },
 };
 
 let voiceCatalogue: VoiceCatalogueEntry[] = [];
@@ -91,6 +91,14 @@ export function getVoiceById(id: string): VoiceCatalogueEntry | undefined {
 export function getTTSVoiceForId(id: string): string {
   const voice = getVoiceById(id);
   return voice?.ttsVoice || 'alloy'; // fallback to alloy if not found
+}
+
+/**
+ * Get the ElevenLabs voice ID for a given voice ID
+ */
+export function getElevenLabsVoiceId(id: string): string {
+  const mapping = VOICE_MAPPING[id];
+  return mapping?.elevenLabsId || 'ErXwobaYiN019PkySvjV'; // fallback to grandpa voice
 }
 
 /**

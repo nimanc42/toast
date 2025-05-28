@@ -662,13 +662,19 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={onClose} disabled={isTranscribing || saveMutation.isPending}>
+        <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            disabled={isTranscribing || saveMutation.isPending}
+            className="sm:flex-1"
+          >
             Cancel
           </Button>
           <Button 
             onClick={() => handleSave()}
             disabled={isTranscribing || saveMutation.isPending}
+            className="sm:flex-1"
           >
             {isTranscribing ? (
               <>
@@ -686,24 +692,12 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </Button>
           <Button 
             onClick={() => {
-              setReviewWithAudio(false);
-              setReviewDialogOpen(true);
-              handleSave();
-            }}
-            disabled={isTranscribing || saveMutation.isPending}
-            className="bg-amber-600 hover:bg-amber-700"
-          >
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Save and Read Review
-          </Button>
-          <Button 
-            onClick={() => {
               setReviewWithAudio(true);
               setReviewDialogOpen(true);
               handleSave();
             }}
             disabled={isTranscribing || saveMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 sm:flex-1"
           >
             <Volume2 className="mr-2 h-4 w-4" />
             Save and Hear Review

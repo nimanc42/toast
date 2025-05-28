@@ -61,4 +61,9 @@
   .card {
     @apply bg-white rounded-lg shadow-sm text-gray-900;
   }
+  
+  /* Ensure text visibility on gradient backgrounds */
+  .text-white {
+    color: white !important;
+  }
 }

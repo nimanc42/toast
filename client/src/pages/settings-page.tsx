@@ -24,6 +24,8 @@ const settingsFormSchema = z.object({
   emailNotifications: z.boolean().default(false),
   timezone: z.string().default("UTC"),
   weeklyToastDay: z.number().min(0).max(6).default(0),
+  toastHour: z.number().min(0).max(23).default(9),
+  toastMinute: z.number().min(0).max(59).default(0),
 });
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>;
@@ -66,6 +68,8 @@ export default function SettingsPage() {
       emailNotifications: false,
       timezone: "UTC",
       weeklyToastDay: 0, // Sunday
+      toastHour: 9, // 9 AM
+      toastMinute: 0, // 0 minutes
     },
   });
   
@@ -219,6 +223,73 @@ export default function SettingsPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Toast Time Selection */}
+                      <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
+                        <FormLabel className="text-blue-700 font-medium mb-3 block">Toast Generation Time</FormLabel>
+                        <div className="flex gap-4">
+                          {/* Hour Selection */}
+                          <FormField
+                            control={form.control}
+                            name="toastHour"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel className="text-sm">Hour</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    onValueChange={(value) => field.onChange(parseInt(value))}
+                                    value={field.value.toString()}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Hour" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[200px]">
+                                      {Array.from({ length: 24 }, (_, i) => (
+                                        <SelectItem key={i} value={i.toString()}>
+                                          {i.toString().padStart(2, '0')}:00
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          {/* Minute Selection */}
+                          <FormField
+                            control={form.control}
+                            name="toastMinute"
+                            render={({ field }) => (
+                              <FormItem className="flex-1">
+                                <FormLabel className="text-sm">Minute</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    onValueChange={(value) => field.onChange(parseInt(value))}
+                                    value={field.value.toString()}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Min" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[200px]">
+                                      {Array.from({ length: 60 }, (_, i) => (
+                                        <SelectItem key={i} value={i.toString()}>
+                                          {i.toString().padStart(2, '0')}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormDescription className="mt-2">
+                          Choose the exact time when your weekly toast will be generated
+                        </FormDescription>
+                      </div>
                       
                       {/* Timezone Selection - Highlighted */}
                       <FormField

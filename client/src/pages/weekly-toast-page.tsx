@@ -276,19 +276,17 @@ export default function WeeklyToastPage() {
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
                     </div>
-                    <p className="text-lg mb-2 text-gray-900">Your weekly toast will be generated automatically</p>
                     <p className="text-sm text-gray-800 max-w-md">
-                      Based on your settings, your toast will be created on your preferred day of the week.
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>
                     <p className="text-xs mt-2 p-2 bg-blue-900/80 rounded-md max-w-md text-white">
                       <strong>New!</strong> Toast generation is now fully automated. Your weekly toast will appear 
                       here on your selected day without any manual action needed.
                     </p>
-                    <div className="mt-3">
+                    <div className="mt-4">
                       <Link href="/settings">
-                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white text-white">
-                          Adjust Toast Preferences
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm font-medium">
+                          Set Toast Schedule
                         </Button>
                       </Link>
                     </div>

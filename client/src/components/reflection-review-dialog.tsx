@@ -172,25 +172,12 @@ export default function ReflectionReviewDialog({
         </DialogHeader>
         
         <div className="my-4">
-          {reviewContent ? (
-            <div className="bg-amber-50 p-4 rounded-md border border-amber-200">
-              <p className="text-amber-800">{reviewContent}</p>
-            </div>
-          ) : (
+          {!reviewContent && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
             </div>
           )}
         </div>
-        
-        {noteContent && (
-          <div className="mt-2 mb-4">
-            <h4 className="text-sm font-medium text-gray-500 mb-1">Your original reflection:</h4>
-            <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-              <p className="text-sm text-gray-700">{noteContent}</p>
-            </div>
-          </div>
-        )}
         
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 

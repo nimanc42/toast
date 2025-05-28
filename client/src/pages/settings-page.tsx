@@ -480,40 +480,6 @@ export default function SettingsPage() {
                         )}
                       />
                       
-                      {/* Weekly Toast Day Preference */}
-                      <FormField
-                        control={form.control}
-                        name="weeklyToastDay"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Weekly Toast Day</FormLabel>
-                            <FormControl>
-                              <Select 
-                                onValueChange={(value) => field.onChange(parseInt(value))}
-                                value={field.value.toString()}
-                              >
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select a day" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="0">Sunday</SelectItem>
-                                  <SelectItem value="1">Monday</SelectItem>
-                                  <SelectItem value="2">Tuesday</SelectItem>
-                                  <SelectItem value="3">Wednesday</SelectItem>
-                                  <SelectItem value="4">Thursday</SelectItem>
-                                  <SelectItem value="5">Friday</SelectItem>
-                                  <SelectItem value="6">Saturday</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormDescription>
-                              Choose which day of the week you'd like to receive your weekly toast
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
                       {/* Timezone Selection */}
                       <FormField
                         control={form.control}

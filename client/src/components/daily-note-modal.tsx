@@ -500,10 +500,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             <Textarea
               id="reflectionInput"
               placeholder={isListening ? "Listening... Start speaking!" : "Type your reflection here..."}
-              rows={4}
+              rows={3}
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
-              className={`mb-4 ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
+              className={`mb-4 min-h-[80px] max-h-[100px] ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
             />
             
             {/* Voice to Text Button */}
@@ -662,34 +662,36 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           </div>
         )}
         
-        <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-4">
-          <Button 
-            variant="outline" 
-            onClick={onClose} 
-            disabled={isTranscribing || saveMutation.isPending}
-            className="sm:flex-1"
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={() => handleSave()}
-            disabled={isTranscribing || saveMutation.isPending}
-            className="sm:flex-1"
-          >
-            {isTranscribing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Transcribing...
-              </>
-            ) : saveMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Reflection"
-            )}
-          </Button>
+        <DialogFooter className="flex flex-col gap-3 pt-4">
+          <div className="flex flex-row gap-3">
+            <Button 
+              variant="outline" 
+              onClick={onClose} 
+              disabled={isTranscribing || saveMutation.isPending}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleSave()}
+              disabled={isTranscribing || saveMutation.isPending}
+              className="flex-1"
+            >
+              {isTranscribing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Transcribing...
+                </>
+              ) : saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Reflection"
+              )}
+            </Button>
+          </div>
           <Button 
             onClick={() => {
               setReviewWithAudio(true);
@@ -697,7 +699,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               handleSave();
             }}
             disabled={isTranscribing || saveMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 sm:flex-1"
+            className="bg-blue-600 hover:bg-blue-700 w-full"
           >
             <Volume2 className="mr-2 h-4 w-4" />
             Save and Hear Review

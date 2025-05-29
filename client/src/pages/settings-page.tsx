@@ -45,6 +45,8 @@ export default function SettingsPage() {
   type UserSettingsResponse = {
     timezone: string;
     weeklyToastDay: number;
+    toastHour: number;
+    toastMinute: number;
   };
   
   // Fetch user voice preferences
@@ -90,9 +92,11 @@ export default function SettingsPage() {
         toastNotification: voicePreferences.toastNotification ?? true,
         emailNotifications: voicePreferences.emailNotifications ?? false,
         
-        // User settings (timezone and weekly toast day)
+        // User settings (timezone, weekly toast day, and time)
         timezone: userSettings.timezone || "UTC",
         weeklyToastDay: userSettings.weeklyToastDay ?? 0,
+        toastHour: userSettings.toastHour ?? 9,
+        toastMinute: userSettings.toastMinute ?? 0,
       });
     }
   }, [voicePreferences, userSettings, form]);
@@ -110,10 +114,12 @@ export default function SettingsPage() {
         emailNotifications: values.emailNotifications,
       });
       
-      // Then update user settings (timezone and weekly toast day)
+      // Then update user settings (timezone, weekly toast day, and time)
       const userSettingsRes = await apiRequest("PUT", "/api/user/settings", {
         timezone: values.timezone,
         weeklyToastDay: values.weeklyToastDay,
+        toastHour: values.toastHour,
+        toastMinute: values.toastMinute,
       });
       
       // Return combined data

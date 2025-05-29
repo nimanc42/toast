@@ -9,6 +9,8 @@ const router = Router();
 const updateUserSettingsSchema = z.object({
   timezone: z.string().optional(),
   weeklyToastDay: z.number().min(0).max(6).optional(),
+  toastHour: z.number().min(0).max(23).optional(),
+  toastMinute: z.number().min(0).max(59).optional(),
 });
 
 /**
@@ -26,6 +28,8 @@ router.get('/api/user/settings', ensureAuthenticated, async (req, res) => {
     res.json({
       timezone: user.timezone || 'UTC',
       weeklyToastDay: user.weeklyToastDay || 0,
+      toastHour: user.toastHour || 9,
+      toastMinute: user.toastMinute || 0,
     });
   } catch (error) {
     console.error('Error fetching user settings:', error);
@@ -46,6 +50,8 @@ router.put('/api/user/settings', ensureAuthenticated, async (req, res) => {
     res.json({
       timezone: updatedUser.timezone || 'UTC',
       weeklyToastDay: updatedUser.weeklyToastDay || 0,
+      toastHour: updatedUser.toastHour || 9,
+      toastMinute: updatedUser.toastMinute || 0,
     });
   } catch (error) {
     console.error('Error updating user settings:', error);

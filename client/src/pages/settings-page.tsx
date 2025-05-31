@@ -68,7 +68,7 @@ export default function SettingsPage() {
       dailyReminder: true,
       toastNotification: true,
       emailNotifications: false,
-      timezone: "UTC",
+      timezone: "Australia/Perth",
       weeklyToastDay: 0, // Sunday
       toastHour: 9, // 9 AM
       toastMinute: 0, // 0 minutes

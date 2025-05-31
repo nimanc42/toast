@@ -12,7 +12,7 @@ export const users = pgTable("users", {
   externalId: text("external_id").unique(), // ID from external auth provider (Supabase, Google, etc.)
   externalProvider: text("external_provider"), // Name of the provider (google, apple, etc.)
   weeklyToastDay: integer("weekly_toast_day").default(0), // 0 = Sunday, 6 = Saturday
-  timezone: text("timezone").default("UTC"),
+  timezone: text("timezone").default("Australia/Perth"),
   toastHour: integer("toast_hour").default(9), // Hour of day for toast generation (0-23)
   toastMinute: integer("toast_minute").default(0), // Minute of hour for toast generation (0-59)
   firstLogin: boolean("first_login").notNull().default(true), // Track if this is the first time a user logs in

@@ -322,7 +322,7 @@ export default function SettingsPage() {
                                     } catch (e) {
                                       // Fallback for browsers that don't support Intl.supportedValuesOf
                                       return [
-                                        "UTC", "America/New_York", "America/Chicago", 
+                                        "Australia/Perth", "UTC", "America/New_York", "America/Chicago", 
                                         "America/Denver", "America/Los_Angeles", "Europe/London",
                                         "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
                                       ].map(tz => (
@@ -471,7 +471,7 @@ export default function SettingsPage() {
                                     } catch (e) {
                                       // Fallback for browsers that don't support Intl.supportedValuesOf
                                       return [
-                                        "UTC", "America/New_York", "America/Chicago", 
+                                        "Australia/Perth", "UTC", "America/New_York", "America/Chicago", 
                                         "America/Denver", "America/Los_Angeles", "Europe/London",
                                         "Europe/Paris", "Asia/Tokyo", "Australia/Sydney"
                                       ].map(tz => (

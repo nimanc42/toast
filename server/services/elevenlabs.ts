@@ -147,7 +147,7 @@ export async function checkElevenLabsCredits(): Promise<{
   }
   
   try {
-    const response = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+    const response = await fetch('https://api.elevenlabs.io/v1/user', {
       headers: {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json'
@@ -162,9 +162,11 @@ export async function checkElevenLabsCredits(): Promise<{
     const data = await response.json();
     // Type guard to ensure data has the expected structure
     if (typeof data === 'object' && data !== null && 
-        'character_count' in data && 'character_limit' in data) {
-      const remaining = data.character_count as number;
-      const limit = data.character_limit as number;
+        'subscription' in data && typeof data.subscription === 'object' && data.subscription !== null &&
+        'character_count' in data.subscription && 'character_limit' in data.subscription) {
+      const used = data.subscription.character_count as number;
+      const limit = data.subscription.character_limit as number;
+      const remaining = limit - used;
     
       // Determine credit status
       let status: 'low' | 'ok' | 'error' = 'ok';

@@ -125,6 +125,8 @@ ELEVENLABS_API_KEY=...
 - Testing mode for development and debugging
 
 ## Changelog
+- July 02, 2025. Set Australia/Perth as default timezone for all users (new and existing)
+- July 02, 2025. Fixed ElevenLabs credit detection system to correctly show available credits
 - July 02, 2025. Initial setup
 
 ## User Preferences

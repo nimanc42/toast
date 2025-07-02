@@ -3,6 +3,58 @@ import path from 'path';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { uploadAudioToSupabase } from './supabase-storage';
+import OpenAI from 'openai';
+
+// Initialize OpenAI client
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+/**
+ * OpenAI TTS fallback when ElevenLabs credits are exhausted
+ */
+async function generateOpenAITTS(
+  text: string, 
+  elevenLabsVoiceId: string,
+  userId?: number
+): Promise<string | { error: string } | null> {
+  try {
+    console.log('[TTS] Using OpenAI TTS as fallback');
+    
+    // Map ElevenLabs voice IDs to OpenAI voices
+    const voiceMapping: { [key: string]: string } = {
+      'EXAVITQu4vr4xnSDxMaL': 'alloy',     // Rachel -> Alloy
+      'NOpBlnGInO9m6vDvFkFC': 'echo',      // Grandpa -> Echo
+      'AZnzlk1XvdvUeBnXmlld': 'nova',      // Giovanni -> Nova
+      'pNInz6obpgDQGcFmaJgB': 'shimmer',   // Adam -> Shimmer
+      'Xb7hH8MSUJpSbSDYk0k2': 'fable',     // Alice -> Fable
+      'XrExE9yKIg1WjnnlVkGX': 'onyx',      // Matilda -> Onyx
+    };
+    
+    const openaiVoice = voiceMapping[elevenLabsVoiceId] || 'alloy';
+    
+    const mp3Response = await openai.audio.speech.create({
+      model: 'tts-1',
+      voice: openaiVoice as any,
+      input: text,
+    });
+
+    const buffer = Buffer.from(await mp3Response.arrayBuffer());
+    const filename = `openai-tts-${Date.now()}.mp3`;
+    
+    // Upload to Supabase Storage
+    const uploadResult = await uploadAudioToSupabase(buffer, filename);
+    
+    if (uploadResult) {
+      console.log(`[TTS] OpenAI TTS generated successfully: ${uploadResult}`);
+      return uploadResult;
+    } else {
+      console.error('[TTS] Failed to upload OpenAI TTS to storage');
+      return { error: 'Failed to upload generated audio' };
+    }
+  } catch (error) {
+    console.error('[TTS] OpenAI TTS generation failed:', error);
+    return { error: 'OpenAI TTS generation failed' };
+  }
+}
 
 // Default voice settings
 const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Rachel voice
@@ -177,8 +229,9 @@ export async function generateSpeech(
   // Estimate character count needed
   const estimatedChars = text.length;
   if (credits && credits.remaining < estimatedChars) {
-    console.error(`[TTS] Not enough credits: ${estimatedChars} needed, ${credits.remaining} available`);
-    return { error: 'Not enough TTS credits available' };
+    console.warn(`[TTS] Not enough ElevenLabs credits: ${estimatedChars} needed, ${credits.remaining} available`);
+    console.log('[TTS] Falling back to OpenAI TTS');
+    return await generateOpenAITTS(text, voiceId, userId);
   }
 
   try {

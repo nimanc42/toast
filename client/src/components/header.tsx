@@ -88,11 +88,7 @@ export default function Header() {
                     <div className="font-medium">{user?.name}</div>
                     <div className="text-gray-500 truncate">{user?.email}</div>
                   </div>
-                  <DropdownMenuItem asChild>
-                    <Link href="/analytics" className="w-full">
-                      Analytics
-                    </Link>
-                  </DropdownMenuItem>
+
                   <DropdownMenuItem asChild>
                     <Link href="/settings" className="w-full">
                       Settings

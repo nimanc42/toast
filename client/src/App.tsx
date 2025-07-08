@@ -16,7 +16,7 @@ import AuthCallback from "@/pages/auth-callback";
 import WeeklyToastPage from "@/pages/weekly-toast-page";
 import SettingsPage from "@/pages/settings-page";
 import SharedToastPage from "@/pages/shared-toast-page";
-import AnalyticsPage from "@/pages/analytics-page";
+
 import NotFound from "@/pages/not-found";
 import VerifyEmailPage from "@/pages/verify-email-page";
 import ResetPasswordPage from "@/pages/reset-password-page";
@@ -29,7 +29,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/weekly-toast" component={WeeklyToastPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
-      <ProtectedRoute path="/analytics" component={AnalyticsPage} />
+
       <Route path="/auth" component={AuthPage} />
       <Route path="/auth/callback" component={AuthCallback} />
       <Route path="/verify-email" component={VerifyEmailPage} />

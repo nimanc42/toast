@@ -1,0 +1,66 @@
+import React, { useState, useEffect, useCallback } from "react";
+import { Slider } from "@/components/ui/slider"; // adjust import to your UI library path
+
+export interface ToneSpiderwebProps {
+  onChange: (settings: Record<string, number>) => void;
+  initialValues?: Record<string, number>;
+}
+
+// Define the eight axes with labels for each end
+const axes = [
+  { key: "empathetic", label: ["Empathetic", "Objective"] },
+  { key: "playful", label: ["Playful", "Formal"] },
+  { key: "encouraging", label: ["Encouraging", "Honest"] },
+  { key: "brief", label: ["Brief", "Detailed"] },
+  { key: "challenge", label: ["Gentle Challenge", "Pure Support"] },
+  { key: "present", label: ["Present-Focused", "Forward-Looking"] },
+  { key: "echo", label: ["Echo Language", "Reframe Language"] },
+  { key: "inquisitive", label: ["Observational", "Inquisitive"] },
+];
+
+const ToneSpiderweb: React.FC<ToneSpiderwebProps> = ({ onChange, initialValues }) => {
+  // Initialize slider values from initialValues or default to 50
+  const defaultValues = axes.reduce((acc, axis) => {
+    acc[axis.key] = initialValues?.[axis.key] ?? 50;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const [settings, setSettings] = useState<Record<string, number>>(defaultValues);
+
+  // Whenever settings change, notify parent
+  useEffect(() => {
+    onChange(settings);
+  }, [settings, onChange]);
+
+  // Handle individual slider change
+  const handleChange = useCallback(
+    (key: string, value: number) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    []
+  );
+
+  return (
+    <div className="grid grid-cols-1 gap-6">
+      {axes.map(({ key, label }) => (
+        <div key={key} className="flex flex-col">
+          <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
+            <span>{label[0]}</span>
+            <span>{settings[key]}</span>
+            <span>{label[1]}</span>
+          </div>
+          <Slider
+            min={0}
+            max={100}
+            step={1}
+            value={settings[key]}
+            onValueChange={(val) => handleChange(key, val as number)}
+            aria-label={`${label[0]} to ${label[1]} slider`}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default ToneSpiderweb;

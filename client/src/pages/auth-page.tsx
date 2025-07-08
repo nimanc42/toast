@@ -118,7 +118,7 @@ export default function AuthPage() {
         <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
           <div className="text-center mb-6">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent mb-2">
-              A Toast to You
+              A Toast
             </h1>
             <p className="text-sm text-gray-600">Your daily positivity reflections</p>
           </div>

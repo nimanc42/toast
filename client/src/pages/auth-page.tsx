@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, FlaskConical } from "lucide-react";
-import { SocialAuthButtons } from "@/components/ui/social-auth-buttons";
+
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -208,11 +208,6 @@ export default function AuthPage() {
                     )}
                   </Button>
                   
-                  <SocialAuthButtons 
-                    onAuthStart={() => loginForm.reset()}
-                    onAuthError={(error) => console.error('Auth error:', error)}
-                  />
-                  
                   {isTestingModeEnabled && (
                     <div className="mt-6 pt-4 border-t">
                       <Alert className="mb-4 bg-yellow-50 border-yellow-200">
@@ -340,11 +335,6 @@ export default function AuthPage() {
                       "Create Account"
                     )}
                   </Button>
-                  
-                  <SocialAuthButtons 
-                    onAuthStart={() => registerForm.reset()}
-                    onAuthError={(error) => console.error('Auth error:', error)}
-                  />
                 </form>
               </Form>
             </TabsContent>

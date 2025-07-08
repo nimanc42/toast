@@ -702,7 +702,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             className="bg-blue-600 hover:bg-blue-700 w-full py-3"
           >
             <Volume2 className="mr-2 h-4 w-4" />
-            Save and Hear Review
+            Save and Listen Back Summary
           </Button>
         </DialogFooter>
         

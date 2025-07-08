@@ -22,6 +22,7 @@ import {
   insertNoteSchema, 
   insertVoicePreferenceSchema,
   insertToastSchema,
+  insertFeedbackSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   verifyEmailSchema
@@ -1204,6 +1205,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Anonymous feedback endpoint
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const validatedData = insertFeedbackSchema.parse(req.body);
+      
+      // Create feedback record without any user identification
+      await storage.createFeedback(validatedData);
+      
+      res.status(201).json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid data", errors: error.errors });
+      } else {
+        console.error("Error creating feedback:", error);
+        res.status(500).json({ message: "Failed to submit feedback" });
+      }
+    }
+  });
+
   // Admin route to manually trigger toast generation job (for testing)
   app.post("/api/admin/run-toast-generation", ensureAuthenticated, async (req, res) => {
     // Check if user is an admin or in development mode

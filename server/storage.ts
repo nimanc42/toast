@@ -11,6 +11,7 @@ import {
   type Badge,
   type UserBadge,
   type UserActivity,
+  feedback,
   type InsertUser, 
   type InsertNote, 
   type InsertVoicePreference, 
@@ -24,6 +25,9 @@ import {
   type InsertUserBadge,
   type InsertUserActivity
 } from "@shared/schema";
+
+type Feedback = typeof feedback.$inferSelect;
+type InsertFeedback = typeof feedback.$inferInsert;
 import session from "express-session";
 
 // Storage interface
@@ -120,6 +124,9 @@ export interface IStorage {
   
   // Additional methods
   getUserStreak(userId: number): Promise<number>;
+  
+  // Feedback methods
+  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
   
   // Session store
   sessionStore: session.Store;

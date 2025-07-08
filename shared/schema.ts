@@ -155,6 +155,14 @@ export const userActivity = pgTable("user_activity", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Anonymous feedback table
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  text: text("text"),
+  audioUrl: text("audio_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -249,6 +257,11 @@ export const insertUserActivitySchema = createInsertSchema(userActivity).pick({
   userId: true,
   activityType: true,
   metadata: true,
+});
+
+export const insertFeedbackSchema = createInsertSchema(feedback).pick({
+  text: true,
+  audioUrl: true,
 });
 
 // Extended schemas for validation

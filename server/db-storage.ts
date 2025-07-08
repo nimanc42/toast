@@ -11,6 +11,7 @@ import {
   badges,
   userBadges,
   userActivity,
+  feedback,
   type User, 
   type Note, 
   type VoicePreference, 
@@ -36,6 +37,9 @@ import {
   type InsertUserBadge,
   type InsertUserActivity
 } from "@shared/schema";
+
+type Feedback = typeof feedback.$inferSelect;
+type InsertFeedback = typeof feedback.$inferInsert;
 import { 
   getBadgeById, 
   getBadgesByCategory, 
@@ -673,8 +677,9 @@ export class DatabaseStorage implements IStorage {
     return getMonthlyActivityCount(userId, activityType);
   }
 
-  // Check and award badges based on user activity
-  async checkAndAwardBadges(userId: number): Promise<UserBadge[]> {
-    return checkAndAwardBadges(userId);
+  // Feedback methods
+  async createFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await db.insert(feedback).values(feedbackData).returning();
+    return newFeedback;
   }
 }

@@ -1,0 +1,51 @@
+Please implement an anonymous “Beta Feedback” tab exactly where “Analytics” used to be:
+
+1. **Navigation**
+   - In `client/src/components/NavBar.tsx`, remove the Analytics `<NavLink>`.
+   - Insert `<NavLink to="/beta-feedback">Beta Feedback</NavLink>` in its place.
+
+2. **Client Page**
+   - Create `client/src/pages/BetaFeedbackPage.tsx`.
+   - At the top, render a disclaimer:  
+     “This feedback is 100% anonymous and cannot be traced back to you.”
+   - Below that, add:
+     - A `<Textarea>` for typed feedback.
+     - An optional voice‐recorder (using `useAudioRecorder`) that shows record/stop buttons and an `<audio>` preview.
+   - Add a “Submit Feedback” button that POSTs `{ text, audioUrl }` to `/api/feedback`.
+
+3. **Routing**
+   - In your router (e.g. `client/src/App.tsx`), add:
+     `<Route path="/beta-feedback" element={<BetaFeedbackPage />} />`
+
+4. **Backend**
+   - Create `server/routes/feedback.ts` with:
+     ```js
+     import express from "express";
+     const router = express.Router();
+     router.post("/api/feedback", async (req,res) => {
+       const { text, audioUrl } = req.body;
+       await db.feedback.insert({ text, audio_url: audioUrl });
+       res.status(201).json({ success: true });
+     });
+     export default router;
+     ```
+   - Register it in `server/routes.ts`: `app.use(require("./routes/feedback"));`
+
+5. **Database**
+   - Update the `feedback` table to remove any `user_id` column:
+     ```sql
+     CREATE TABLE IF NOT EXISTS feedback (
+       id SERIAL PRIMARY KEY,
+       text TEXT,
+       audio_url TEXT,
+       created_at TIMESTAMP DEFAULT now()
+     );
+     ```
+   - If you already have a `user_id` column, drop it.
+
+6. **Deploy & Test**
+   - Run migrations (`npm run migrate`).
+   - Restart the server and navigate to `/beta-feedback`.
+   - Verify you see the disclaimer, can type or record feedback, click “Submit,” and see a 201 response.
+
+This will give you an anonymous feedback tab in the exact spot where Analytics was, with no user tracking.```

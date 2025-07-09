@@ -68,9 +68,10 @@ export default function Header() {
                 Settings
               </Link>
             </nav>
-
+          </div>
+          <div className="flex items-center">
             {/* Mobile Hamburger Button */}
-            <div className="md:hidden ml-6">
+            <div className="md:hidden mr-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -84,8 +85,6 @@ export default function Header() {
                 )}
               </Button>
             </div>
-          </div>
-          <div className="flex items-center">
             <div className="ml-3 relative">
               <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
                 <DropdownMenuTrigger asChild>

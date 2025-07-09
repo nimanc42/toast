@@ -269,13 +269,7 @@ export default function HomePage() {
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">
                     <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-amber-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                        <line x1="6" y1="1" x2="6" y2="4"></line>
-                        <line x1="10" y1="1" x2="10" y2="4"></line>
-                        <line x1="14" y1="1" x2="14" y2="4"></line>
-                      </svg>
+                      <img src="/logo-new.jpeg" alt="A Toast Logo" className="h-10 w-10 object-contain rounded-full" />
                     </span>
                   </div>
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your Weekly Toast</h2>

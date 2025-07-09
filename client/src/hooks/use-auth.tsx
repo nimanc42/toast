@@ -86,9 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginUser) => {
       const res = await apiRequest("POST", "/api/login", credentials);
+      
+      // Check if the response is not ok (failed login)
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Login failed");
+      }
+      
       return await res.json();
     },
     onSuccess: (response: LoginResponse) => {
+      // Only execute this if we have a valid response with user and token
+      if (!response.user || !response.token) {
+        throw new Error("Invalid login response");
+      }
+      
       // Store the JWT token in localStorage
       localStorage.setItem('authToken', response.token);
       

@@ -49,20 +49,20 @@ export default function Header() {
                   <line x1="10" y1="1" x2="10" y2="4"></line>
                   <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
-                A Toast to You
+                A Toast (Beta)
               </Link>
             </div>
-            <nav className="hidden sm:ml-6 sm:flex sm:items-center">
-              <Link href="/" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+            <nav className="ml-6 flex items-center flex-wrap">
+              <Link href="/" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
                 Dashboard
               </Link>
-              <Link href="/weekly-toast" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/weekly-toast" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
                 Weekly Toast
               </Link>
-              <Link href="/beta-feedback" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/beta-feedback" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
                 Beta Feedback
               </Link>
-              <Link href="/settings" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/settings" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
                 Settings
               </Link>
             </nav>

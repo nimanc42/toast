@@ -18,7 +18,7 @@ async function generateOpenAITTS(
 ): Promise<string | { error: string } | null> {
   try {
     console.log('[TTS] Using OpenAI TTS as fallback');
-    
+
     // Map ElevenLabs voice IDs to OpenAI voices
     const voiceMapping: { [key: string]: string } = {
       'EXAVITQu4vr4xnSDxMaL': 'alloy',     // Rachel -> Alloy
@@ -28,9 +28,9 @@ async function generateOpenAITTS(
       'Xb7hH8MSUJpSbSDYk0k2': 'fable',     // Alice -> Fable
       'XrExE9yKIg1WjnnlVkGX': 'onyx',      // Matilda -> Onyx
     };
-    
+
     const openaiVoice = voiceMapping[elevenLabsVoiceId] || 'alloy';
-    
+
     const mp3Response = await openai.audio.speech.create({
       model: 'tts-1',
       voice: openaiVoice as any,
@@ -39,10 +39,10 @@ async function generateOpenAITTS(
 
     const buffer = Buffer.from(await mp3Response.arrayBuffer());
     const filename = `openai-tts-${Date.now()}.mp3`;
-    
+
     // Upload to Supabase Storage
     const uploadResult = await uploadAudioToSupabase(buffer, filename);
-    
+
     if (uploadResult) {
       console.log(`[TTS] OpenAI TTS generated successfully: ${uploadResult}`);
       return uploadResult;
@@ -86,7 +86,7 @@ const userRateLimits = new Map<number, RateLimitEntry>();
 function checkRateLimit(userId: number): { isLimited: boolean; resetTime?: Date } {
   const now = Date.now();
   const entry = userRateLimits.get(userId);
-  
+
   if (!entry) {
     // First request, create new entry
     userRateLimits.set(userId, {
@@ -96,7 +96,7 @@ function checkRateLimit(userId: number): { isLimited: boolean; resetTime?: Date 
     });
     return { isLimited: false };
   }
-  
+
   // Check if the reset time has passed
   if (now > entry.resetTime) {
     // Reset period has elapsed, reset counter
@@ -107,7 +107,7 @@ function checkRateLimit(userId: number): { isLimited: boolean; resetTime?: Date 
     });
     return { isLimited: false };
   }
-  
+
   // Check if user has exceeded limit
   if (entry.requestCount >= MAX_REQUESTS_PER_HOUR) {
     return { 
@@ -115,7 +115,7 @@ function checkRateLimit(userId: number): { isLimited: boolean; resetTime?: Date 
       resetTime: new Date(entry.resetTime) 
     };
   }
-  
+
   // Increment request count
   entry.requestCount += 1;
   userRateLimits.set(userId, entry);
@@ -145,7 +145,7 @@ export async function checkElevenLabsCredits(): Promise<{
     console.error('[TTS] ELEVENLABS_API_KEY is not set');
     return null;
   }
-  
+
   try {
     const response = await fetch('https://api.elevenlabs.io/v1/user', {
       headers: {
@@ -153,12 +153,12 @@ export async function checkElevenLabsCredits(): Promise<{
         'Content-Type': 'application/json'
       }
     });
-    
+
     if (!response.ok) {
       console.error(`[TTS] Error checking credit balance: ${response.status} ${response.statusText}`);
       return null;
     }
-    
+
     const data = await response.json();
     // Type guard to ensure data has the expected structure
     if (typeof data === 'object' && data !== null && 
@@ -167,21 +167,21 @@ export async function checkElevenLabsCredits(): Promise<{
       const used = data.subscription.character_count as number;
       const limit = data.subscription.character_limit as number;
       const remaining = limit - used;
-    
+
       // Determine credit status
       let status: 'low' | 'ok' | 'error' = 'ok';
       if (remaining < QUOTA_WARNING_THRESHOLD) {
         status = 'low';
         console.warn(`[TTS] ElevenLabs credits low: ${remaining} characters remaining`);
       }
-      
+
       return {
         remaining,
         limit,
         status
       };
     }
-    
+
     console.error('[TTS] Unexpected response structure from ElevenLabs API');
     return null;
   } catch (error) {
@@ -208,7 +208,7 @@ export async function generateSpeech(
     console.error('[TTS] ELEVENLABS_API_KEY is not set');
     return { error: 'TTS service not configured' };
   }
-  
+
   // Check rate limit if userId is provided
   if (userId) {
     const rateLimit = checkRateLimit(userId);
@@ -220,14 +220,14 @@ export async function generateSpeech(
       };
     }
   }
-  
+
   // Check credit balance
   const credits = await checkElevenLabsCredits();
   if (credits && credits.status === 'low') {
     console.warn(`[TTS] Credit balance low: ${credits.remaining} characters remaining`);
     // We continue with the request, but log the warning
   }
-  
+
   // Estimate character count needed
   const estimatedChars = text.length;
   if (credits && credits.remaining < estimatedChars) {
@@ -239,13 +239,13 @@ export async function generateSpeech(
   try {
     // Prepare request to ElevenLabs API
     const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`;
-    
+
     console.log(`[TTS] Starting request to ElevenLabs API with voice: ${voiceId}`);
     // Use Promise.race with a longer timeout to prevent hanging requests
     const timeoutPromise = new Promise<Response | null>((_, reject) => {
       setTimeout(() => reject(new Error('TTS request timeout after 30 seconds')), 30000);
     });
-    
+
     const fetchPromise = fetch(url, {
       method: 'POST',
       headers: {
@@ -261,7 +261,7 @@ export async function generateSpeech(
         }
       })
     });
-    
+
     console.log(`[TTS] Request body: ${JSON.stringify({
       text: text.substring(0, 50) + '...',
       voice_settings: {
@@ -269,7 +269,7 @@ export async function generateSpeech(
         similarity_boost: DEFAULT_SIMILARITY_BOOST
       }
     })}`);
-    
+
     const response = await Promise.race([
       fetchPromise,
       timeoutPromise
@@ -288,15 +288,15 @@ export async function generateSpeech(
       try {
         const errorText = await response.text();
         let errorData;
-        
+
         try {
           errorData = JSON.parse(errorText);
         } catch (e) {
           errorData = { detail: errorText };
         }
-        
+
         console.error(`[TTS] ElevenLabs API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
-        
+
         // Handle specific error scenarios
         if (response.status === 401) {
           if (errorData?.detail?.status === 'quota_exceeded') {
@@ -306,11 +306,11 @@ export async function generateSpeech(
           }
           return { error: 'TTS service authentication failed' };
         }
-        
+
         if (response.status === 429) {
           return { error: 'Too many requests. Please try again later.' };
         }
-        
+
         // Generic error handling
         return { error: `TTS service error: ${response.status} ${response.statusText}` };
       } catch (parseError) {
@@ -323,40 +323,41 @@ export async function generateSpeech(
       // Generate a unique filename for the audio
       const timestamp = Date.now();
       const filename = `toast-${timestamp}.mp3`;
-      
+
       const arrayBuffer = await response.arrayBuffer().catch(err => {
         console.error('[TTS] Failed to read response buffer:', err);
         return null;
       });
-      
+
       if (!arrayBuffer) return null;
-      
+
       const buffer = Buffer.from(arrayBuffer);
-      
+
       // Decide whether to use Supabase or local storage
       if (useSupabase) {
         console.log('[TTS] Using Supabase Storage for audio file');
-        const supabaseUrl = await uploadAudioToSupabase(buffer, filename);
-        
-        if (supabaseUrl) {
-          console.log(`[TTS] Audio uploaded to Supabase: ${supabaseUrl}`);
-          return supabaseUrl;
+        // ensure we store as .mp3 and set correct mime in Supabase
+        const uploadRes = await uploadAudioToSupabase(buffer, filename, { contentType: 'audio/mpeg', upsert: true });
+
+        if (uploadRes) {
+          console.log(`[TTS] Audio uploaded to Supabase: ${uploadRes}`);
+          return uploadRes;
         } else {
           console.error('[TTS] Failed to upload to Supabase, falling back to local storage');
         }
       }
-      
+
       // Fallback to local storage if Supabase failed or not configured
       console.log('[TTS] Using local storage for audio file');
       const audioDir = ensureAudioDirExists();
       const filePath = path.join(audioDir, filename);
-      
+
       // Use promises for async file operations
       await fs.promises.writeFile(filePath, buffer).catch(err => {
         console.error('[TTS] Failed to write audio file:', err);
         throw err;
       });
-      
+
       // Return the URL to the audio file
       return `/audio/${filename}`;
     } catch (fileError) {
@@ -381,7 +382,7 @@ export function getVoiceId(voiceStyle: string): string {
     'friendly': '21m00Tcm4TlvDq8ikWAM',     // Adam
     'poetic': 'AZnzlk1XvdvUeBnXmlld',       // Domi
     'custom': 'Dnd9VXpAjEGXiRGBf1O6',       // Custom voice added by user
-    
+
     // Individual voices we have samples for
     'david': 'jvcMcno3QtjOzGtfpjoI',        // David voice
     'ranger': 'qNkzaJoHLLdpvgh5tISm',       // Ranger voice
@@ -392,10 +393,10 @@ export function getVoiceId(voiceStyle: string): string {
     'maeve': 'UwdJWMIQkTCJhLgSE82b',        // Maeve voice
     'rachel': 'EXAVITQu4vr4xnSDxMaL'        // Rachel voice
   };
-  
+
   console.log(`[TTS] Getting voice ID for style: ${voiceStyle}`);
   const voiceId = voiceMap[voiceStyle] || DEFAULT_VOICE_ID;
   console.log(`[TTS] Selected voice ID: ${voiceId}`);
-  
+
   return voiceId;
 }

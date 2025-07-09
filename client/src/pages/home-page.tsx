@@ -48,17 +48,7 @@ export default function HomePage() {
     queryKey: ["/api/voices"]
   });
   
-  // Voice sample file mapping - only including files that actually exist
-  const voiceSampleMap = {
-    david:        "/voice-samples/david-antfield.mp3",
-    ranger:       "/voice-samples/ranger.mp3",
-    grandpa:      "/voice-samples/grandpa.mp3",
-    sam:          "/voice-samples/sam.mp3",
-    giovanni:     "/voice-samples/giovanni.mp3",
-    amelia:       "/voice-samples/amelia.mp3",
-    maeve:        "/voice-samples/maeve.mp3",
-    rachel:       "/voice-samples/rachel.mp3"
-  };
+  
 
   // Fetch voice preference
   const { data: voicePreference } = useQuery<VoicePreference>({
@@ -100,15 +90,16 @@ export default function HomePage() {
   };
   
   // Play a voice preview using the sample MP3 files
-  const playVoicePreview = (e: React.MouseEvent) => {
+  const playVoicePreview = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
-    // If already playing, stop it
-    if (previewPlaying) {
-      setPreviewPlaying(false);
-      return;
-    }
-    
+
+    const audio = document.getElementById('voicePreview') as HTMLAudioElement;
+    if (!audio) return;
+
+    // stop any current playback
+    audio.pause();
+    audio.currentTime = 0;
+
     // Find the selected voice in our options
     const selectedVoiceObj = voiceOptions?.find(voice => voice.id === selectedVoice);
     if (!selectedVoiceObj) {
@@ -119,39 +110,22 @@ export default function HomePage() {
       });
       return;
     }
-    
-    // Create a new Audio object using the sample URL from the voice data
-    const soundPlayer = new Audio(selectedVoiceObj.sampleUrl);
-    
-    // Add debugging logs
-    console.log("Preview src:", selectedVoiceObj.sampleUrl);
-    
-    // Set up event handlers
-    soundPlayer.onended = () => setPreviewPlaying(false);
-    
-    soundPlayer.onerror = () => {
-      console.error("Audio error occurred");
-      setPreviewPlaying(false);
-      toast({
-        title: "Preview not available",
-        description: `Could not play sample for "${getVoiceName(selectedVoice)}" voice.`,
-        variant: "destructive"
-      });
-    };
-    
-    // Set playing state and play the audio
-    setPreviewPlaying(true);
-    
-    // Play the audio with improved error handling
-    soundPlayer.play().catch(err => {
+
+    audio.src = selectedVoiceObj.sampleUrl;
+    audio.load();          // force refresh
+
+    try {
+      await audio.play();  // <-- inside the user-gesture
+      setPreviewPlaying(true);
+    } catch (err: any) {
       console.error(err);
       setPreviewPlaying(false);
       toast({
-        title: "Playback error",
-        description: err.message,
-        variant: "destructive"
+        title: 'Tap again to play',
+        description: 'Mobile browsers sometimes need a second tap.',
+        variant: 'destructive',
       });
-    });
+    }
   };
   
   // Helper to get voice name for display in messages
@@ -309,7 +283,14 @@ export default function HomePage() {
                     
                     <div className="flex flex-col gap-3">
                       {/* Hidden audio element for voice preview */}
-                      <audio id="voicePreview" style={{ display: 'none' }}></audio>
+                      <audio
+                        id="voicePreview"
+                        style={{ display: 'none' }}
+                        playsInline   // iOS: don't force fullscreen
+                        crossOrigin="anonymous"
+                        onEnded={() => setPreviewPlaying(false)}
+                        onError={() => setPreviewPlaying(false)}
+                      ></audio>
                       
                       <div className="flex flex-col sm:flex-row gap-2">
                         <Select

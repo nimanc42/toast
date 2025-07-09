@@ -10,10 +10,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2 } from "lucide-react";
+import { Loader2, Menu, X } from "lucide-react";
 
 export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logoutMutation } = useAuth();
   const [_, navigate] = useLocation();
   
@@ -52,20 +53,37 @@ export default function Header() {
                 A Toast (Beta)
               </Link>
             </div>
-            <nav className="ml-6 flex items-center flex-wrap">
-              <Link href="/" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:ml-6 md:flex md:items-center md:space-x-4">
+              <Link href="/" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Dashboard
               </Link>
-              <Link href="/weekly-toast" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/weekly-toast" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Weekly Toast
               </Link>
-              <Link href="/beta-feedback" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/beta-feedback" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Beta Feedback
               </Link>
-              <Link href="/settings" className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900">
+              <Link href="/settings" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Settings
               </Link>
             </nav>
+
+            {/* Mobile Hamburger Button */}
+            <div className="md:hidden ml-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
           </div>
           <div className="flex items-center">
             <div className="ml-3 relative">
@@ -111,6 +129,42 @@ export default function Header() {
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200 bg-white">
+            <div className="px-4 py-2 space-y-1">
+              <Link 
+                href="/" 
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link 
+                href="/weekly-toast" 
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Weekly Toast
+              </Link>
+              <Link 
+                href="/beta-feedback" 
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Beta Feedback
+              </Link>
+              <Link 
+                href="/settings" 
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Settings
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

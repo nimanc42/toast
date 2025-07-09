@@ -117,9 +117,12 @@ export default function AuthPage() {
       <div className="max-w-4xl w-full flex flex-col md:flex-row shadow-lg rounded-xl overflow-hidden">
         <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
           <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent mb-2">
-              A Toast
-            </h1>
+            <div className="flex items-center justify-center mb-2">
+              <img src="/logo.jpeg" alt="A Toast Logo" className="h-8 w-8 mr-3 object-contain" />
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent">
+                A Toast
+              </h1>
+            </div>
             <p className="text-sm text-gray-600">Your daily positivity reflections</p>
           </div>
 
@@ -345,15 +348,7 @@ export default function AuthPage() {
           <div className="h-full flex flex-col justify-center">
             <div className="mb-6 flex justify-center">
               <div className="p-4 bg-white/10 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19.562 12.098l1.531 2.652c.47.812-.16 1.82-1.091 1.82h-16.004c-.931 0-1.561-1.008-1.092-1.82l1.532-2.652"></path>
-                  <path d="M3.45 11l7.55-8 7.55 8"></path>
-                  <path d="M4 21v-4"></path>
-                  <path d="M8 21v-8"></path>
-                  <path d="M12 21v-10"></path>
-                  <path d="M16 21v-8"></path>
-                  <path d="M20 21v-4"></path>
-                </svg>
+                <img src="/logo.jpeg" alt="A Toast Logo" className="h-12 w-12 object-contain" />
               </div>
             </div>
             <h2 className="text-3xl font-bold mb-4 text-center font-accent">Celebrate Every Day</h2>

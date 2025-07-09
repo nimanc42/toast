@@ -118,7 +118,7 @@ export default function AuthPage() {
         <div className="w-full md:w-1/2 flex flex-col justify-center p-8 bg-white">
           <div className="text-center mb-6">
             <div className="flex items-center justify-center mb-2">
-              <img src="/logo.jpg" alt="A Toast Logo" className="h-8 w-8 mr-3 object-cover rounded-md" />
+              <img src="/logo.jpg" alt="A Toast Logo" className="h-8 w-8 mr-3 object-contain" />
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 font-accent">
                 A Toast
               </h1>
@@ -348,7 +348,7 @@ export default function AuthPage() {
           <div className="h-full flex flex-col justify-center">
             <div className="mb-6 flex justify-center">
               <div className="p-4 bg-white/10 rounded-full">
-                <img src="/logo.jpg" alt="A Toast Logo" className="h-12 w-12 object-cover rounded-md" />
+                <img src="/logo.jpg" alt="A Toast Logo" className="h-12 w-12 object-contain" />
               </div>
             </div>
             <h2 className="text-3xl font-bold mb-4 text-center font-accent">Celebrate Every Day</h2>

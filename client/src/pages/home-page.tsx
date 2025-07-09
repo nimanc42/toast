@@ -111,20 +111,59 @@ export default function HomePage() {
       return;
     }
 
-    audio.src = selectedVoiceObj.sampleUrl;
+    // Add cache-busting timestamp to ensure fresh audio file
+    const cacheBustUrl = selectedVoiceObj.sampleUrl + '?v=' + Date.now();
+    audio.src = cacheBustUrl;
+
+    // Add debugging event listeners
+    audio.oncanplaythrough = () => {
+      console.log('Sample loaded successfully:', selectedVoiceObj.name);
+    };
+    
+    audio.onerror = (e) => {
+      console.error('Audio load error:', e, 'for voice:', selectedVoiceObj.name);
+      setPreviewPlaying(false);
+      toast({
+        title: 'Audio loading failed',
+        description: 'The audio file could not be loaded. Please check your network connection and try again.',
+        variant: 'destructive',
+      });
+    };
+
+    audio.onloadstart = () => {
+      console.log('Audio loading started for:', selectedVoiceObj.name);
+    };
+
     audio.load();          // force refresh
 
     try {
       await audio.play();  // <-- inside the user-gesture
       setPreviewPlaying(true);
+      console.log('Audio playback started successfully');
     } catch (err: any) {
-      console.error(err);
+      console.error('Audio playback error:', err);
       setPreviewPlaying(false);
-      toast({
-        title: 'Tap again to play',
-        description: 'Mobile browsers sometimes need a second tap.',
-        variant: 'destructive',
-      });
+      
+      // More specific error handling
+      if (err.name === 'NotAllowedError') {
+        toast({
+          title: 'Permission needed',
+          description: 'Please tap the play button again to allow audio playback.',
+          variant: 'destructive',
+        });
+      } else if (err.name === 'NotSupportedError') {
+        toast({
+          title: 'Audio format not supported',
+          description: 'Your browser cannot play this audio format. Try using Chrome or Safari.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Playback failed',
+          description: 'Audio playback failed. Please try again or check your network connection.',
+          variant: 'destructive',
+        });
+      }
     }
   };
   

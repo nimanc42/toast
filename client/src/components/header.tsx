@@ -43,7 +43,7 @@ export default function Header() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-primary-600 font-accent flex items-center">
-                <img src="/logo.jpg" alt="A Toast Logo" className="h-8 w-8 mr-2 object-contain rounded-full" />
+                <img src="/logo.jpg" alt="A Toast Logo" className="h-8 w-8 mr-2 object-cover rounded-md" />
                 A Toast (Beta)
               </Link>
             </div>

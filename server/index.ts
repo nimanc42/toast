@@ -53,6 +53,7 @@ app.use((req, res, next) => {
 (async () => {
   try {
     // Check database connection first
+    log('Checking database connection...');
     const dbConnected = await checkDatabaseConnection();
     
     if (!dbConnected) {
@@ -60,13 +61,27 @@ app.use((req, res, next) => {
       process.exit(1);
     }
     
+    log('Database connection established successfully');
+    
     // Initialize voice catalogue
-    initializeVoiceCatalogue();
+    log('Initializing voice catalogue...');
+    try {
+      initializeVoiceCatalogue();
+      log('Voice catalogue initialized');
+    } catch (error) {
+      log(`Warning: Voice catalogue initialization failed: ${error}`);
+    }
     
     // Initialize scheduled jobs after confirming database connection
-    initializeScheduledJobs();
-    log('Scheduled toast generation service initialized');
+    log('Initializing scheduled jobs...');
+    try {
+      initializeScheduledJobs();
+      log('Scheduled toast generation service initialized');
+    } catch (error) {
+      log(`Warning: Scheduled jobs initialization failed: ${error}`);
+    }
     
+    log('Registering routes...');
     const server = await registerRoutes(app);
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -1,10 +1,6 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
-
-// Configure websocket for Neon Serverless
-neonConfig.webSocketConstructor = ws;
 
 // Check for DATABASE_URL environment variable
 if (!process.env.DATABASE_URL) {
@@ -13,8 +9,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create database pool and client
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Create database pool and client with standard PostgreSQL driver
+export const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
 export const db = drizzle(pool, { schema });
 
 // Helper function to check database connection
@@ -25,7 +27,7 @@ export async function checkDatabaseConnection() {
     client.release();
     return true;
   } catch (error) {
-    console.error('Error connecting to the database:', error);
+    console.error('Database connection failed:', error);
     return false;
   }
 }

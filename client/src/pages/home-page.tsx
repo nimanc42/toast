@@ -269,7 +269,7 @@ export default function HomePage() {
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">
                     <span className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-amber-100">
-                      <img src="/logo-new.jpeg" alt="A Toast Logo" className="h-10 w-10 object-contain rounded-full" />
+                      <img src="/logo.png" alt="A Toast Logo" className="h-10 w-10 object-contain rounded-full" />
                     </span>
                   </div>
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">Your Weekly Toast</h2>

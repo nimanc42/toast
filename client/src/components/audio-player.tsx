@@ -87,6 +87,10 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
     } else {
       try {
         console.log('Attempting to play audio:', audioUrl);
+        
+        // Set crossOrigin to handle CORS issues with Supabase
+        audioRef.current.crossOrigin = "anonymous";
+        
         await audioRef.current.play();
         intervalRef.current = window.setInterval(() => {
           if (audioRef.current) {
@@ -109,6 +113,26 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
           console.warn('Audio play blocked by browser - user interaction required');
         } else if (error.name === 'NotSupportedError') {
           console.warn('Audio format not supported');
+        } else if (error.message.includes('CORS') || error.message.includes('cross-origin')) {
+          console.warn('CORS error - trying to fetch audio directly');
+          // Try to fetch the audio data directly and create a blob URL
+          try {
+            const response = await fetch(audioUrl!, { mode: 'cors' });
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            audioRef.current.src = blobUrl;
+            await audioRef.current.play();
+            intervalRef.current = window.setInterval(() => {
+              if (audioRef.current) {
+                setCurrentTime(audioRef.current.currentTime);
+              }
+            }, 1000);
+            setIsPlaying(true);
+            console.log('Audio playback started successfully via blob URL');
+            return;
+          } catch (fetchError) {
+            console.error('Failed to fetch audio data:', fetchError);
+          }
         } else {
           console.warn('General audio playback error');
         }

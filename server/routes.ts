@@ -1173,6 +1173,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audio proxy endpoint to handle CORS issues
+  app.get("/api/audio/proxy", ensureAuthenticated, async (req, res) => {
+    try {
+      const { url } = req.query;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'Missing audio URL' });
+      }
+
+      // Only allow Supabase URLs for security
+      if (!url.includes('supabase.co/storage')) {
+        return res.status(403).json({ error: 'Invalid audio URL' });
+      }
+
+      console.log('Proxying audio request for URL:', url);
+
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error('Failed to fetch audio:', response.status, response.statusText);
+        return res.status(response.status).json({ error: 'Failed to fetch audio file' });
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      
+      // Set CORS headers and proper content type
+      res.set({
+        'Content-Type': 'audio/mpeg',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Cache-Control': 'public, max-age=3600'
+      });
+
+      res.send(Buffer.from(audioBuffer));
+    } catch (error) {
+      console.error('Audio proxy error:', error);
+      res.status(500).json({ error: 'Failed to proxy audio file' });
+    }
+  });
+
   // API endpoint to generate speech for reflection reviews
   app.post("/api/tts/review", ensureAuthenticated, async (req, res) => {
     try {

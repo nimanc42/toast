@@ -59,7 +59,14 @@ export default function ReflectionReviewDialog({
     mutationFn: async (text: string) => {
       const res = await apiRequest("POST", "/api/tts/review", { text });
       const data = await res.json();
-      return data.audioUrl;
+      
+      // If it's a Supabase URL, create a proxy URL to avoid CORS issues
+      let audioUrl = data.audioUrl;
+      if (audioUrl && audioUrl.includes('supabase.co/storage')) {
+        audioUrl = `/api/audio/proxy?url=${encodeURIComponent(audioUrl)}`;
+      }
+      
+      return audioUrl;
     },
     onSuccess: (url) => {
       console.log("TTS audio URL received:", url);

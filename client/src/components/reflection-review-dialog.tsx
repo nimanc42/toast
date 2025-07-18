@@ -61,13 +61,13 @@ export default function ReflectionReviewDialog({
     mutationFn: async (text: string) => {
       const res = await apiRequest("POST", "/api/tts/review", { text });
       const data = await res.json();
-      
+
       // If it's a Supabase URL, create a proxy URL to avoid CORS issues
       let audioUrl = data.audioUrl;
       if (audioUrl && audioUrl.includes('supabase.co/storage')) {
         audioUrl = `/api/audio/proxy?url=${encodeURIComponent(audioUrl)}`;
       }
-      
+
       return audioUrl;
     },
     onSuccess: (url) => {
@@ -92,7 +92,7 @@ export default function ReflectionReviewDialog({
     console.log("User initiated audio playback from URL:", url);
     console.log("URL type:", typeof url);
     console.log("URL length:", url?.length);
-    
+
     if (!url) {
       console.error("No audio URL provided");
       toast({
@@ -102,11 +102,11 @@ export default function ReflectionReviewDialog({
       });
       return;
     }
-    
+
     // Disable button for 1 second to prevent double-clicking
     setButtonDisabled(true);
     setTimeout(() => setButtonDisabled(false), 1000);
-    
+
     try {
       // Remove any existing audio element
       const existingAudio = document.getElementById("reviewAudio");
@@ -114,22 +114,22 @@ export default function ReflectionReviewDialog({
         console.log("Removing existing audio element");
         existingAudio.remove();
       }
-      
+
       // Create a fresh audio element
       console.log("Creating new audio element");
       const audioElement = new Audio();
       audioElement.id = "reviewAudio";
       audioElement.preload = "auto";
       audioElement.crossOrigin = "anonymous";
-      
+
       console.log("Setting up event listeners");
-      
+
       // Set up event listeners
       audioElement.onended = () => {
         console.log("Audio playback ended");
         setIsPlayingAudio(false);
       };
-      
+
       audioElement.onerror = (e) => {
         console.error("Audio error event:", e);
         console.error("Audio element error details:", audioElement.error);
@@ -137,36 +137,36 @@ export default function ReflectionReviewDialog({
         console.error("Audio element ready state:", audioElement.readyState);
         console.error("Audio element src:", audioElement.src);
         setIsPlayingAudio(false);
-        
+
         toast({
           title: "Audio playback error",
           description: "There was an error playing the audio file. Please try again.",
           variant: "destructive",
         });
       };
-      
+
       audioElement.onloadstart = () => {
         console.log("Audio load started");
       };
-      
+
       audioElement.oncanplay = () => {
         console.log("Audio can play");
       };
-      
+
       audioElement.oncanplaythrough = () => {
         console.log("Audio can play through");
       };
-      
+
       // Set the source
       console.log("Setting audio source to:", url);
       audioElement.src = url;
-      
+
       // Try to play the audio immediately (user-initiated)
       console.log("Attempting to play audio...");
       await audioElement.play();
       console.log("Audio playback started successfully");
       setIsPlayingAudio(true);
-      
+
     } catch (error: any) {
       console.error("=== AUDIO PLAYBACK ERROR ===");
       console.error("Audio play failed:", error);
@@ -174,7 +174,7 @@ export default function ReflectionReviewDialog({
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
       setIsPlayingAudio(false);
-      
+
       if (error.name === 'NotAllowedError') {
         toast({
           title: "Permission needed",
@@ -199,24 +199,24 @@ export default function ReflectionReviewDialog({
     console.log("reviewContent:", reviewContent);
     console.log("ttsMutation.isPending:", ttsMutation.isPending);
     console.log("buttonDisabled:", buttonDisabled);
-    
+
     // Prevent action if button is disabled (debouncing)
     if (buttonDisabled) {
       console.log("Button disabled, ignoring click");
       return;
     }
-    
-    if (isPlayingAudio && audioUrl) {
-      // Stop the current audio if playing
-      console.log("Stopping current audio");
-      const audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
-      if (audioElement) {
-        // Remove event listeners to prevent conflicts
-        audioElement.onended = null;
-        audioElement.onerror = null;
-        audioElement.pause();
-        audioElement.currentTime = 0;
-        audioElement.remove();
+
+    if (isPlayingAudio) {
+      // User wants to stop the current audio
+      console.log("Stopping current audio playback");
+      const existingAudioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
+      if (existingAudioElement) {
+        console.log("Stopping and removing existing audio element");
+        existingAudioElement.onended = null;
+        existingAudioElement.onerror = null;
+        existingAudioElement.pause();
+        existingAudioElement.currentTime = 0;
+        existingAudioElement.remove();
       }
       setIsPlayingAudio(false);
       // Disable button briefly to prevent rapid clicking
@@ -239,11 +239,11 @@ export default function ReflectionReviewDialog({
       reviewMutation.mutate(noteId);
     }
   }, [isOpen, noteId]);
-  
+
   // Generate audio when review content is available and autoPlayAudio is true
   useEffect(() => {
     let autoPlayTimeout: NodeJS.Timeout | null = null;
-    
+
     if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending && !audioUrl) {
       // Add a small delay to prevent rapid requests
       autoPlayTimeout = setTimeout(() => {
@@ -251,7 +251,7 @@ export default function ReflectionReviewDialog({
         ttsMutation.mutate(reviewContent);
       }, 500);
     }
-    
+
     // Clean up timeout if component unmounts or dependencies change
     return () => {
       if (autoPlayTimeout) {
@@ -266,7 +266,7 @@ export default function ReflectionReviewDialog({
         <DialogHeader>
           <DialogTitle className="text-amber-700">I hear you saying...</DialogTitle>
         </DialogHeader>
-        
+
         <div className="my-4">
           {!reviewContent && (
             <div className="flex items-center justify-center py-8">
@@ -274,7 +274,7 @@ export default function ReflectionReviewDialog({
             </div>
           )}
         </div>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 
             onClick={handleReadAloud}

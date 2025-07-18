@@ -31,8 +31,8 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/weekly-toast" component={WeeklyToastPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/beta-feedback" component={BetaFeedbackPage} />
+      <ProtectedRoute path="/about" component={AboutPage} />
+      <ProtectedRoute path="/beta-feedback" component={BetaFeedbackPage} />
 
       <Route path="/auth" component={AuthPage} />
       <Route path="/auth/callback" component={AuthCallback} />

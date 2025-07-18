@@ -103,8 +103,22 @@ export default function ReflectionReviewDialog({
     }
   });
 
-  // Function to play audio
+  // Function to play audio with the review content
   const playAudio = (url: string) => {
+    console.log("Attempting to play audio from URL:", url);
+
+    // Validate URL first
+    if (!url || typeof url !== 'string') {
+      console.error("Invalid audio URL provided:", url);
+      toast({
+        title: "Audio playback failed",
+        description: "Invalid audio URL received.",
+        variant: "destructive",
+      });
+      setIsPlayingAudio(false);
+      return;
+    }
+
     // Create or get the audio element
     let audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
 
@@ -113,106 +127,158 @@ export default function ReflectionReviewDialog({
       audioElement.id = "reviewAudio";
       audioElement.style.display = "none";
       audioElement.preload = "metadata";
+      audioElement.crossOrigin = "anonymous"; // Handle CORS if needed
       document.body.appendChild(audioElement);
+      console.log("Created new audio element");
     }
 
-    // Clean up previous event listeners
+    // Clean up any existing playback
+    try {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    } catch (e) {
+      console.warn("Error stopping previous audio:", e);
+    }
+
+    // Clean up previous event listeners to avoid memory leaks
     audioElement.onended = null;
     audioElement.onerror = null;
     audioElement.onloadstart = null;
     audioElement.oncanplay = null;
+    audioElement.onloadeddata = null;
 
     // Set up event listeners
     audioElement.onended = () => {
+      console.log("Audio playback ended");
       setIsPlayingAudio(false);
     };
 
     audioElement.onloadstart = () => {
-      console.log("Audio loading started");
+      console.log("Audio loading started for URL:", url);
+    };
+
+    audioElement.onloadeddata = () => {
+      console.log("Audio data loaded successfully");
     };
 
     audioElement.oncanplay = () => {
-      console.log("Audio can start playing");
+      console.log("Audio ready to play");
     };
 
     audioElement.onerror = (e) => {
-      console.error("Audio error event:", e, audioElement.error);
+      console.error("Audio error event:", e);
+      const error = audioElement.error;
       setIsPlayingAudio(false);
-      
-      // Check for specific error types
-      if (audioElement.error) {
-        const errorCode = audioElement.error.code;
+
+      if (error) {
+        console.error("MediaError details:", {
+          code: error.code,
+          message: error.message,
+          MEDIA_ERR_ABORTED: MediaError.MEDIA_ERR_ABORTED,
+          MEDIA_ERR_NETWORK: MediaError.MEDIA_ERR_NETWORK,
+          MEDIA_ERR_DECODE: MediaError.MEDIA_ERR_DECODE,
+          MEDIA_ERR_SRC_NOT_SUPPORTED: MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
+        });
+
         let errorMessage = "Audio playback failed";
-        
-        switch (errorCode) {
+
+        switch (error.code) {
           case MediaError.MEDIA_ERR_ABORTED:
             console.log("Audio playback aborted by user");
             return; // Don't show error for user-initiated stops
           case MediaError.MEDIA_ERR_NETWORK:
-            errorMessage = "Network error while loading audio";
+            errorMessage = "Network error while loading audio. Please check your connection.";
             break;
           case MediaError.MEDIA_ERR_DECODE:
-            errorMessage = "Audio format not supported";
+            errorMessage = "Audio format could not be decoded.";
             break;
           case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-            errorMessage = "Audio source not supported";
+            errorMessage = "Audio source format not supported by your browser.";
             break;
+          default:
+            errorMessage = `Audio error (code: ${error.code})`;
         }
-        
+
         toast({
           title: "Audio playback error",
           description: errorMessage,
           variant: "destructive",
         });
+      } else {
+        toast({
+          title: "Audio playback error",
+          description: "Unknown audio error occurred.",
+          variant: "destructive",
+        });
       }
     };
 
-    // Reset audio element state
-    audioElement.pause();
-    audioElement.currentTime = 0;
-    
     // Set source and load
+    console.log("Setting audio source to:", url);
     audioElement.src = url;
-    audioElement.load();
 
-    // Attempt to play with better error handling
-    const playPromise = audioElement.play();
-    
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          console.log("Audio playback started successfully");
-          setIsPlayingAudio(true);
-        })
-        .catch(err => {
-          console.error("Playback promise error:", err);
-          setIsPlayingAudio(false);
-          
-          // Handle specific promise rejection reasons
-          if (err.name === 'NotAllowedError') {
-            toast({
-              title: "Audio playback blocked",
-              description: "Please interact with the page first, then try again.",
-              variant: "destructive",
-            });
-          } else if (err.name === 'AbortError') {
-            console.log("Audio playback aborted");
-            // Don't show error for aborted playback
-          } else if (err.name === 'NotSupportedError') {
-            toast({
-              title: "Audio not supported",
-              description: "Your browser doesn't support this audio format.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Audio playback failed",
-              description: "Could not play the audio. Please try again.",
-              variant: "destructive",
-            });
-          }
-        });
+    // Force reload the audio element
+    try {
+      audioElement.load();
+    } catch (e) {
+      console.error("Error loading audio:", e);
+      toast({
+        title: "Audio loading failed",
+        description: "Could not load the audio file.",
+        variant: "destructive",
+      });
+      setIsPlayingAudio(false);
+      return;
     }
+
+    // Small delay to ensure audio is ready, then attempt to play
+    setTimeout(() => {
+      const playPromise = audioElement.play();
+
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log("Audio playback started successfully");
+            setIsPlayingAudio(true);
+          })
+          .catch(err => {
+            console.error("Playback promise error:", err);
+            setIsPlayingAudio(false);
+
+            // Handle specific promise rejection reasons
+            if (err.name === 'NotAllowedError') {
+              toast({
+                title: "Audio playback blocked",
+                description: "Browser requires user interaction first. Please click the audio button again.",
+                variant: "destructive",
+              });
+            } else if (err.name === 'AbortError') {
+              console.log("Audio playback aborted - this is normal");
+              // Don't show error for aborted playback
+            } else if (err.name === 'NotSupportedError') {
+              toast({
+                title: "Audio not supported",
+                description: "Your browser doesn't support this audio format.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Unable to generate voice review",
+                description: `Playback failed: ${err.message || 'Unknown error'}`,
+                variant: "destructive",
+              });
+            }
+          });
+      } else {
+        console.error("Audio play() method did not return a promise");
+        setIsPlayingAudio(false);
+        toast({
+          title: "Audio playback failed",
+          description: "Browser does not support audio playback.",
+          variant: "destructive",
+        });
+      }
+    }, 100); // 100ms delay to ensure audio is loaded
   };
 
   // Handle reading the review aloud

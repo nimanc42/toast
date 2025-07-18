@@ -5,7 +5,6 @@ import Header from "@/components/header";
 import Footer from "@/components/footer";
 import DailyNoteModal from "@/components/daily-note-modal";
 import NoteHistory from "@/components/note-history";
-import FriendsList from "@/components/friends-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -400,14 +399,6 @@ export default function HomePage() {
 
             {/* Note History Section */}
             <NoteHistory />
-          </div>
-          
-          {/* Friends Column - Add sidebar with friends list */}
-          <div className="md:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6 sticky top-6">
-              <h3 className="text-lg font-medium mb-4 text-gray-900">Friends</h3>
-              <FriendsList />
-            </div>
           </div>
         </div>
       </main>

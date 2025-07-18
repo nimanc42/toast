@@ -568,7 +568,7 @@ export default function SettingsPage() {
                                 Daily reflection reminder
                               </FormLabel>
                               <FormDescription>
-                                Receive a notification if you haven't added your daily reflection
+                                Receive email reminders if you haven't added your daily reflection
                               </FormDescription>
                             </div>
                           </FormItem>
@@ -591,7 +591,7 @@ export default function SettingsPage() {
                                 Weekly toast notification
                               </FormLabel>
                               <FormDescription>
-                                Receive a notification when your weekly toast is ready
+                                Receive email reminders when your weekly toast is ready
                               </FormDescription>
                             </div>
                           </FormItem>

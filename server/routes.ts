@@ -1240,44 +1240,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No text provided for speech generation" });
       }
 
-      // Check daily and weekly limits before generating audio
-      const today = new Date();
-      const startOfDay = new Date(today);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(today);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      startOfWeek.setHours(0, 0, 0, 0);
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-
-      try {
-        // Get today's notes count
-        const todayNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfDay, endOfDay);
-        // Get this week's notes count
-        const weekNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfWeek, endOfWeek);
-
-        // If user has exceeded limits, don't generate audio
-        if (todayNotes.length >= 2) {
-          return res.status(429).json({ 
-            error: "Daily reflection limit reached",
-            message: "You have reached your daily limit. Audio generation is not available until tomorrow." 
-          });
-        }
-
-        if (weekNotes.length >= 7) {
-          return res.status(429).json({ 
-            error: "Weekly reflection limit reached",
-            message: "You have reached your weekly limit. Audio generation is not available until next week." 
-          });
-        }
-      } catch (error) {
-        console.error("Error checking reflection limits for TTS:", error);
-        // Continue with audio generation if limit check fails
-      }
+      // Note: We don't check reflection limits here because this endpoint is for generating 
+      // audio for existing reflections that have already been created and passed the limits check.
+      // The limits are enforced at reflection creation time, not at audio generation time.
 
       // Get the user's voice preference
       const voicePreference = await storage.getVoicePreferenceByUserId(userId);

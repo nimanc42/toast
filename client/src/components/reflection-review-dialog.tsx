@@ -1,9 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
 import { Loader2, Volume2, VolumeX } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ReflectionReviewDialogProps {
@@ -26,6 +32,7 @@ export default function ReflectionReviewDialog({
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const { toast } = useToast();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Reset state when the dialog opens or closes
   useEffect(() => {
@@ -61,137 +68,69 @@ export default function ReflectionReviewDialog({
     mutationFn: async (text: string) => {
       const res = await apiRequest("POST", "/api/tts/review", { text });
       const data = await res.json();
-
-      // If it's a Supabase URL, create a proxy URL to avoid CORS issues
-      let audioUrl = data.audioUrl;
-      if (audioUrl && audioUrl.includes('supabase.co/storage')) {
-        audioUrl = `/api/audio/proxy?url=${encodeURIComponent(audioUrl)}`;
-      }
-
-      return audioUrl;
+      return data.audioUrl;
     },
     onSuccess: (url) => {
-      console.log("TTS audio URL received:", url);
+      console.log("TTS generation successful, audio URL:", url);
       setAudioUrl(url);
-      // Don't auto-play - let user click the button
-      // Audio will be available via the Read Aloud button
+
+      // Automatically play the audio once it's generated
+      setTimeout(() => {
+        const audio = audioRef.current;
+        if (audio && url) {
+          audio.src = `/api/audio/proxy?url=${encodeURIComponent(url)}`;
+          audio.play().then(() => {
+            console.log("Auto-playing generated audio");
+            setIsPlayingAudio(true);
+          }).catch((error) => {
+            console.error("Failed to auto-play generated audio:", error);
+          });
+        }
+      }, 100);
     },
     onError: (error: Error) => {
+      console.error("TTS generation failed:", error);
       toast({
-        title: "Voice generation failed",
-        description: "Unable to generate voice for this review. Please try again.",
+        title: "Failed to generate audio",
+        description: error.message,
         variant: "destructive",
       });
-      setIsPlayingAudio(false);
-    }
+    },
   });
 
-  // Function to play audio - user-initiated only
-  const playAudio = async (url: string) => {
-    console.log("=== AUDIO PLAYBACK DEBUG ===");
-    console.log("User initiated audio playback from URL:", url);
-    console.log("URL type:", typeof url);
-    console.log("URL length:", url?.length);
+  // Handle playing audio
+  const handlePlay = async () => {
+    const audio = audioRef.current;
+    if (!audio || !audioUrl) return;
 
-    if (!url) {
-      console.error("No audio URL provided");
-      toast({
-        title: "No audio available",
-        description: "Audio file not found. Please try generating again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Disable button for 1 second to prevent double-clicking
-    setButtonDisabled(true);
-    setTimeout(() => setButtonDisabled(false), 1000);
+    console.log("Playing audio:", audioUrl);
+    audio.src = `/api/audio/proxy?url=${encodeURIComponent(audioUrl)}`;
 
     try {
-      // Remove any existing audio element
-      const existingAudio = document.getElementById("reviewAudio");
-      if (existingAudio) {
-        console.log("Removing existing audio element");
-        existingAudio.remove();
-      }
-
-      // Create a fresh audio element
-      console.log("Creating new audio element");
-      const audioElement = new Audio();
-      audioElement.id = "reviewAudio";
-      audioElement.preload = "auto";
-      audioElement.crossOrigin = "anonymous";
-
-      console.log("Setting up event listeners");
-
-      // Set up event listeners
-      audioElement.onended = () => {
-        console.log("Audio playback ended");
-        setIsPlayingAudio(false);
-      };
-
-      audioElement.onerror = (e) => {
-        console.error("Audio error event:", e);
-        console.error("Audio element error details:", audioElement.error);
-        console.error("Audio element network state:", audioElement.networkState);
-        console.error("Audio element ready state:", audioElement.readyState);
-        console.error("Audio element src:", audioElement.src);
-        setIsPlayingAudio(false);
-
-        toast({
-          title: "Audio playback error",
-          description: "There was an error playing the audio file. Please try again.",
-          variant: "destructive",
-        });
-      };
-
-      audioElement.onloadstart = () => {
-        console.log("Audio load started");
-      };
-
-      audioElement.oncanplay = () => {
-        console.log("Audio can play");
-      };
-
-      audioElement.oncanplaythrough = () => {
-        console.log("Audio can play through");
-      };
-
-      // Set the source
-      console.log("Setting audio source to:", url);
-      audioElement.src = url;
-
-      // Try to play the audio immediately (user-initiated)
-      console.log("Attempting to play audio...");
-      await audioElement.play();
-      console.log("Audio playback started successfully");
+      await audio.play();
       setIsPlayingAudio(true);
-
-    } catch (error: any) {
-      console.error("=== AUDIO PLAYBACK ERROR ===");
-      console.error("Audio play failed:", error);
-      console.error("Error name:", error.name);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      setIsPlayingAudio(false);
-
-      if (error.name === 'NotAllowedError') {
-        toast({
-          title: "Permission needed",
-          description: "Please click the play button again to allow audio playback.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Playback failed",
-          description: `Audio playback failed: ${error.message}`,
-          variant: "destructive",
-        });
-      }
+    } catch (error) {
+      console.error("Failed to play audio:", error);
+      toast({
+        title: "Playback failed",
+        description: "Could not play the audio. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
-  // Handle reading the review aloud
+  // Handle stopping audio
+  const handleStop = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    console.log("Stopping audio");
+    audio.pause();
+    audio.currentTime = 0;
+    setIsPlayingAudio(false);
+  };
+
+  // Handle read aloud (generate audio if needed, then play)
   const handleReadAloud = () => {
     console.log("=== HANDLE READ ALOUD ===");
     console.log("isPlayingAudio:", isPlayingAudio);
@@ -206,42 +145,10 @@ export default function ReflectionReviewDialog({
       return;
     }
 
-    if (isPlayingAudio) {
-      // User wants to stop the current audio
-      console.log("Stopping current audio playback");
-      const existingAudioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
-      if (existingAudioElement) {
-        console.log("Stopping and removing existing audio element");
-        // Clear all event listeners first
-        existingAudioElement.onended = null;
-        existingAudioElement.onerror = null;
-        existingAudioElement.onloadstart = null;
-        existingAudioElement.oncanplay = null;
-        existingAudioElement.oncanplaythrough = null;
-        
-        // Pause the audio
-        existingAudioElement.pause();
-        
-        // Reset to beginning
-        existingAudioElement.currentTime = 0;
-        
-        // Clear the source to stop any ongoing loading/streaming
-        existingAudioElement.src = "";
-        existingAudioElement.load(); // This forces the audio element to stop completely
-        
-        // Remove from DOM
-        existingAudioElement.remove();
-      }
-      setIsPlayingAudio(false);
-      setAudioUrl(null); // Clear the audio URL to prevent reuse of stopped audio
-      // Disable button briefly to prevent rapid clicking
-      setButtonDisabled(true);
-      setTimeout(() => setButtonDisabled(false), 500);
-    } else if (audioUrl) {
-      // Play existing audio if available
-      console.log("Playing existing audio");
-      playAudio(audioUrl);
-    } else if (reviewContent && !ttsMutation.isPending) {
+    // If we already have audio, play it
+    if (audioUrl) {
+      handlePlay();
+    } else {
       // Generate new audio if no audio is available and not already requesting
       console.log("Generating new audio");
       ttsMutation.mutate(reviewContent);
@@ -290,6 +197,12 @@ export default function ReflectionReviewDialog({
           )}
         </div>
 
+        {reviewContent && (
+          <div className="prose prose-sm max-w-none text-gray-700 mb-4">
+            <p className="leading-relaxed">{reviewContent}</p>
+          </div>
+        )}
+
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 
             onClick={handleReadAloud}
@@ -321,6 +234,24 @@ export default function ReflectionReviewDialog({
           </Button>
           <Button onClick={onClose}>Close</Button>
         </DialogFooter>
+
+        {/* Hidden audio element */}
+        <audio
+          ref={audioRef}
+          style={{ display: 'none' }}
+          playsInline
+          crossOrigin="anonymous"
+          onEnded={handleStop}
+          onError={() => {
+            console.error("Audio element error");
+            setIsPlayingAudio(false);
+            toast({
+              title: "Audio playback error",
+              description: "There was an error playing the audio file. Please try again.",
+              variant: "destructive",
+            });
+          }}
+        />
       </DialogContent>
     </Dialog>
   );

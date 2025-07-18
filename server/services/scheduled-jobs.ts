@@ -3,8 +3,9 @@ import { DateTime } from 'luxon';
 import { db } from '../db';
 import { users, toasts } from '@shared/schema';
 import { generateWeeklyToast } from './toast-generator';
-import { eq, and, between } from 'drizzle-orm';
+import { eq, and, between, sql } from 'drizzle-orm';
 import { CONFIG } from '../config';
+import { sendDailyReflectionReminder } from './email-service';
 
 // Log with timestamp for easier debugging
 const logWithTimestamp = (message: string, ...args: any[]) => {
@@ -50,6 +51,65 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
   } catch (error) {
     logWithTimestamp(`Error checking if toast should be generated for user ${userId}:`, error);
     return false;
+  }
+}
+
+/**
+ * Processes daily reflection reminder emails for eligible users
+ */
+async function processDailyReminderEmails() {
+  try {
+    logWithTimestamp('Starting daily reminder email job');
+    
+    // Skip in testing mode
+    if (CONFIG.TESTING_MODE) {
+      logWithTimestamp('Skipping daily reminder emails in testing mode');
+      return;
+    }
+
+    // Get all users who have daily reminders enabled
+    const usersWithReminders = await db.execute(sql`
+      SELECT u.id, u.name, u.email, u.timezone
+      FROM users u
+      JOIN voice_preferences vp ON u.id = vp.user_id
+      WHERE vp.daily_reminder = true
+    `);
+    
+    logWithTimestamp(`Found ${usersWithReminders.rows.length} users with daily reminders enabled`);
+    
+    let emailsSent = 0;
+    let emailErrors = 0;
+    
+    // Send reminder emails
+    for (const userRow of usersWithReminders.rows) {
+      try {
+        // Skip test users
+        if (userRow.id === CONFIG.TEST_USER?.id) {
+          continue;
+        }
+        
+        const userName = userRow.name || 'there';
+        const userEmail = userRow.email;
+        
+        if (userEmail) {
+          logWithTimestamp(`Sending daily reminder to ${userEmail}`);
+          const success = await sendDailyReflectionReminder(userEmail, userName);
+          
+          if (success) {
+            emailsSent++;
+          } else {
+            emailErrors++;
+          }
+        }
+      } catch (error) {
+        emailErrors++;
+        logWithTimestamp(`Error sending daily reminder to user ${userRow.id}:`, error);
+      }
+    }
+    
+    logWithTimestamp(`Daily reminder emails complete. Sent ${emailsSent} emails with ${emailErrors} errors`);
+  } catch (error) {
+    logWithTimestamp('Error in daily reminder email job:', error);
   }
 }
 
@@ -129,7 +189,17 @@ export function initializeScheduledJobs() {
     try {
       await processAutomaticToastGeneration();
     } catch (error) {
-      logWithTimestamp('Unhandled error in scheduled job:', error);
+      logWithTimestamp('Unhandled error in toast generation job:', error);
+    }
+  });
+  
+  // Schedule daily reminder emails to run once per day at 9:00 AM
+  // This will send reminders to users who have daily reminders enabled
+  cron.schedule('0 9 * * *', async () => {
+    try {
+      await processDailyReminderEmails();
+    } catch (error) {
+      logWithTimestamp('Unhandled error in daily reminder job:', error);
     }
   });
   
@@ -145,6 +215,19 @@ export async function runImmediateToastGeneration() {
     return { success: true, message: 'Immediate toast generation completed' };
   } catch (error: any) {
     console.error('Error running immediate toast generation:', error);
+    return { success: false, message: `Error: ${error?.message || 'Unknown error'}` };
+  }
+}
+
+/**
+ * Run immediate daily reminder emails (for testing/debugging)
+ */
+export async function runImmediateDailyReminders() {
+  try {
+    await processDailyReminderEmails();
+    return { success: true, message: 'Immediate daily reminder emails completed' };
+  } catch (error: any) {
+    console.error('Error running immediate daily reminders:', error);
     return { success: false, message: `Error: ${error?.message || 'Unknown error'}` };
   }
 }

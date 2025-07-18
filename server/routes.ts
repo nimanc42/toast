@@ -47,7 +47,7 @@ function getThemesFromNotes(noteContents: string[]): string[] {
   // This is a simplified version - in a real app, we might use NLP
   // to extract themes from the notes
   const commonThemes: {[key: string]: number} = {};
-  
+
   // Keywords to look for in notes
   const themeKeywords = {
     'achievement': ['accomplish', 'achieve', 'complete', 'finish', 'win', 'success'],
@@ -60,18 +60,18 @@ function getThemesFromNotes(noteContents: string[]): string[] {
     'career': ['work', 'job', 'career', 'professional', 'project'],
     'joy': ['happy', 'joy', 'enjoy', 'fun', 'laugh', 'smile', 'delight']
   };
-  
+
   // Check each note for themes
   for (const note of noteContents) {
     const lowerNote = note.toLowerCase();
-    
+
     for (const [theme, keywords] of Object.entries(themeKeywords)) {
       if (keywords.some(keyword => lowerNote.includes(keyword))) {
         commonThemes[theme] = (commonThemes[theme] || 0) + 1;
       }
     }
   }
-  
+
   // Get top 3 themes
   return Object.entries(commonThemes)
     .sort((a, b) => b[1] - a[1])
@@ -94,7 +94,7 @@ function generateToastContent(noteCount: number, themes: string[]): string {
     "Let's celebrate your week of mindful reflection!",
     "Another week, another opportunity to celebrate you!"
   ];
-  
+
   // Acknowledgment templates
   const acknowledgments = [
     `You've captured ${noteCount} moments this week.`,
@@ -102,7 +102,7 @@ function generateToastContent(noteCount: number, themes: string[]): string {
     `With ${noteCount} thoughtful notes this week, you're building a wonderful practice.`,
     `Your ${noteCount} entries this week show your commitment to reflection.`
   ];
-  
+
   // Theme-specific templates
   const themeMessages: {[key: string]: string[]} = {
     'achievement': [
@@ -151,7 +151,7 @@ function generateToastContent(noteCount: number, themes: string[]): string {
       "The delight you've experienced reminds us all to find pleasure in life."
     ]
   };
-  
+
   // Closing templates
   const closings = [
     "Here's to another week of growth and discovery ahead!",
@@ -160,19 +160,19 @@ function generateToastContent(noteCount: number, themes: string[]): string {
     "Carry this positive momentum forward into the days ahead!",
     "Wishing you a week ahead filled with insights and growth!"
   ];
-  
+
   // Randomly select templates
   const intro = intros[Math.floor(Math.random() * intros.length)];
   const acknowledgment = acknowledgments[Math.floor(Math.random() * acknowledgments.length)];
   const closing = closings[Math.floor(Math.random() * closings.length)];
-  
+
   // Build the content
   let content = `${intro} ${acknowledgment}\n\n`;
-  
+
   // Add theme-specific content
   if (themes.length > 0) {
     content += "This week, I noticed these themes in your reflections:\n\n";
-    
+
     themes.forEach(theme => {
       if (themeMessages[theme]) {
         const messages = themeMessages[theme];
@@ -181,10 +181,10 @@ function generateToastContent(noteCount: number, themes: string[]): string {
       }
     });
   }
-  
+
   // Add closing
   content += closing;
-  
+
   return content;
 }
 
@@ -194,24 +194,24 @@ function generateToastContent(noteCount: number, themes: string[]): string {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication routes
   setupAuth(app);
-  
+
   // Email verification and password reset routes
   app.post("/api/auth/send-verification", sendVerification);
   app.post("/api/auth/verify-email", verifyEmail);
   app.post("/api/auth/forgot-password", forgotPassword);
   app.post("/api/auth/reset-password", resetPassword);
   app.post("/api/auth/resend-verification", resendVerification);
-  
+
   // Onboarding route
   app.post("/api/user/complete-onboarding", ensureAuthenticated, completeOnboarding);
-  
+
   // Google OAuth authentication routes
   // Endpoint to check if Google auth is configured
   app.get('/api/auth/google/status', (req, res) => {
     const isConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
     res.json({ configured: isConfigured });
   });
-  
+
   // Check if Google OAuth is configured
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     // Standard API endpoint for Google Auth
@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prompt: 'select_account'
       })
     );
-    
+
     // Handle callback at API path
     app.get('/api/auth/google/callback', 
       googleAuth.authenticate('google', { 
@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.redirect('/');
       }
     );
-    
+
     // Also handle the callback at the path configured in Google Cloud Console
     app.get('/auth/google/callback', 
       googleAuth.authenticate('google', { 
@@ -244,16 +244,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     );
   }
-  
+
   // Social features routes
   registerSocialRoutes(app);
-  
+
   // Gamification and analytics routes
   app.use('/api/gamification', gamificationRoutes);
-  
+
   // User settings routes
   app.use(userSettingsRoutes);
-  
+
   // Audio transcription routes
   app.use('/api/transcribe', transcriptionRoutes);
 
@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Creating note, user:", req.user);
       console.log("Request body:", req.body);
-      
+
       const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
         ...req.body,
@@ -270,13 +270,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // TODO (BundledAway): activate bundleTag feature when UI is ready
         bundleTag: req.body.bundleTag || null
       });
-      
+
       // Check if in testing mode - skip database writes
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
-      
+
       let note;
       let userBadge = null;
-      
+
       if (isTestingMode) {
         // Create a mock note with a consistent ID for testing
         note = {
@@ -287,15 +287,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bundleTag: validatedData.bundleTag,
           createdAt: new Date()
         };
-        
+
         // Store the note in the session's testingNotes array 
         if (!(req.session as any).testingNotes) {
           (req.session as any).testingNotes = [];
         }
         (req.session as any).testingNotes.push(note);
-        
+
         console.log("[Testing Mode] Adding note with content:", note.content ? note.content.substring(0, 50) + "..." : "No content");
-        
+
         // Save session
         req.session.save((err) => {
           if (err) {
@@ -306,10 +306,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Testing Mode] Notes in session: ${JSON.stringify(notes.map((n: any) => ({ id: n.id, content: n.content.substring(0, 30) + "..." })))}`);
           }
         });
-        
+
         // Log the user data for debugging
         console.log("Testing user:", req.user);
-        
+
         // Create a mock first note badge for testing
         userBadge = {
           id: Math.floor(Math.random() * 10000),
@@ -331,28 +331,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Validated data:", validatedData);
         note = await storage.createNote(validatedData);
         console.log("Note created:", note);
-        
+
         // Check if this is the user's first note and award badge if it is
         try {
           const notesCount = await storage.getUserNotesCount(userId);
           console.log(`User ${userId} has ${notesCount} notes`);
-          
+
           if (notesCount === 1) {
             console.log("This is the user's first note! Checking for first note badge...");
             const badge = await storage.getBadgeByRequirement('first_note');
-            
+
             if (badge) {
               console.log(`Found first note badge: ${badge.name}`);
               userBadge = await storage.awardBadge(userId, badge.id);
               console.log(`Badge awarded: ${userBadge.id}`);
-              
+
               // Notify connected WebSocket clients about the badge
               const wss = req.app.locals.wss;
               if (wss) {
                 const clients = [...wss.clients].filter(
                   client => client.userId === userId && client.readyState === WebSocket.OPEN
                 );
-                
+
                 if (clients.length > 0) {
                   const badgeEvent = {
                     type: 'badge-earned',
@@ -363,11 +363,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       badgeDescription: badge.description
                     }
                   };
-                  
+
                   clients.forEach(client => {
                     client.send(JSON.stringify(badgeEvent));
                   });
-                  
+
                   console.log(`WebSocket notification sent to ${clients.length} clients`);
                 }
               }
@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error("Error awarding badge:", badgeError);
         }
       }
-      
+
       res.status(201).json(note);
     } catch (error) {
       console.error("Error creating note:", error);
@@ -395,17 +395,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      
+
       // Check if in testing mode
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
-      
+
       if (isTestingMode && (req.session as any).testingNotes) {
         // Return notes from session for testing mode
         const testingNotes = (req.session as any).testingNotes || [];
         console.log(`[Testing Mode] Returning ${testingNotes.length} notes from session`);
         return res.json(testingNotes);
       }
-      
+
       // Normal database access
       const notes = await storage.getNotesByUserId(userId);
       res.json(notes);
@@ -420,10 +420,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       // Check if in testing mode
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
-      
+
       if (isTestingMode && (req.session as any).testingNotes) {
         // Filter today's notes from session for testing mode
         const testingNotes = (req.session as any).testingNotes || [];
@@ -432,11 +432,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           noteDate.setHours(0, 0, 0, 0);
           return noteDate.getTime() === today.getTime();
         });
-        
+
         console.log(`[Testing Mode] Returning ${todayNotes.length} notes for today from session`);
         return res.json(todayNotes);
       }
-      
+
       // Normal database access
       const notes = await storage.getNotesByUserIdAndDate(userId, today);
       res.json(notes);
@@ -450,16 +450,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const noteId = parseInt(req.params.id);
       const userId = req.user!.id;
-      
+
       const note = await storage.getNoteById(noteId);
       if (!note) {
         return res.status(404).json({ message: "Note not found" });
       }
-      
+
       if (note.userId !== userId) {
         return res.status(403).json({ message: "You don't have permission to update this note" });
       }
-      
+
       const updatedNote = await storage.updateNote(noteId, req.body);
       res.json(updatedNote);
     } catch (error) {
@@ -471,48 +471,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const noteId = parseInt(req.params.id);
       const userId = req.user!.id;
-      
+
       const note = await storage.getNoteById(noteId);
       if (!note) {
         return res.status(404).json({ message: "Note not found" });
       }
-      
+
       if (note.userId !== userId) {
         return res.status(403).json({ message: "You don't have permission to delete this note" });
       }
-      
+
       await storage.deleteNote(noteId);
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete note" });
     }
   });
-  
+
   // Generate a reflection review for a specific note
   app.post("/api/notes/:id/review", ensureAuthenticated, async (req, res) => {
     try {
       const noteId = parseInt(req.params.id);
       const userId = req.user!.id;
-      
+
       // Fetch the note and ensure it belongs to the user
       const note = await storage.getNoteById(noteId);
-      
+
       if (!note) {
         return res.status(404).json({ message: "Note not found" });
       }
-      
+
       if (note.userId !== userId) {
         return res.status(403).json({ message: "You don't have permission to review this note" });
       }
-      
+
       // Check for OpenAI API key
       if (!process.env.OPENAI_API_KEY) {
         return res.status(503).json({ message: "Review service is currently unavailable" });
       }
-      
+
       // Generate the review using OpenAI
       const review = await generateReflectionReview(note.content);
-      
+
       // Return the review
       res.json({ review });
     } catch (error) {
@@ -526,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const preferences = await storage.getVoicePreferenceByUserId(userId);
-      
+
       if (!preferences) {
         // Create default preferences if none exist
         const defaultPreferences = await storage.createVoicePreference({
@@ -540,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         return res.json(defaultPreferences);
       }
-      
+
       res.json(preferences);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch preferences" });
@@ -554,14 +554,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...req.body,
         userId
       });
-      
+
       const preferences = await storage.getVoicePreferenceByUserId(userId);
-      
+
       if (!preferences) {
         const newPreferences = await storage.createVoicePreference(validatedData);
         return res.json(newPreferences);
       }
-      
+
       const updatedPreferences = await storage.updateVoicePreference(preferences.id, validatedData);
       res.json(updatedPreferences);
     } catch (error) {
@@ -588,16 +588,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const toasts = await storage.getToastsByUserId(userId);
-      
+
       if (toasts.length === 0) {
         return res.status(404).json({ message: "No toasts found" });
       }
-      
+
       // Sort by creation date and get the latest
       const latestToast = toasts.sort((a, b) => {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       })[0];
-      
+
       res.json(latestToast);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch latest toast" });
@@ -609,15 +609,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const voice = req.body.voice;
-      
+
       // Get user for timezone and weekly toast day preferences
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       console.log(`[Toast Generator] Generating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format with timezone: ${user.timezone || 'UTC'}, weeklyToastDay: ${user.weeklyToastDay || 0}`);
-      
+
       // Update user voice preference if provided, but skip for test users
       const isTestUser = userId === CONFIG.TEST_USER.id;
       if (voice && !isTestUser) {
@@ -633,22 +633,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       }
-      
+
       // For test users, proceed without voice preference database operations
       if (isTestUser) {
         console.log("Testing mode: Skipping voice preference database operations");
       }
-      
+
       try {
         // Generate the weekly toast using the standardized format with user's preferences
         // Pass the full user object to ensure timezone and weekly toast day preferences are used
         const result = await generateWeeklyToast(userId, user.name);
-        
+
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 
           audioUrl: result.audioUrl || 'No audio URL'
         });
-        
+
         // Log analytics for toast generation, but skip for test users
         if (storage.logUserActivity && userId !== CONFIG.TEST_USER.id) {
           try {
@@ -668,7 +668,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (userId === CONFIG.TEST_USER.id) {
           console.log('[Toast Generator] Test user - skipping activity logging');
         }
-        
+
         res.status(201).json(result);
       } catch (err: any) {
         console.error('[Toast gen]', err);
@@ -676,36 +676,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error('Error generating toast:', error);
-      
+
       // Handle specific errors
       if (error?.message?.includes('No notes found')) {
         return res.status(400).json({ 
           message: "You don't have any notes from the last week to generate a toast" 
         });
       }
-      
+
       res.status(500).json({ 
         message: "Failed to generate toast", 
         error: error?.message || "Unknown error"
       });
     }
   });
-  
+
   // Endpoint to regenerate a toast with updated voice preference
   app.post("/api/toasts/regenerate", ensureAuthenticated, async (req, res) => {
     try {
       // Get user info and preferences
       const userId = req.user!.id;
       const voice = req.body.voice;
-      
+
       // Get user for timezone and weekly toast day preferences
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       console.log(`[Toast Generator] Regenerating toast for user ${userId}, voice: ${voice || 'default'}, using standardized format with timezone: ${user.timezone || 'UTC'}, weeklyToastDay: ${user.weeklyToastDay || 0}`);
-      
+
       // Always update user voice preference if provided
       if (voice) {
         const existingPref = await storage.getVoicePreferenceByUserId(userId);
@@ -724,37 +724,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         console.log(`[Toast Generator] No voice preference provided, using user's saved preference`);
       }
-      
+
       // Get date range for the past week
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(endDate.getDate() - 7);
-      
+
       // Get user notes for the past week
       const userNotes = await storage.getNotesByUserIdAndDateRange(userId, startDate, endDate);
-      
+
       if (userNotes.length === 0) {
         return res.status(400).json({ error: "No notes found for this week. Add some reflections first!" });
       }
-      
+
       // Extract note contents and IDs
       const noteContents = userNotes.map(note => note.content || '').filter(Boolean);
       const noteIds = userNotes.map(note => note.id);
-      
+
       // Format reflections
       const formattedReflections = noteContents.join('\n\n');
-      
+
       console.log(`[Toast Generator] Using standard toast format`);
-      
+
       try {
         // Use the standardized toast generator function with updated prompt format
         const toast = await generateWeeklyToast(userId, req.user?.name || '');
-        
+
         // The toast content and creation is now handled within generateWeeklyToast
-        
+
         // Now generate audio with the selected voice using voice catalogue
         const ttsVoice = getTTSVoiceForId(voice || 'rachel');
-        
+
         // Generate speech with OpenAI TTS using the voice catalogue
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const mp3Response = await openai.audio.speech.create({
@@ -765,32 +765,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const buffer = Buffer.from(await mp3Response.arrayBuffer());
         const filename = `toast-${Date.now()}.mp3`;
-        
+
         // Upload to Supabase Storage
         const { createClient } = await import('@supabase/supabase-js');
         const supabaseUrl = process.env.VITE_SUPABASE_URL!;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('audio')
           .upload(filename, buffer, {
             contentType: 'audio/mpeg',
             cacheControl: '3600'
           });
-        
+
         if (uploadError) {
           console.error('Error uploading weekly toast audio:', uploadError);
           throw new Error('Failed to upload audio file');
         }
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('audio')
           .getPublicUrl(uploadData.path);
-        
+
         // Update toast with audio URL
         const updatedToast = await storage.updateToast(toast.id, { audioUrl: publicUrl });
-        
+
         // Log analytics for toast regeneration
         if (storage.logUserActivity) {
           await storage.logUserActivity({
@@ -803,12 +803,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             } as Record<string, any>
           });
         }
-        
+
         console.log(`[Toast Generator] Regenerated toast:`, {
           content: updatedToast.content ? `${updatedToast.content.substring(0, 30)}...` : 'No content', 
           audioUrl: updatedToast.audioUrl || 'No audio URL'
         });
-        
+
         res.status(200).json(updatedToast);
       } catch (err: any) {
         console.error('[Toast regeneration] OpenAI or database error:', err);
@@ -816,14 +816,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       console.error('Error regenerating toast:', error);
-      
+
       // Handle specific errors
       if (error?.message?.includes('No notes found')) {
         return res.status(400).json({ 
           message: "You don't have any notes from the last week to regenerate a toast" 
         });
       }
-      
+
       res.status(500).json({ 
         message: "Failed to regenerate toast", 
         error: error?.message || "Unknown error"
@@ -835,35 +835,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/toasts", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      
+
       // Get user voice preferences
       const preferences = await storage.getVoicePreferenceByUserId(userId);
       const voiceStyle = preferences?.voiceStyle || 'motivational';
-      
+
       // Get recent notes to generate the toast
       const recentNotes = await storage.getRecentNotesByUserId(userId, 7);
-      
+
       if (recentNotes.length === 0) {
         return res.status(400).json({ message: "You don't have any notes to generate a toast" });
       }
-      
+
       const noteIds = recentNotes.map(note => note.id);
-      
+
       // Extract significant themes and highlights from notes
       const noteContents = recentNotes.map(note => note.content || "").filter(Boolean);
-      
+
       // Generate a more personalized toast content
       const themes = getThemesFromNotes(noteContents);
       const toastContent = generateToastContent(noteContents.length, themes);
-      
-      // Get the appropriate voice ID based on user preference
+
+      // Get theappropriate voice ID based on user preference
       const voiceId = getVoiceId(voiceStyle);
-      
+
       // Generate speech audio using ElevenLabs API
       let audioUrl: string | null = null;
       try {
         const ttsResult = await generateSpeech(toastContent, voiceId, userId);
-        
+
         // Handle different response types
         if (typeof ttsResult === 'string') {
           // Success case - we got an audio URL
@@ -884,11 +884,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error generating audio:', error);
         audioUrl = 'Error: Audio generation failed';
       }
-      
+
       // Create a unique share URL
       const shareId = createId();
       const shareUrl = `/shared/${shareId}`;
-      
+
       const toast = await storage.createToast({
         userId,
         content: toastContent,
@@ -897,7 +897,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         shared: false,
         shareUrl
       });
-      
+
       res.status(201).json(toast);
     } catch (error) {
       res.status(500).json({ message: "Failed to create toast" });
@@ -908,49 +908,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const toastId = parseInt(req.params.id);
       const userId = req.user!.id;
-      
+
       const toast = await storage.getToastById(toastId);
       if (!toast) {
         return res.status(404).json({ message: "Toast not found" });
       }
-      
+
       if (toast.userId !== userId) {
         return res.status(403).json({ message: "You don't have permission to share this toast" });
       }
-      
+
       const updatedToast = await storage.updateToast(toastId, { shared: true });
       res.json(updatedToast);
     } catch (error) {
       res.status(500).json({ message: "Failed to share toast" });
     }
   });
-  
+
   // Regenerate audio for an existing toast with a different voice
   app.post("/api/toasts/:id/regenerate-audio", ensureAuthenticated, async (req, res) => {
     try {
       const toastId = parseInt(req.params.id);
       const userId = req.user!.id;
       const { voiceStyle } = req.body;
-      
+
       // Get the toast
       const toast = await storage.getToastById(toastId);
       if (!toast) {
         return res.status(404).json({ message: "Toast not found" });
       }
-      
+
       // Verify ownership
       if (toast.userId !== userId) {
         return res.status(403).json({ message: "You don't have permission to modify this toast" });
       }
-      
+
       // Get the appropriate voice ID
       const voiceId = getVoiceId(voiceStyle || 'motivational');
-      
+
       // Generate new audio
       let audioUrl: string | null = null;
       try {
         const ttsResult = await generateSpeech(toast.content, voiceId, userId);
-        
+
         // Handle different response types
         if (typeof ttsResult === 'string') {
           // Success case - we got an audio URL
@@ -974,7 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error regenerating audio:', error);
         return res.status(500).json({ message: "Failed to generate audio: Server error" });
       }
-      
+
       // Update the toast with the new audio URL
       const updatedToast = await storage.updateToast(toastId, { audioUrl });
       res.json(updatedToast);
@@ -988,28 +988,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
-      
+
       // Get the count of notes for the current week
       const today = new Date();
       const startOfWeek = new Date(today);
       startOfWeek.setDate(today.getDate() - today.getDay()); // Set to Sunday
       startOfWeek.setHours(0, 0, 0, 0);
-      
+
       let weeklyNotesCount = 0;
       let streak = 0;
-      
+
       // If in testing mode, get notes from session instead of database
       if (isTestingMode && (req.session as any).testingNotes) {
         const testingNotes = (req.session as any).testingNotes || [];
-        
+
         // Count notes in the current week
         const weeklyNotes = testingNotes.filter((note: any) => {
           const noteDate = new Date(note.createdAt);
           return noteDate >= startOfWeek && noteDate <= today;
         });
-        
+
         weeklyNotesCount = weeklyNotes.length;
-        
+
         // Set streak to the number of consecutive days with notes
         // For testing mode, simplify by returning count of days with notes
         const days = new Set();
@@ -1018,9 +1018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const dayKey = `${noteDate.getFullYear()}-${noteDate.getMonth()}-${noteDate.getDate()}`;
           days.add(dayKey);
         });
-        
+
         streak = days.size;
-        
+
         console.log(`[Testing Mode] Stats: ${weeklyNotesCount} weekly notes, ${streak} day streak`);
       } else {
         // Normal database access
@@ -1028,17 +1028,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weeklyNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfWeek, today);
         weeklyNotesCount = weeklyNotes.length;
       }
-      
+
       // Get user data to determine the next toast day using weeklyToastDay preference
       const user = await storage.getUser(userId);
-      
+
       let nextToastDate: Date;
       if (user) {
         // Use user timezone if set, otherwise default to UTC
         const timezone = user.timezone || 'UTC';
         // Get preferred day (0 = Sunday, 6 = Saturday) or default to Sunday (0)
         const preferredDay = user.weeklyToastDay ?? 0;
-        
+
         try {
           // Calculate next toast date using user's timezone
           const now = DateTime.now().setZone(timezone);
@@ -1046,12 +1046,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const luxonDay = preferredDay === 0 ? 7 : preferredDay;
           // Get next occurrence of preferred day
           let nextDate = now.set({ weekday: luxonDay as 1|2|3|4|5|6|7 });
-          
+
           // If today is the toast day or we've already passed it, move to next week
           if (nextDate <= now) {
             nextDate = nextDate.plus({ weeks: 1 });
           }
-          
+
           nextToastDate = nextDate.toJSDate();
           console.log(`Next toast date calculated as ${nextDate.toFormat('yyyy-MM-dd')} in timezone ${timezone}`);
         } catch (error) {
@@ -1059,7 +1059,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Fallback to simple calculation if DateTime fails
           const todayDayIndex = today.getDay();
           const preferredDayIndex = preferredDay;
-          
+
           nextToastDate = new Date(today);
           if (todayDayIndex < preferredDayIndex) {
             nextToastDate.setDate(today.getDate() + (preferredDayIndex - todayDayIndex));
@@ -1076,13 +1076,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nextToastDate = new Date(today);
         nextToastDate.setDate(today.getDate() + daysUntilSunday);
       }
-      
+
       // In testing mode, always set the next toast date to tomorrow for easier testing
       if (isTestingMode) {
         nextToastDate = new Date(today);
         nextToastDate.setDate(today.getDate() + 1);
       }
-      
+
       res.json({
         streak,
         weeklyNotesCount,
@@ -1099,7 +1099,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/config/status", (req, res) => {
     // Check if user is in testing mode from session
     const isTestingSession = req.session?.testingMode === true;
-    
+
     res.json({
       testingModeEnabled: CONFIG.ENABLE_TESTING_MODE,
       testingMode: isTestingSession || CONFIG.TESTING_MODE,
@@ -1119,22 +1119,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch available voices" });
     }
   });
-  
+
   // Special route for testing mode
   app.post("/api/auth/testing-mode", (req, res) => {
     if (!CONFIG.ENABLE_TESTING_MODE) {
       return res.status(403).json({ message: "Testing mode is disabled" });
     }
-    
+
     // Set testing mode flag in session
     req.session.testingMode = true;
-    
+
     // Save session
     req.session.save((err) => {
       if (err) {
         console.error("Error saving testing mode session:", err);
       }
-      
+
       // Return success to client
       console.log("Testing mode enabled for session:", req.sessionID);
       res.status(200).json({
@@ -1149,14 +1149,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // This endpoint is admin-only or for checking system status
       const credits = await checkElevenLabsCredits();
-      
+
       if (!credits) {
         return res.status(500).json({ 
           message: "Failed to retrieve TTS credit information", 
           status: "error" 
         });
       }
-      
+
       return res.json({
         ...credits,
         message: credits.status === 'low' 
@@ -1171,27 +1171,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-  
+
   // API endpoint to generate speech for reflection reviews
   app.post("/api/tts/review", ensureAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
       const { text } = req.body;
-      
+
       if (!text) {
         return res.status(400).json({ error: "No text provided for speech generation" });
       }
-      
+
       // Get the user's voice preference
       const voicePreference = await storage.getVoicePreferenceByUserId(userId);
       const voiceStyle = voicePreference?.voiceStyle || "rachel"; // Default to 'rachel' if no preference
-      
+
       // Get the ElevenLabs voice ID using your custom voice mapping
       const elevenLabsVoiceId = getVoiceId(voiceStyle);
-      
+
       // Generate speech with ElevenLabs using your actual voice samples
       const result = await generateSpeech(text, elevenLabsVoiceId, userId);
-      
+
       if (typeof result === 'string') {
         return res.json({ audioUrl: result });
       } else if (result && 'error' in result) {
@@ -1204,15 +1204,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ error: "An error occurred while generating speech" });
     }
   });
-  
+
   // Anonymous feedback endpoint
   app.post("/api/feedback", async (req, res) => {
     try {
       const validatedData = insertFeedbackSchema.parse(req.body);
-      
+
       // Create feedback record without any user identification
       await storage.createFeedback(validatedData);
-      
+
       res.status(201).json({ success: true });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1231,10 +1231,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!userId) {
       return res.status(400).json({ message: "Invalid user" });
     }
-    
+
     const isAdmin = userId === 1; // Simple admin check - user ID 1 is admin
     const isDevelopment = process.env.NODE_ENV === 'development';
-    
+
     if (!isAdmin && !isDevelopment) {
       return res.status(403).json({ message: "Unauthorized: Admin access required" });
     }
@@ -1252,15 +1252,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Run immediate daily reminder emails for testing
+  app.post("/api/admin/run-daily-reminders", ensureAuthenticated, async (req, res) => {
+    try {
+      const { runImmediateDailyReminders } = await import('./services/scheduled-jobs');
+      const result = await runImmediateDailyReminders();
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        message: `Error: ${error?.message || 'Unknown error'}` 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
-  
+
   // TEMPORARILY DISABLED: WebSocket functionality for debugging server crashes
   console.log('WebSocket functionality is temporarily disabled for debugging');
-  
+
   // Dummy implementation to prevent errors
   (global as any).sendNotificationToUser = (userId: number, notification: any) => {
     console.log(`[Disabled WebSocket] Would send to user ${userId}:`, notification);
   };
-  
+
   return httpServer;
 }

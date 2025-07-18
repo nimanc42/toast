@@ -315,3 +315,87 @@ export async function markTokenAsUsed(token: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Send a weekly toast notification email
+ * @param email The user's email address
+ * @param name The user's name
+ */
+export async function sendWeeklyToastNotification(email: string, name: string): Promise<boolean> {
+  try {
+    const subject = 'Your Weekly Toast is Ready!';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #3b82f6;">Your Weekly Toast is Ready!</h1>
+        <p>Hi ${name},</p>
+        <p>Your Weekly Toast is ready to read or listen to. It's a celebration of your reflections and growth from this past week.</p>
+        <p style="margin: 30px 0;">
+          <a href="${frontendUrl}" style="background-color: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Open A Toast to You</a>
+        </p>
+        <p>Take a moment to listen to your personalized toast and celebrate your journey!</p>
+        <p>Best regards,<br/>The A Toast to You Team</p>
+      </div>
+    `;
+
+    const text = `
+Hi ${name},
+
+Your Weekly Toast is ready to read or listen to. It's a celebration of your reflections and growth from this past week.
+
+Open A Toast to You: ${frontendUrl}
+
+Take a moment to listen to your personalized toast and celebrate your journey!
+
+Best regards,
+The A Toast to You Team
+    `;
+
+    return await sendEmail({ to: email, subject, html, text });
+  } catch (error) {
+    console.error('Failed to send weekly toast notification:', error);
+    return false;
+  }
+}
+
+/**
+ * Send a daily reflection reminder email
+ * @param email The user's email address
+ * @param name The user's name
+ */
+export async function sendDailyReflectionReminder(email: string, name: string): Promise<boolean> {
+  try {
+    const subject = 'Your Daily Reflection Awaits';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #3b82f6;">Your Daily Reflection Awaits</h1>
+        <p>Hi ${name},</p>
+        <p>Take a minute to reflect today. What mattered to you? What did you learn? What are you grateful for?</p>
+        <p style="margin: 30px 0;">
+          <a href="${frontendUrl}" style="background-color: #3b82f6; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Add Your Reflection</a>
+        </p>
+        <p>Your future self will thank you for taking this moment to reflect and grow.</p>
+        <p>Best regards,<br/>The A Toast to You Team</p>
+      </div>
+    `;
+
+    const text = `
+Hi ${name},
+
+Take a minute to reflect today. What mattered to you? What did you learn? What are you grateful for?
+
+Add Your Reflection: ${frontendUrl}
+
+Your future self will thank you for taking this moment to reflect and grow.
+
+Best regards,
+The A Toast to You Team
+    `;
+
+    return await sendEmail({ to: email, subject, html, text });
+  } catch (error) {
+    console.error('Failed to send daily reflection reminder:', error);
+    return false;
+  }
+}

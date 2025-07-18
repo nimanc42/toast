@@ -218,11 +218,7 @@ export default function ReflectionReviewDialog({
           )}
         </div>
 
-        {reviewContent && (
-          <div className="prose prose-sm max-w-none text-gray-700 mb-4">
-            <p className="leading-relaxed">{reviewContent}</p>
-          </div>
-        )}
+
 
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 

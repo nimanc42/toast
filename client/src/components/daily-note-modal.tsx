@@ -80,18 +80,18 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
   const [savedNoteId, setSavedNoteId] = useState<number | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-
+  
   // Speech recognition reference
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-
+  
   // Reference to track the current text content for speech recognition
   const textContentRef = useRef(textContent);
-
+  
   // Keep the ref updated with the latest textContent value
   useEffect(() => {
     textContentRef.current = textContent;
   }, [textContent]);
-
+  
   // Initialize speech recognition when component mounts
   useEffect(() => {
     // Check if the browser supports SpeechRecognition
@@ -105,33 +105,33 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         // @ts-ignore
         window.msSpeechRecognition
       );
-
+      
       if (SpeechRecognitionAPI) {
         const recognition = new SpeechRecognitionAPI();
         recognition.continuous = false; // Set to false for more reliable results on mobile
         recognition.interimResults = true; // Show results as they come in
         recognition.lang = 'en-US';
-
+        
         // Set up simple and direct event handler for speech recognition results
         recognition.onresult = (event: SpeechRecognitionEvent) => {
           // Access the last result (most recent) from the speech recognition
           const lastResult = event.results[event.results.length - 1];
-
+          
           // Check if this result is final
           if (lastResult.isFinal) {
             // Get the transcript text
             const transcript = lastResult[0].transcript;
             console.log("Final transcript received:", transcript);
-
+            
             // Use the ref to get the current text content for more reliable updates
             const currentText = textContentRef.current;
             const newText = currentText ? `${currentText} ${transcript}` : transcript;
-
+            
             // Update the state with the new text
             setTextContent(newText);
           }
         };
-
+        
         recognition.onerror = (event: SpeechRecognitionEvent) => {
           console.error('Speech recognition error:', event.error);
           setIsListening(false);
@@ -141,18 +141,18 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             variant: "destructive",
           });
         };
-
+        
         recognition.onend = () => {
           setIsListening(false);
         };
-
+        
         recognitionRef.current = recognition;
       } else {
         setSpeechSupported(false);
         console.warn("Speech Recognition API not supported in this browser");
       }
     }
-
+    
     // Cleanup function
     return () => {
       if (recognitionRef.current) {
@@ -164,7 +164,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       }
     };
   }, [toast]);
-
+  
   // Function to toggle speech recognition
   const toggleSpeechRecognition = () => {
     if (!speechSupported) {
@@ -175,7 +175,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       });
       return;
     }
-
+    
     if (isListening) {
       console.log("Stopping speech recognition");
       // Stop listening
@@ -193,11 +193,11 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           if (textElement) {
             textElement.placeholder = "Listening... Start speaking!";
           }
-
+          
           // Start recognition
           recognitionRef.current.start();
           setIsListening(true);
-
+          
           toast({
             title: "Voice-to-text activated",
             description: "Speak clearly and your words will be converted to text.",
@@ -213,7 +213,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       }
     }
   };
-
+  
   // Audio recorder hook
   const {
     isRecording,
@@ -224,10 +224,10 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     stopRecording,
     clearRecording
   } = useAudioRecorder();
-
+  
   // Audio element ref for playing recorded audio
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
-
+  
   // Save note mutation
   const saveMutation = useMutation({
     mutationFn: async (data: { content: string; audioUrl?: string; bundleTag?: string | null }) => {
@@ -237,7 +237,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       console.log("Auth token:", localStorage.getItem('authToken') ? "Present" : "Missing");
       console.log("Current input type:", inputType);
       console.log("Is speech-to-text active:", isListening);
-
+      
       try {
         const res = await apiRequest("POST", "/api/notes", data);
         const json = await res.json();
@@ -250,65 +250,49 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
     },
     onSuccess: (data) => {
       console.log("Save successful:", data);
-
+      
       // Store the saved note ID for potential review
       setSavedNoteId(data.id);
-
+      
       // If user requested a review, open the review dialog
       if (reviewDialogOpen) {
         // The review dialog will handle itself - already open
         return;
       }
-
+      
       // Otherwise, just close and reset as usual
       setTextContent("");
       clearRecording();
       onClose();
-
+      
       // Show success message
       toast({
         title: "Note saved!",
         description: "Your daily reflection has been recorded.",
       });
-
+      
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/notes/today"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
-    onError: (error: any) => {
-      console.error("Error saving note:", error);
-
-      // Handle specific limit errors
-      if (error.message?.includes("Daily limit reached")) {
-        toast({
-          title: "Daily limit reached",
-          description: "You can only create 2 reflections per day. Try again tomorrow!",
-          variant: "destructive",
-        });
-      } else if (error.message?.includes("Weekly limit reached")) {
-        toast({
-          title: "Weekly limit reached", 
-          description: "You can only create 7 reflections per week. Try again next week!",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Error saving reflection",
-          description: error.message || "There was a problem saving your reflection.",
-          variant: "destructive",
-        });
-      }
+    onError: (error: Error) => {
+      console.error("Save error in onError handler:", error);
+      toast({
+        title: "Failed to save note",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
-
+  
   // Format recording time
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
-
+  
   // Handle saving the note
   const handleSave = async (withReview = false, withAudio = false) => {
     // For text mode, require content
@@ -320,7 +304,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       });
       return;
     }
-
+    
     // For audio mode in "not recording" state with no blob, show error
     if (inputType === "audio" && !isRecording && !audioBlob) {
       toast({
@@ -330,7 +314,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       });
       return;
     }
-
+    
     try {
       // Stop any active speech recognition
       if (isListening && recognitionRef.current) {
@@ -339,7 +323,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         // Small delay to ensure final transcript is processed
         await new Promise(resolve => setTimeout(resolve, 300));
       }
-
+      
       // Stop any active recording
       if (isRecording) {
         stopRecording();
@@ -352,12 +336,12 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         setReviewDialogOpen(true);
         setReviewWithAudio(withAudio);
       }
-
+      
       // TEXT MODE - Save text content (including any voice-to-text transcription)
       if (inputType === "text") {
         // Verify we have text content to save
         const trimmedText = textContent.trim();
-
+        
         if (!trimmedText) {
           toast({
             title: "Empty note",
@@ -366,9 +350,9 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           });
           return;
         }
-
+        
         console.log("Saving text reflection:", trimmedText);
-
+        
         // Save as a text reflection (not audio)
         saveMutation.mutate({ 
           content: trimmedText,
@@ -379,7 +363,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       // AUDIO MODE - Save audio recording
       else if (inputType === "audio" && audioBlob) {
         console.log("Audio blob available for saving:", audioBlob);
-
+        
         try {
           // First show a toast to indicate transcription is starting
           setIsTranscribing(true);
@@ -387,14 +371,14 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             title: "Transcribing audio...",
             description: "We're converting your audio to text. This may take a moment.",
           });
-
+          
           // Create FormData to send the audio file with proper MIME type for Whisper
           const formData = new FormData();
           // Use the original audioBlob directly - it should already have the correct MIME type
           // from our MediaRecorder configuration (audio/webm;codecs=opus)
           formData.append("file", audioBlob, "audio-reflection.webm");
           console.log("Sending audio for transcription:", audioBlob.type, audioBlob.size);
-
+          
           // Call the transcription API with authentication
           const response = await fetch("/api/transcribe", {
             method: "POST",
@@ -403,21 +387,21 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             }
           });
-
+          
           if (!response.ok) {
             throw new Error(`Transcription failed: ${response.statusText}`);
           }
-
+          
           const { transcript } = await response.json();
           console.log("Transcription result:", transcript);
-
+          
           // Save only the transcript without the audio URL
           saveMutation.mutate({ 
             content: transcript || "[Audio reflection]", // Use transcript if available, fallback otherwise
             // Remove audioUrl to prevent UI from showing audio player
             bundleTag: null
           });
-
+          
           // Show success toast for transcription
           if (!withReview) {
             toast({
@@ -427,14 +411,14 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           }
         } catch (error) {
           console.error("Error during transcription:", error);
-
+          
           // If transcription fails, save with default text
           saveMutation.mutate({ 
             content: "[Audio reflection]",
             audioUrl: recordingAudioUrl || "audio-url-placeholder",
             bundleTag: null
           });
-
+          
           // Show warning toast for failed transcription
           if (!withReview) {
             toast({
@@ -456,7 +440,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
       });
     }
   };
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -466,7 +450,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             What's something positive about today that you want to celebrate?
           </DialogDescription>
         </DialogHeader>
-
+        
         {/* TODO (BundledAway): enable bundle picker UI */}
         <input
           type="text"
@@ -475,7 +459,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           disabled
           hidden
         />
-
+        
         {/* Input Type Toggle */}
         <div className="flex justify-center mb-4">
           <div className="inline-flex rounded-md shadow-sm">
@@ -509,7 +493,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             </Button>
           </div>
         </div>
-
+        
         {/* Text Input Section */}
         {inputType === "text" && (
           <div className="relative">
@@ -521,7 +505,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
               onChange={(e) => setTextContent(e.target.value)}
               className={`mb-6 min-h-[80px] max-h-[100px] ${isListening ? 'pr-12 border-blue-500 focus-visible:ring-blue-500' : ''}`}
             />
-
+            
             {/* Voice to Text Button */}
             <div className="absolute right-3 bottom-6">
               <Button
@@ -540,7 +524,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 )}
               </Button>
             </div>
-
+            
             {/* Voice to Text Indicator */}
             {isListening && (
               <div className="mb-2 text-sm text-blue-600 font-medium">
@@ -550,9 +534,9 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 </div>
               </div>
             )}
-
+            
             {/* This second status indicator is redundant - removing it */}
-
+            
             {/* Unsupported Browser Warning */}
             {!speechSupported && (
               <div className="mt-1 text-xs text-orange-600">
@@ -561,7 +545,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             )}
           </div>
         )}
-
+        
         {/* Audio Input Section */}
         {inputType === "audio" && (
           <div className="bg-gray-50 p-4 rounded-lg text-center">
@@ -584,7 +568,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 <p className="mt-2 text-sm text-gray-600">Tap to start recording</p>
               </div>
             )}
-
+            
             {/* Recording State */}
             {isRecording && (
               <div className="flex flex-col items-center">
@@ -610,7 +594,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
                 </Button>
               </div>
             )}
-
+            
             {/* Recording Preview */}
             {!isRecording && audioBlob && recordingAudioUrl && (
               <div>
@@ -677,7 +661,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             )}
           </div>
         )}
-
+        
         <DialogFooter className="flex flex-col gap-4 pt-6">
           <div className="flex flex-row gap-3">
             <Button 
@@ -721,7 +705,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             Save and Listen Back Summary
           </Button>
         </DialogFooter>
-
+        
         {/* Reflection Review Dialog */}
         <ReflectionReviewDialog
           isOpen={reviewDialogOpen}
@@ -730,7 +714,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
             setTextContent("");
             clearRecording();
             onClose();
-
+            
             // Invalidate queries to refresh data
             queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
             queryClient.invalidateQueries({ queryKey: ["/api/notes/today"] });

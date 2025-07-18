@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Helmet } from "react-helmet";
+import Header from "@/components/header";
 
 export default function AboutPage() {
   const { user } = useAuth();
@@ -11,6 +12,7 @@ export default function AboutPage() {
         <meta name="description" content="Learn about A Toast - a gentle daily ritual designed to help you reflect on what's good and celebrate yourself with personalized weekly toasts." />
       </Helmet>
       
+      <Header />
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">

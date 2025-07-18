@@ -130,7 +130,7 @@ export default function ReflectionReviewDialog({
     setIsPlayingAudio(false);
   };
 
-  // Handle read aloud (generate audio if needed, then play)
+  // Handle read aloud (generate audio if needed, then play/stop)
   const handleReadAloud = () => {
     console.log("=== HANDLE READ ALOUD ===");
     console.log("isPlayingAudio:", isPlayingAudio);
@@ -145,8 +145,11 @@ export default function ReflectionReviewDialog({
       return;
     }
 
-    // If we already have audio, play it
-    if (audioUrl) {
+    // If audio is currently playing, stop it
+    if (isPlayingAudio) {
+      handleStop();
+    } else if (audioUrl) {
+      // If we have audio but it's not playing, play it
       handlePlay();
     } else {
       // Generate new audio if no audio is available and not already requesting

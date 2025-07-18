@@ -213,8 +213,13 @@ export default function ReflectionReviewDialog({
       if (audioElement) {
         audioElement.pause();
         audioElement.currentTime = 0;
+        // Remove the audio element to fully stop it
+        audioElement.remove();
       }
       setIsPlayingAudio(false);
+      // Disable button briefly to prevent rapid clicking
+      setButtonDisabled(true);
+      setTimeout(() => setButtonDisabled(false), 500);
     } else if (audioUrl) {
       // Play existing audio if available
       console.log("Playing existing audio");

@@ -49,14 +49,6 @@ export const toasts = pgTable("toasts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const reflectionReviews = pgTable("reflection_reviews", {
-  id: serial("id").primaryKey(),
-  noteId: integer("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
-  reviewText: text("review_text").notNull(),
-  audioUrl: text("audio_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
 export const tokens = pgTable("tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -162,6 +154,14 @@ export const feedback = pgTable("feedback", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const reflectionReviews = pgTable("reflection_reviews", {
+  id: serial("id").primaryKey(),
+  noteId: integer("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  reviewText: text("review_text").notNull(),
+  audioUrl: text("audio_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -196,12 +196,7 @@ export const insertToastSchema = createInsertSchema(toasts).pick({
   userId: true,
   content: true,
   audioUrl: true,
-  noteIds: true,
-  type: true,
-  intervalStart: true,
-  intervalEnd: true,
-  shared: true,
-  shareUrl: true,
+  weekStartDate: true,
 });
 
 export const insertTokenSchema = createInsertSchema(tokens).pick({

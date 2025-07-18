@@ -53,8 +53,9 @@ export default function ReflectionReviewDialog({
     },
     onSuccess: (data) => {
       setReviewContent(data.review);
-      // If we have cached audio, set it immediately
+      // If we have cached audio, set it immediately and don't need to generate
       if (data.audioUrl) {
+        console.log("Using cached audio from review response:", data.audioUrl);
         setAudioUrl(data.audioUrl);
       }
     },
@@ -158,8 +159,8 @@ export default function ReflectionReviewDialog({
     } else if (audioUrl) {
       // If we have audio but it's not playing, play it
       handlePlay();
-    } else {
-      // Generate new audio if no audio is available and not already requesting
+    } else if (reviewContent && !ttsMutation.isPending) {
+      // Only generate new audio if we don't already have one and not already requesting
       console.log("Generating new audio");
       ttsMutation.mutate(reviewContent);
     }

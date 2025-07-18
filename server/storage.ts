@@ -128,6 +128,11 @@ export interface IStorage {
   // Feedback methods
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
 
+  // Reflection review methods
+  getReflectionReview(noteId: number): Promise<{ reviewText: string; audioUrl: string | null } | undefined>;
+  createReflectionReview(data: { noteId: number; reviewText: string; audioUrl: string | null }): Promise<{ reviewText: string; audioUrl: string | null }>;
+  updateReflectionReviewAudio(noteId: number, audioUrl: string): Promise<void>;
+
   // Session store
   sessionStore: session.Store;
 }

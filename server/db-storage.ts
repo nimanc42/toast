@@ -2,7 +2,7 @@ import {
   users, 
   notes, 
   voicePreferences, 
-  toasts,
+  toasts, 
   tokens,
   friendships,
   sharedToasts,
@@ -12,6 +12,7 @@ import {
   userBadges,
   userActivity,
   feedback,
+  reflectionReviews,
   type User, 
   type Note, 
   type VoicePreference, 
@@ -68,7 +69,7 @@ const PgSessionStore = connectPgSimple(session);
  */
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  
+
   constructor() {
     // Create session store with PostgreSQL
     this.sessionStore = new PgSessionStore({
@@ -88,12 +89,12 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user;
   }
-  
+
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
-  
+
   async getUserByExternalId(externalId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.externalId, externalId));
     return user;
@@ -103,32 +104,32 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     const [updatedUser] = await db
       .update(users)
       .set(userData)
       .where(eq(users.id, id))
       .returning();
-      
+
     if (!updatedUser) {
       throw new Error(`User with id ${id} not found`);
     }
-    
+
     return updatedUser;
   }
-  
+
   async verifyUserEmail(id: number): Promise<User> {
     const [verifiedUser] = await db
       .update(users)
       .set({ verified: true })
       .where(eq(users.id, id))
       .returning();
-      
+
     if (!verifiedUser) {
       throw new Error(`User with id ${id} not found`);
     }
-    
+
     return verifiedUser;
   }
 
@@ -150,10 +151,10 @@ export class DatabaseStorage implements IStorage {
     // Create start/end date boundaries for the query
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
-    
+
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    
+
     return db
       .select()
       .from(notes)
@@ -201,11 +202,11 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(notes.id, id))
       .returning();
-      
+
     if (!updatedNote) {
       throw new Error(`Note with id ${id} not found`);
     }
-    
+
     return updatedNote;
   }
 
@@ -219,7 +220,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(voicePreferences)
       .where(eq(voicePreferences.userId, userId));
-      
+
     return preference;
   }
 
@@ -228,7 +229,7 @@ export class DatabaseStorage implements IStorage {
       .insert(voicePreferences)
       .values(insertPreference)
       .returning();
-      
+
     return preference;
   }
 
@@ -238,11 +239,11 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(voicePreferences.id, id))
       .returning();
-      
+
     if (!updatedPreference) {
       throw new Error(`Voice preference with id ${id} not found`);
     }
-    
+
     return updatedPreference;
   }
 
@@ -271,11 +272,11 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(toasts.id, id))
       .returning();
-      
+
     if (!updatedToast) {
       throw new Error(`Toast with id ${id} not found`);
     }
-    
+
     return updatedToast;
   }
 
@@ -290,7 +291,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(tokens)
       .where(eq(tokens.token, tokenValue));
-      
+
     return token;
   }
 
@@ -302,7 +303,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(tokens.userId, userId), eq(tokens.type, type)))
         .orderBy(desc(tokens.createdAt));
     }
-    
+
     return db
       .select()
       .from(tokens)
@@ -316,11 +317,11 @@ export class DatabaseStorage implements IStorage {
       .set({ used: true })
       .where(eq(tokens.token, tokenValue))
       .returning();
-      
+
     if (!updatedToken) {
       throw new Error(`Token ${tokenValue} not found`);
     }
-    
+
     return updatedToken;
   }
 
@@ -329,11 +330,38 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tokens).where(lte(tokens.expiresAt, now));
   }
 
-  // Calculate user streak
+  // Reflection review methods
+  async getReflectionReview(noteId: number): Promise<{ reviewText: string; audioUrl: string | null } | undefined> {
+    const [review] = await db
+      .select()
+      .from(reflectionReviews)
+      .where(eq(reflectionReviews.noteId, noteId))
+      .limit(1);
+
+    return review;
+  }
+
+  async createReflectionReview(data: { noteId: number; reviewText: string; audioUrl: string | null }): Promise<{ reviewText: string; audioUrl: string | null }> {
+    const [review] = await db
+      .insert(reflectionReviews)
+      .values(data)
+      .returning();
+
+    return review;
+  }
+
+  async updateReflectionReviewAudio(noteId: number, audioUrl: string): Promise<void> {
+    await db
+      .update(reflectionReviews)
+      .set({ audioUrl })
+      .where(eq(reflectionReviews.noteId, noteId));
+  }
+
+  // Additional methods
   async getUserStreak(userId: number): Promise<number> {
     // Get all notes for this user
     const userNotes = await this.getNotesByUserId(userId);
-    
+
     if (userNotes.length === 0) {
       return 0;
     }
@@ -347,18 +375,18 @@ export class DatabaseStorage implements IStorage {
 
     // Convert to array and sort
     const dates = Array.from(uniqueDates).sort().reverse();
-    
+
     // Check for consecutive days
     let streak = 1;
     const now = new Date();
     const today = now.toISOString().split('T')[0];
-    
+
     // If no note for today, start checking from yesterday
     let currentDate = new Date();
     if (dates[0] !== today) {
       currentDate.setDate(currentDate.getDate() - 1);
     }
-    
+
     for (let i = 0; i < dates.length - 1; i++) {
       const dateToCheck = currentDate.toISOString().split('T')[0];
       if (dates.includes(dateToCheck)) {
@@ -368,7 +396,7 @@ export class DatabaseStorage implements IStorage {
         break;
       }
     }
-    
+
     return streak;
   }
 
@@ -382,10 +410,10 @@ export class DatabaseStorage implements IStorage {
     // Get all friendships where the user is either the initiator or the recipient
     const userFriendships = await db.select().from(friendships)
       .where(eq(friendships.userId, userId));
-    
+
     const friendUserFriendships = await db.select().from(friendships)
       .where(eq(friendships.friendId, userId));
-    
+
     return [...userFriendships, ...friendUserFriendships];
   }
 
@@ -404,7 +432,7 @@ export class DatabaseStorage implements IStorage {
           )
         )
       );
-    
+
     return friendship;
   }
 
@@ -420,7 +448,7 @@ export class DatabaseStorage implements IStorage {
           eq(friendships.status, status)
         )
       );
-    
+
     // Then, get friendships where user is the recipient
     const receivedFriendships = await db.select({
       friendId: friendships.userId
@@ -431,23 +459,23 @@ export class DatabaseStorage implements IStorage {
           eq(friendships.status, status)
         )
       );
-    
+
     // Combine friend IDs
     const friendIds = [
       ...initiatedFriendships.map(f => f.friendId),
       ...receivedFriendships.map(f => f.friendId)
     ];
-    
+
     // Get the actual user records
     if (friendIds.length === 0) {
       return [];
     }
-    
+
     const friends = await db.select().from(users)
       .where(
         inArray(users.id, friendIds)
       );
-    
+
     return friends;
   }
 
@@ -455,7 +483,7 @@ export class DatabaseStorage implements IStorage {
     const [newFriendship] = await db.insert(friendships)
       .values(friendship)
       .returning();
-    
+
     return newFriendship;
   }
 
@@ -467,7 +495,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(friendships.id, id))
       .returning();
-    
+
     return updatedFriendship;
   }
 
@@ -495,7 +523,7 @@ export class DatabaseStorage implements IStorage {
     const [newSharedToast] = await db.insert(sharedToasts)
       .values(sharedToast)
       .returning();
-    
+
     return newSharedToast;
   }
 
@@ -504,7 +532,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(eq(sharedToasts.id, id))
       .returning();
-    
+
     return updatedSharedToast;
   }
 
@@ -515,18 +543,18 @@ export class DatabaseStorage implements IStorage {
 
   async incrementSharedToastViewCount(id: number): Promise<SharedToast> {
     const [sharedToast] = await db.select().from(sharedToasts).where(eq(sharedToasts.id, id));
-    
+
     if (!sharedToast) {
       throw new Error('Shared toast not found');
     }
-    
+
     const [updatedSharedToast] = await db.update(sharedToasts)
       .set({ 
         viewCount: sharedToast.viewCount + 1
       })
       .where(eq(sharedToasts.id, id))
       .returning();
-    
+
     return updatedSharedToast;
   }
 
@@ -548,7 +576,7 @@ export class DatabaseStorage implements IStorage {
           eq(toastReactions.toastId, toastId)
         )
       );
-    
+
     return reaction;
   }
 
@@ -556,7 +584,7 @@ export class DatabaseStorage implements IStorage {
     const [newReaction] = await db.insert(toastReactions)
       .values(reaction)
       .returning();
-    
+
     return newReaction;
   }
 
@@ -565,7 +593,7 @@ export class DatabaseStorage implements IStorage {
       .set({ reaction })
       .where(eq(toastReactions.id, id))
       .returning();
-    
+
     return updatedReaction;
   }
 
@@ -590,7 +618,7 @@ export class DatabaseStorage implements IStorage {
     const [newComment] = await db.insert(toastComments)
       .values(comment)
       .returning();
-    
+
     return newComment;
   }
 
@@ -602,7 +630,7 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(toastComments.id, id))
       .returning();
-    
+
     return updatedComment;
   }
 
@@ -619,15 +647,15 @@ export class DatabaseStorage implements IStorage {
   async getBadgesByCategory(category: string): Promise<Badge[]> {
     return await import('./db-storage-gamification').then(mod => mod.getBadgesByCategory(category));
   }
-  
+
   async getBadgeByRequirement(requirement: string): Promise<Badge | undefined> {
     return await import('./db-storage-gamification').then(mod => mod.getBadgeByRequirement(requirement));
   }
-  
+
   async createBadge(badge: InsertBadge): Promise<Badge> {
     return await import('./db-storage-gamification').then(mod => mod.createBadge(badge));
   }
-  
+
   async getUserNotesCount(userId: number): Promise<number> {
     return await import('./db-storage-gamification').then(mod => mod.getUserNotesCount(userId));
   }
@@ -643,7 +671,7 @@ export class DatabaseStorage implements IStorage {
   async createUserBadge(userBadge: InsertUserBadge): Promise<UserBadge> {
     return await import('./db-storage-gamification').then(mod => mod.createUserBadge(userBadge));
   }
-  
+
   async awardBadge(userId: number, badgeId: number): Promise<UserBadge> {
     return await import('./db-storage-gamification').then(mod => mod.awardBadge(userId, badgeId));
   }
@@ -655,7 +683,7 @@ export class DatabaseStorage implements IStorage {
   async getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]> {
     return await import('./db-storage-gamification').then(mod => mod.getUnseenUserBadges(userId));
   }
-  
+
   async checkAndAwardBadges(userId: number): Promise<UserBadge[]> {
     return await import('./db-storage-gamification').then(mod => mod.checkAndAwardBadges(userId));
   }

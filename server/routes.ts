@@ -1230,13 +1230,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Text is required" });
       }
 
-      // If noteId is provided, check for cached audio
+      // If noteId is provided, check for cached audio FIRST
       if (noteId) {
         const existingReview = await storage.getReflectionReview(noteId);
         if (existingReview?.audioUrl) {
+          console.log(`[TTS] Using cached audio for note ${noteId}: ${existingReview.audioUrl}`);
           return res.json({ audioUrl: existingReview.audioUrl });
         }
       }
+
+      console.log(`[TTS] No cached audio found for note ${noteId}, generating new audio`);
 
       // Get user's voice preference
       const preferences = await storage.getVoicePreferenceByUserId(userId);
@@ -1256,8 +1259,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Cache the audio URL if noteId is provided
+      // Cache the audio URL if noteId is provided and generation was successful
       if (noteId && typeof result === 'string') {
+        console.log(`[TTS] Caching audio URL for note ${noteId}: ${result}`);
         await storage.updateReflectionReviewAudio(noteId, result);
       }
 

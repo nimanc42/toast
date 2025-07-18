@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Pencil, Heart, Play, Loader2, Trash2, AlertCircle, MessageCircle, Volume2 } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Play, Trash2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -22,15 +20,8 @@ import {
 
 export default function NoteHistory() {
   const [showAll, setShowAll] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [currentNote, setCurrentNote] = useState<{ id: number, content: string } | null>(null);
-  const [editedContent, setEditedContent] = useState("");
-  const [reviewContent, setReviewContent] = useState("");
-  const [isReviewing, setIsReviewing] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
   
   // Define the Note type
@@ -48,47 +39,7 @@ export default function NoteHistory() {
     queryKey: ["/api/notes"],
   });
   
-  // Favorite note mutation
-  const favoriteMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      const res = await apiRequest("PUT", `/api/notes/${noteId}`, { favorite: true });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to favorite note",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-  
-  // Edit note mutation
-  const editMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: number, content: string }) => {
-      const res = await apiRequest("PUT", `/api/notes/${id}`, { content });
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
-      toast({
-        title: "Note updated",
-        description: "Your reflection has been updated.",
-      });
-      // Close the edit dialog after successful update
-      setEditDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update note",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+
   
   // Delete note mutation
   const deleteMutation = useMutation({
@@ -114,168 +65,11 @@ export default function NoteHistory() {
     },
   });
   
-  // Reflection review mutation
-  const reviewMutation = useMutation({
-    mutationFn: async (noteId: number) => {
-      const res = await apiRequest("POST", `/api/notes/${noteId}/review`);
-      const data = await res.json();
-      return data.review;
-    },
-    onSuccess: (review) => {
-      setReviewContent(review);
-      setIsReviewing(false);
-      setReviewDialogOpen(true);
-      // Reset audio state when opening a new review
-      setAudioUrl(null);
-      setIsPlayingAudio(false);
-    },
-    onError: (error: Error) => {
-      setIsReviewing(false);
-      toast({
-        title: "Review generation failed",
-        description: "Unable to generate a review for your reflection.",
-        variant: "destructive",
-      });
-    }
-  });
-  
-  // Text-to-speech mutation for reading reviews aloud
-  const ttsMutation = useMutation({
-    mutationFn: async (text: string) => {
-      const res = await apiRequest("POST", "/api/tts/review", { text });
-      const data = await res.json();
-      return data.audioUrl;
-    },
-    onSuccess: (url) => {
-      setAudioUrl(url);
-      playAudio(url);
-    },
-    onError: (error: Error) => {
-      console.error("TTS error:", error);
-      toast({
-        title: "Voice generation failed",
-        description: "Unable to generate voice for this review. Please try again.",
-        variant: "destructive",
-      });
-      setIsPlayingAudio(false);
-    }
-  });
-  
-  // Function to play audio with the review content
-  const playAudio = (url: string) => {
-    console.log("Attempting to play audio from URL:", url);
-    
-    // Create or get the audio element
-    let audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
-    
-    if (!audioElement) {
-      audioElement = document.createElement("audio");
-      audioElement.id = "reviewAudio";
-      audioElement.style.display = "none";
-      document.body.appendChild(audioElement);
-    }
-    
-    // Clear any existing source first
-    audioElement.src = "";
-    
-    // Set up event listeners
-    audioElement.onended = () => {
-      console.log("Audio playback ended");
-      setIsPlayingAudio(false);
-    };
-    
-    audioElement.onerror = (e) => {
-      console.error("Audio element error:", e, "Network state:", audioElement.networkState, "Error code:", audioElement.error?.code);
-      setIsPlayingAudio(false);
-      
-      // Only show error if it's a real error, not just normal state changes
-      if (audioElement.networkState === audioElement.NETWORK_NO_SOURCE || 
-          audioElement.error?.code === audioElement.error?.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        toast({
-          title: "Audio playback error",
-          description: "There was an error playing the audio file.",
-          variant: "destructive",
-        });
-      }
-    };
-    
-    audioElement.onloadstart = () => {
-      console.log("Audio load started");
-    };
-    
-    audioElement.oncanplay = () => {
-      console.log("Audio can play");
-    };
-    
-    // Set source and play
-    audioElement.src = url;
-    audioElement.load(); // Force reload the audio element
-    
-    audioElement.play()
-      .then(() => {
-        console.log("Audio playback started successfully");
-        setIsPlayingAudio(true);
-      })
-      .catch(err => {
-        console.error("Playback error:", err);
-        setIsPlayingAudio(false);
-        // Only show toast for actual playback failures, not user interaction issues
-        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-          toast({
-            title: "Audio playback failed",
-            description: "Could not play the audio. Please try again.",
-            variant: "destructive",
-          });
-        }
-      });
-  };
-  
-  // Read the reflection review aloud
-  const handleReadAloud = () => {
-    if (isPlayingAudio && audioUrl) {
-      // Stop the current audio if playing
-      const audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
-      setIsPlayingAudio(false);
-    } else if (audioUrl) {
-      // Play existing audio if available
-      playAudio(audioUrl);
-    } else if (reviewContent) {
-      // Generate new audio if no audio is available
-      ttsMutation.mutate(reviewContent);
-    }
-  };
-  
-  // Handle requesting a reflection review
-  const handleRequestReview = (note: Note) => {
-    setCurrentNote({ id: note.id, content: note.content });
-    setIsReviewing(true);
-    reviewMutation.mutate(note.id);
-  };
 
-  // Handle audio playback
-  const handlePlayAudio = (audioUrl: string) => {
-    // In a real implementation, we would play the audio file here
-    toast({
-      title: "Audio playback",
-      description: "Audio playback is not implemented in this prototype.",
-    });
-  };
   
-  // Handle favorite toggle
-  const handleFavorite = (id: number) => {
-    favoriteMutation.mutate(id);
-  };
+
   
-  // Handle edit click
-  const handleEdit = (id: number, content: string) => {
-    setCurrentNote({ id, content });
-    setEditedContent(content);
-    setEditDialogOpen(true);
-  };
+
   
   // Handle delete click
   const handleDelete = (id: number, content: string) => {
@@ -289,31 +83,7 @@ export default function NoteHistory() {
     deleteMutation.mutate(currentNote.id);
   };
   
-  // Handle saving edited note
-  const handleSaveEdit = () => {
-    if (!currentNote) return;
-    
-    if (!editedContent.trim()) {
-      toast({
-        title: "Empty reflection",
-        description: "Please enter some text for your reflection.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    editMutation.mutate({ 
-      id: currentNote.id, 
-      content: editedContent 
-    });
-  };
-  
-  // Close the edit dialog
-  const handleCloseEditDialog = () => {
-    setEditDialogOpen(false);
-    setCurrentNote(null);
-    setEditedContent("");
-  };
+
   
   // Ensure we have a proper array of notes to work with
   const notesArray = notes || [];
@@ -409,39 +179,10 @@ export default function NoteHistory() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-secondary-500"
-                      onClick={() => handleEdit(note.id, note.content || "")}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-amber-500"
-                      onClick={() => handleRequestReview(note)}
-                      disabled={isReviewing && currentNote?.id === note.id}
-                    >
-                      {isReviewing && currentNote?.id === note.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <MessageCircle className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
                       className="h-8 w-8 text-gray-400 hover:text-red-500"
                       onClick={() => handleDelete(note.id, note.content || "")}
                     >
                       <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      className={`h-8 w-8 ${note.favorite ? 'text-accent-500' : 'text-gray-400 hover:text-accent-500'}`}
-                      onClick={() => handleFavorite(note.id)}
-                    >
-                      <Heart className="h-4 w-4" fill={note.favorite ? "currentColor" : "none"} />
                     </Button>
                   </div>
                 </div>
@@ -553,54 +294,7 @@ export default function NoteHistory() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reflection Review Dialog */}
-      <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-amber-700">I hear you saying...</DialogTitle>
-          </DialogHeader>
-          
-          <div className="my-4">
-            {!reviewContent && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button 
-              onClick={handleReadAloud}
-              variant="outline"
-              className="border-blue-300 text-blue-700 hover:bg-blue-50"
-              disabled={ttsMutation.isPending || !reviewContent}
-            >
-              {isPlayingAudio ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Playing...
-                </>
-              ) : ttsMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Volume2 className="mr-2 h-4 w-4" />
-                  Read Aloud
-                </>
-              )}
-            </Button>
-            <Button 
-              onClick={() => setReviewDialogOpen(false)}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </>
   );
 }

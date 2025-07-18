@@ -9,12 +9,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Create database pool and client with standard PostgreSQL driver
+// Create database pool and client with Replit PostgreSQL optimized settings
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 5, // Reduced for Replit environment
+  idleTimeoutMillis: 10000, // Shorter idle timeout
+  connectionTimeoutMillis: 5000, // Longer connection timeout
+  acquireTimeoutMillis: 10000, // Add acquire timeout
+  allowExitOnIdle: true, // Allow pool to exit when idle
 });
 
 export const db = drizzle(pool, { schema });

@@ -22,6 +22,7 @@ const settingsFormSchema = z.object({
   dailyReminder: z.boolean().default(true),
   toastNotification: z.boolean().default(true),
   emailNotifications: z.boolean().default(false),
+  dailyReminderHour: z.number().min(5).max(22).default(9),
   timezone: z.string().default("UTC"),
   weeklyToastDay: z.number().min(0).max(6).default(0),
   toastHour: z.number().min(0).max(23).default(9),
@@ -40,6 +41,7 @@ export default function SettingsPage() {
     dailyReminder: boolean;
     toastNotification: boolean;
     emailNotifications: boolean;
+    dailyReminderHour: number;
   };
   
   type UserSettingsResponse = {
@@ -68,6 +70,7 @@ export default function SettingsPage() {
       dailyReminder: true,
       toastNotification: true,
       emailNotifications: false,
+      dailyReminderHour: 9,
       timezone: "Australia/Perth",
       weeklyToastDay: 0, // Sunday
       toastHour: 9, // 9 AM
@@ -91,6 +94,7 @@ export default function SettingsPage() {
         dailyReminder: voicePreferences.dailyReminder ?? true,
         toastNotification: voicePreferences.toastNotification ?? true,
         emailNotifications: voicePreferences.emailNotifications ?? false,
+        dailyReminderHour: voicePreferences.dailyReminderHour ?? 9,
         
         // User settings (timezone, weekly toast day, and time)
         timezone: userSettings.timezone || "UTC",
@@ -112,6 +116,7 @@ export default function SettingsPage() {
         dailyReminder: values.dailyReminder,
         toastNotification: values.toastNotification,
         emailNotifications: values.emailNotifications,
+        dailyReminderHour: values.dailyReminderHour,
       });
       
       // Then update user settings (timezone, weekly toast day, and time)
@@ -552,28 +557,67 @@ export default function SettingsPage() {
                   
                   <div className="px-4 py-5 sm:p-6">
                     <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="dailyReminder"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel className="font-medium">
-                                Daily reflection reminder
-                              </FormLabel>
-                              <FormDescription>
-                                Receive email reminders if you haven't added your daily reflection
-                              </FormDescription>
-                            </div>
-                          </FormItem>
+                      <div className="space-y-3">
+                        <FormField
+                          control={form.control}
+                          name="dailyReminder"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel className="font-medium">
+                                  Daily reflection reminder
+                                </FormLabel>
+                                <FormDescription>
+                                  Receive email reminders if you haven't added your daily reflection
+                                </FormDescription>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                        
+                        {form.watch("dailyReminder") && (
+                          <FormField
+                            control={form.control}
+                            name="dailyReminderHour"
+                            render={({ field }) => (
+                              <FormItem className="ml-6">
+                                <FormLabel className="text-sm text-gray-600">Reminder time</FormLabel>
+                                <FormControl>
+                                  <Select 
+                                    onValueChange={(value) => field.onChange(parseInt(value))}
+                                    value={field.value.toString()}
+                                  >
+                                    <SelectTrigger className="w-[180px]">
+                                      <SelectValue placeholder="Select time" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Array.from({ length: 18 }, (_, i) => {
+                                        const hour = i + 5; // 5 AM to 10 PM (22)
+                                        const time12 = hour <= 12 ? `${hour === 0 ? 12 : hour}:00 AM` : `${hour === 12 ? 12 : hour - 12}:00 PM`;
+                                        return (
+                                          <SelectItem key={hour} value={hour.toString()}>
+                                            {time12}
+                                          </SelectItem>
+                                        );
+                                      })}
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormDescription>
+                                  Choose when to receive daily reminder emails (in your local timezone)
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         )}
-                      />
+                      </div>
                       
                       <FormField
                         control={form.control}

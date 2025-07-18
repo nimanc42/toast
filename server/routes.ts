@@ -537,6 +537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dailyReminder: true,
           toastNotification: true,
           emailNotifications: false,
+          dailyReminderHour: 9,
         });
         return res.json(defaultPreferences);
       }

@@ -37,6 +37,7 @@ export const voicePreferences = pgTable("voice_preferences", {
   dailyReminder: boolean("daily_reminder").notNull().default(true),
   toastNotification: boolean("toast_notification").notNull().default(true),
   emailNotifications: boolean("email_notifications").notNull().default(false),
+  dailyReminderHour: integer("daily_reminder_hour").notNull().default(9),
 });
 
 export const toasts = pgTable("toasts", {
@@ -190,6 +191,7 @@ export const insertVoicePreferenceSchema = createInsertSchema(voicePreferences).
   dailyReminder: true,
   toastNotification: true,
   emailNotifications: true,
+  dailyReminderHour: true,
 });
 
 export const insertToastSchema = createInsertSchema(toasts).pick({

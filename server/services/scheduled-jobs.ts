@@ -67,9 +67,15 @@ async function processDailyReminderEmails() {
       return;
     }
 
+    // Get current UTC time
+    const now = DateTime.now().setZone('UTC');
+    const currentUtcHour = now.hour;
+    
+    logWithTimestamp(`Current UTC hour: ${currentUtcHour}`);
+
     // Get all users who have daily reminders enabled
     const usersWithReminders = await db.execute(sql`
-      SELECT u.id, u.name, u.email, u.timezone
+      SELECT u.id, u.name, u.email, u.timezone, vp.daily_reminder_hour
       FROM users u
       JOIN voice_preferences vp ON u.id = vp.user_id
       WHERE vp.daily_reminder = true
@@ -79,8 +85,9 @@ async function processDailyReminderEmails() {
     
     let emailsSent = 0;
     let emailErrors = 0;
+    let usersChecked = 0;
     
-    // Send reminder emails
+    // Check each user's local time
     for (const userRow of usersWithReminders.rows) {
       try {
         // Skip test users
@@ -88,26 +95,37 @@ async function processDailyReminderEmails() {
           continue;
         }
         
-        const userName = userRow.name || 'there';
-        const userEmail = userRow.email;
+        usersChecked++;
+        const userTimezone = userRow.timezone || 'UTC';
+        const userReminderHour = userRow.daily_reminder_hour || 9;
         
-        if (userEmail) {
-          logWithTimestamp(`Sending daily reminder to ${userEmail}`);
-          const success = await sendDailyReflectionReminder(userEmail, userName);
+        // Convert current UTC time to user's timezone
+        const userLocalTime = now.setZone(userTimezone);
+        const userLocalHour = userLocalTime.hour;
+        
+        // Check if it's the user's reminder time
+        if (userLocalHour === userReminderHour) {
+          const userName = userRow.name || 'there';
+          const userEmail = userRow.email;
           
-          if (success) {
-            emailsSent++;
-          } else {
-            emailErrors++;
+          if (userEmail) {
+            logWithTimestamp(`Sending daily reminder to ${userEmail} (local time: ${userLocalTime.toFormat('HH:mm')} in ${userTimezone})`);
+            const success = await sendDailyReflectionReminder(userEmail, userName);
+            
+            if (success) {
+              emailsSent++;
+            } else {
+              emailErrors++;
+            }
           }
         }
       } catch (error) {
         emailErrors++;
-        logWithTimestamp(`Error sending daily reminder to user ${userRow.id}:`, error);
+        logWithTimestamp(`Error processing daily reminder for user ${userRow.id}:`, error);
       }
     }
     
-    logWithTimestamp(`Daily reminder emails complete. Sent ${emailsSent} emails with ${emailErrors} errors`);
+    logWithTimestamp(`Daily reminder check complete. Checked ${usersChecked} users, sent ${emailsSent} emails with ${emailErrors} errors`);
   } catch (error) {
     logWithTimestamp('Error in daily reminder email job:', error);
   }
@@ -193,9 +211,9 @@ export function initializeScheduledJobs() {
     }
   });
   
-  // Schedule daily reminder emails to run once per day at 9:00 AM
-  // This will send reminders to users who have daily reminders enabled
-  cron.schedule('0 9 * * *', async () => {
+  // Schedule daily reminder emails to run every hour
+  // This checks each user's local time and sends reminders at their preferred hour
+  cron.schedule('0 * * * *', async () => {
     try {
       await processDailyReminderEmails();
     } catch (error) {

@@ -52,6 +52,7 @@ export default function ReflectionReviewDialog({
       return data;
     },
     onSuccess: (data) => {
+      // Store the review content but don't display it to the user
       setReviewContent(data.review);
       // If we have cached audio, set it immediately and don't need to generate
       if (data.audioUrl) {
@@ -204,6 +205,15 @@ export default function ReflectionReviewDialog({
           {!reviewContent && (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            </div>
+          )}
+          {reviewContent && (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center text-gray-600">
+                <Volume2 className="h-12 w-12 mx-auto mb-4 text-amber-500" />
+                <p>Your reflection summary is ready to listen to</p>
+                <p className="text-sm text-gray-500 mt-2">Audio only - no text will be shown</p>
+              </div>
             </div>
           )}
         </div>

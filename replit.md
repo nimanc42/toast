@@ -134,6 +134,9 @@ ELEVENLABS_API_KEY=...
 - Input validation using Zod schemas
 
 ## Changelog
+- July 18, 2025. **Audio-Only Experience**: Modified reflection review dialog to only provide audio playback without displaying review text, maintaining privacy and focus on listening experience
+- July 18, 2025. **Database Migration**: Created missing `reflection_reviews` table to enable proper caching of generated reviews and audio files
+- July 18, 2025. **Audio System Fix**: Resolved audio playback issues with comprehensive error handling and user-initiated playback (removed problematic auto-play)
 - July 18, 2025. **Pre-Launch Security Enhancement**: Added comprehensive security measures including Helmet.js security headers, rate limiting (100 req/15min general, 5 req/15min auth), global error handling with logging, and `/health` endpoint for monitoring
 - July 18, 2025. **UI Cleanup**: Removed all buttons from reflection entry cards except delete button for simplified user experience
 - July 18, 2025. **About Page**: Added comprehensive "About A Toast" page with story, features, values, and call-to-action

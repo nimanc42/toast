@@ -379,7 +379,7 @@ export function setupAuth(app: Express) {
  * Middleware to ensure a user is authenticated
  * Checks session authentication, JWT bearer token, and testing mode
  */
-export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+export async function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   // Check for testing mode through multiple methods for robustness
   try {
     // Check testing mode through multiple channels for reliability
@@ -428,29 +428,23 @@ export function ensureAuthenticated(req: Request, res: Response, next: NextFunct
       const { valid, userId } = verifyJwtToken(token);
       if (valid && userId) {
         // Get the user from the database
-        storage.getUser(userId)
-          .then(user => {
-            if (user) {
-              // Attach the user to the request
-              req.user = user;
-              
-              // Auto-login this user to establish a session as well (optional but helps with consistency)
-              req.login(user, (err) => {
-                if (err) {
-                  console.error("Error establishing session from JWT:", err);
-                  // Still allow the request to proceed even if session creation fails
-                }
-                return next();
-              });
-            } else {
-              console.log("JWT token valid but user not found:", userId);
-              res.status(401).json({ message: "Authentication required" });
+        const user = await storage.getUser(userId);
+        if (user) {
+          // Attach the user to the request
+          req.user = user;
+          
+          // Auto-login this user to establish a session as well (optional but helps with consistency)
+          req.login(user, (err) => {
+            if (err) {
+              console.error("Error establishing session from JWT:", err);
+              // Still allow the request to proceed even if session creation fails
             }
-          })
-          .catch(err => {
-            console.error("Error fetching user from JWT token:", err);
-            res.status(500).json({ message: "Internal server error" });
+            return next();
           });
+        } else {
+          console.log("JWT token valid but user not found:", userId);
+          res.status(401).json({ message: "Authentication required" });
+        }
         return;
       } else {
         console.log("Invalid JWT token");

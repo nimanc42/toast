@@ -78,8 +78,25 @@ export const getQueryFn: <T>(options: {
       // Only log the 401 but don't clear the token - let the session cookie handle authentication
       if (token) {
         console.log('Got 401 on a query with auth token, but keeping token for next attempt');
+        
+        // If we keep getting 401s, it might be because the token is expired
+        // Check if this is happening repeatedly and clear the token after multiple failures
+        const failureCount = parseInt(localStorage.getItem('auth401Count') || '0');
+        if (failureCount > 3) {
+          console.warn('Multiple 401 errors detected, clearing potentially stale token');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('authTokenExpiry');
+          localStorage.removeItem('auth401Count');
+        } else {
+          localStorage.setItem('auth401Count', (failureCount + 1).toString());
+        }
       }
       return null;
+    }
+    
+    // Clear 401 counter on successful requests
+    if (res.ok && localStorage.getItem('auth401Count')) {
+      localStorage.removeItem('auth401Count');
     }
 
     await throwIfResNotOk(res);

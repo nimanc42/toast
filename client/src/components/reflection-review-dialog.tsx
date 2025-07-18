@@ -77,6 +77,8 @@ export default function ReflectionReviewDialog({
 
   // Function to play audio
   const playAudio = (url: string) => {
+    console.log("Attempting to play audio from URL:", url);
+    
     // Create or get the audio element
     let audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
     
@@ -87,28 +89,45 @@ export default function ReflectionReviewDialog({
       document.body.appendChild(audioElement);
     }
     
+    // Clear any existing source first
+    audioElement.src = "";
+    
     // Set up event listeners
     audioElement.onended = () => {
+      console.log("Audio playback ended");
       setIsPlayingAudio(false);
     };
     
     audioElement.onerror = (e) => {
+      console.error("Audio element error:", e, "Network state:", audioElement.networkState, "Error code:", audioElement.error?.code);
       setIsPlayingAudio(false);
+      
       // Only show error if it's a real error, not just normal state changes
       if (audioElement.networkState === audioElement.NETWORK_NO_SOURCE || 
           audioElement.error?.code === audioElement.error?.MEDIA_ERR_SRC_NOT_SUPPORTED) {
         toast({
           title: "Audio playback error",
-          description: "There was an error playing the audio.",
+          description: "There was an error playing the audio file.",
           variant: "destructive",
         });
       }
     };
     
+    audioElement.onloadstart = () => {
+      console.log("Audio load started");
+    };
+    
+    audioElement.oncanplay = () => {
+      console.log("Audio can play");
+    };
+    
     // Set source and play
     audioElement.src = url;
+    audioElement.load(); // Force reload the audio element
+    
     audioElement.play()
       .then(() => {
+        console.log("Audio playback started successfully");
         setIsPlayingAudio(true);
       })
       .catch(err => {

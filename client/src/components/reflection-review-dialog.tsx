@@ -24,6 +24,7 @@ export default function ReflectionReviewDialog({
   const [reviewContent, setReviewContent] = useState("");
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [buttonDisabled, setButtonDisabled] = useState(false);
   const { toast } = useToast();
 
   // Reset state when the dialog opens or closes
@@ -32,6 +33,7 @@ export default function ReflectionReviewDialog({
       setReviewContent("");
       setAudioUrl(null);
       setIsPlayingAudio(false);
+      setButtonDisabled(false);
     }
   }, [isOpen]);
 
@@ -100,6 +102,10 @@ export default function ReflectionReviewDialog({
       });
       return;
     }
+    
+    // Disable button for 1 second to prevent double-clicking
+    setButtonDisabled(true);
+    setTimeout(() => setButtonDisabled(false), 1000);
     
     try {
       // Remove any existing audio element
@@ -192,6 +198,13 @@ export default function ReflectionReviewDialog({
     console.log("audioUrl:", audioUrl);
     console.log("reviewContent:", reviewContent);
     console.log("ttsMutation.isPending:", ttsMutation.isPending);
+    console.log("buttonDisabled:", buttonDisabled);
+    
+    // Prevent action if button is disabled (debouncing)
+    if (buttonDisabled) {
+      console.log("Button disabled, ignoring click");
+      return;
+    }
     
     if (isPlayingAudio && audioUrl) {
       // Stop the current audio if playing
@@ -260,7 +273,7 @@ export default function ReflectionReviewDialog({
             onClick={handleReadAloud}
             variant="outline"
             className="border-blue-300 text-blue-700 hover:bg-blue-50"
-            disabled={ttsMutation.isPending || !reviewContent}
+            disabled={ttsMutation.isPending || !reviewContent || buttonDisabled}
           >
             {isPlayingAudio ? (
               <>
@@ -271,6 +284,11 @@ export default function ReflectionReviewDialog({
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating...
+              </>
+            ) : buttonDisabled ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Please wait...
               </>
             ) : (
               <>

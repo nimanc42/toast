@@ -1240,10 +1240,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No text provided for speech generation" });
       }
 
-      // Note: We don't check reflection limits here because this endpoint is for generating 
-      // audio for existing reflections that have already been created and passed the limits check.
-      // The limits are enforced at reflection creation time, not at audio generation time.
-
       // Get the user's voice preference
       const voicePreference = await storage.getVoicePreferenceByUserId(userId);
       const voiceStyle = voicePreference?.voiceStyle || "rachel"; // Default to 'rachel' if no preference

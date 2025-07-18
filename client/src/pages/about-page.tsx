@@ -1,10 +1,13 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Heart, Users, Calendar, Sparkles, Coffee } from "lucide-react";
+import Header from "@/components/header";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           
@@ -148,5 +151,6 @@ export default function AboutPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

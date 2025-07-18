@@ -79,19 +79,37 @@ export default function ReflectionReviewDialog({
 
   // Function to play audio - user-initiated only
   const playAudio = async (url: string) => {
+    console.log("=== AUDIO PLAYBACK DEBUG ===");
     console.log("User initiated audio playback from URL:", url);
+    console.log("URL type:", typeof url);
+    console.log("URL length:", url?.length);
+    
+    if (!url) {
+      console.error("No audio URL provided");
+      toast({
+        title: "No audio available",
+        description: "Audio file not found. Please try generating again.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       // Remove any existing audio element
       const existingAudio = document.getElementById("reviewAudio");
       if (existingAudio) {
+        console.log("Removing existing audio element");
         existingAudio.remove();
       }
       
       // Create a fresh audio element
-      const audioElement = new Audio(url);
+      console.log("Creating new audio element");
+      const audioElement = new Audio();
       audioElement.id = "reviewAudio";
       audioElement.preload = "auto";
+      audioElement.crossOrigin = "anonymous";
+      
+      console.log("Setting up event listeners");
       
       // Set up event listeners
       audioElement.onended = () => {
@@ -100,8 +118,11 @@ export default function ReflectionReviewDialog({
       };
       
       audioElement.onerror = (e) => {
-        console.error("Audio error:", e);
+        console.error("Audio error event:", e);
         console.error("Audio element error details:", audioElement.error);
+        console.error("Audio element network state:", audioElement.networkState);
+        console.error("Audio element ready state:", audioElement.readyState);
+        console.error("Audio element src:", audioElement.src);
         setIsPlayingAudio(false);
         
         toast({
@@ -111,15 +132,34 @@ export default function ReflectionReviewDialog({
         });
       };
       
+      audioElement.onloadstart = () => {
+        console.log("Audio load started");
+      };
+      
+      audioElement.oncanplay = () => {
+        console.log("Audio can play");
+      };
+      
+      audioElement.oncanplaythrough = () => {
+        console.log("Audio can play through");
+      };
+      
+      // Set the source
+      console.log("Setting audio source to:", url);
+      audioElement.src = url;
+      
       // Try to play the audio immediately (user-initiated)
+      console.log("Attempting to play audio...");
       await audioElement.play();
       console.log("Audio playback started successfully");
       setIsPlayingAudio(true);
       
     } catch (error: any) {
+      console.error("=== AUDIO PLAYBACK ERROR ===");
       console.error("Audio play failed:", error);
       console.error("Error name:", error.name);
       console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       setIsPlayingAudio(false);
       
       if (error.name === 'NotAllowedError') {
@@ -131,7 +171,7 @@ export default function ReflectionReviewDialog({
       } else {
         toast({
           title: "Playback failed",
-          description: "Audio playback failed. Please try again.",
+          description: `Audio playback failed: ${error.message}`,
           variant: "destructive",
         });
       }
@@ -140,8 +180,15 @@ export default function ReflectionReviewDialog({
 
   // Handle reading the review aloud
   const handleReadAloud = () => {
+    console.log("=== HANDLE READ ALOUD ===");
+    console.log("isPlayingAudio:", isPlayingAudio);
+    console.log("audioUrl:", audioUrl);
+    console.log("reviewContent:", reviewContent);
+    console.log("ttsMutation.isPending:", ttsMutation.isPending);
+    
     if (isPlayingAudio && audioUrl) {
       // Stop the current audio if playing
+      console.log("Stopping current audio");
       const audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
       if (audioElement) {
         audioElement.pause();
@@ -150,9 +197,11 @@ export default function ReflectionReviewDialog({
       setIsPlayingAudio(false);
     } else if (audioUrl) {
       // Play existing audio if available
+      console.log("Playing existing audio");
       playAudio(audioUrl);
     } else if (reviewContent && !ttsMutation.isPending) {
       // Generate new audio if no audio is available and not already requesting
+      console.log("Generating new audio");
       ttsMutation.mutate(reviewContent);
     }
   };

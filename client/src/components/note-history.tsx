@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Play, Trash2 } from "lucide-react";
+import { Play, Trash2, AlertCircle, Loader2 } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -216,46 +216,7 @@ export default function NoteHistory() {
         </CardContent>
       </Card>
 
-      {/* Edit Reflection Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Reflection</DialogTitle>
-            <DialogDescription>
-              Update your reflection for {currentNote && format(new Date(notesArray.find(n => n.id === currentNote?.id)?.createdAt || new Date()), "EEEE, MMMM d")}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div>
-            <Textarea
-              placeholder="Update your reflection here..."
-              rows={4}
-              value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
-              className="mb-4"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseEditDialog}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveEdit}
-              disabled={editMutation.isPending}
-            >
-              {editMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save Changes"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

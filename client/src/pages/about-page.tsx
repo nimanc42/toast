@@ -7,7 +7,7 @@ export default function AboutPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+      <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto space-y-8">
           

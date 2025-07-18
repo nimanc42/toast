@@ -40,7 +40,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, userData: Partial<User>): Promise<User>;
   verifyUserEmail(id: number): Promise<User>;
-  
+
   // Note methods
   getNoteById(id: number): Promise<Note | undefined>;
   getNotesByUserId(userId: number): Promise<Note[]>;
@@ -50,25 +50,25 @@ export interface IStorage {
   createNote(note: InsertNote): Promise<Note>;
   updateNote(id: number, note: Partial<InsertNote>): Promise<Note>;
   deleteNote(id: number): Promise<void>;
-  
+
   // Voice preference methods
   getVoicePreferenceByUserId(userId: number): Promise<VoicePreference | undefined>;
   createVoicePreference(preference: InsertVoicePreference): Promise<VoicePreference>;
   updateVoicePreference(id: number, preference: Partial<InsertVoicePreference>): Promise<VoicePreference>;
-  
+
   // Toast methods
   getToastById(id: number): Promise<Toast | undefined>;
   getToastsByUserId(userId: number): Promise<Toast[]>;
   createToast(toast: InsertToast): Promise<Toast>;
   updateToast(id: number, toast: Partial<InsertToast>): Promise<Toast>;
-  
+
   // Token methods
   createToken(token: InsertToken): Promise<Token>;
   getTokenByValue(token: string): Promise<Token | undefined>;
   getTokensByUserId(userId: number, type?: string): Promise<Token[]>;
   markTokenAsUsed(token: string): Promise<Token>;
   deleteExpiredTokens(): Promise<void>;
-  
+
   // Friendship methods
   getFriendshipById(id: number): Promise<Friendship | undefined>;
   getFriendshipsByUserId(userId: number): Promise<Friendship[]>;
@@ -77,7 +77,7 @@ export interface IStorage {
   createFriendship(friendship: InsertFriendship): Promise<Friendship>;
   updateFriendshipStatus(id: number, status: string): Promise<Friendship>;
   deleteFriendship(id: number): Promise<void>;
-  
+
   // Shared toast methods
   getSharedToastById(id: number): Promise<SharedToast | undefined>;
   getSharedToastByShareCode(shareCode: string): Promise<SharedToast | undefined>;
@@ -86,7 +86,7 @@ export interface IStorage {
   updateSharedToast(id: number, updateData: Partial<InsertSharedToast>): Promise<SharedToast>;
   deleteSharedToast(id: number): Promise<void>;
   incrementSharedToastViewCount(id: number): Promise<SharedToast>;
-  
+
   // Toast reaction methods
   getToastReactionById(id: number): Promise<ToastReaction | undefined>;
   getToastReactionsByToastId(toastId: number): Promise<ToastReaction[]>;
@@ -94,14 +94,14 @@ export interface IStorage {
   createToastReaction(reaction: InsertToastReaction): Promise<ToastReaction>;
   updateToastReaction(id: number, reaction: string): Promise<ToastReaction>;
   deleteToastReaction(id: number): Promise<void>;
-  
+
   // Toast comment methods
   getToastCommentById(id: number): Promise<ToastComment | undefined>;
   getToastCommentsByToastId(toastId: number): Promise<ToastComment[]>;
   createToastComment(comment: InsertToastComment): Promise<ToastComment>;
   updateToastComment(id: number, comment: string): Promise<ToastComment>;
   deleteToastComment(id: number): Promise<void>;
-  
+
   // Badge methods
   getBadgeById(id: number): Promise<Badge | undefined>;
   getBadgesByCategory(category: string): Promise<Badge[]>;
@@ -115,19 +115,19 @@ export interface IStorage {
   getUnseenUserBadges(userId: number): Promise<(UserBadge & { badge: Badge })[]>;
   checkAndAwardBadges(userId: number): Promise<UserBadge[]>;
   getUserNotesCount(userId: number): Promise<number>;
-  
+
   // Activity and Analytics methods
   logUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
   getUserActivity(userId: number, type?: string, limit?: number): Promise<UserActivity[]>;
   getWeeklyActivityCount(userId: number, activityType: string): Promise<number>;
   getMonthlyActivityCount(userId: number, activityType: string): Promise<number>;
-  
+
   // Additional methods
   getUserStreak(userId: number): Promise<number>;
-  
+
   // Feedback methods
   createFeedback(feedback: InsertFeedback): Promise<Feedback>;
-  
+
   // Session store
   sessionStore: session.Store;
 }

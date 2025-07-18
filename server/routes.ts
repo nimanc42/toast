@@ -488,30 +488,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate a reflection review for a specific note
+  // Generate reflection review
   app.post("/api/notes/:id/review", ensureAuthenticated, async (req, res) => {
     try {
       const noteId = parseInt(req.params.id);
       const userId = req.user!.id;
 
-      // Fetch the note and ensure it belongs to the user
+      // Verify the note belongs to the user
       const note = await storage.getNoteById(noteId);
-
-      if (!note) {
+      if (!note || note.userId !== userId) {
         return res.status(404).json({ message: "Note not found" });
       }
 
-      if (note.userId !== userId) {
-        return res.status(403).json({ message: "You don't have permission to review this note" });
+      // Check if we already have a cached review and audio URL
+      const existingReview = await storage.getReflectionReview(noteId);
+      if (existingReview) {
+        return res.json({ 
+          review: existingReview.reviewText,
+          audioUrl: existingReview.audioUrl 
+        });
       }
 
-      // Check for OpenAI API key
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(503).json({ message: "Review service is currently unavailable" });
-      }
-
-      // Generate the review using OpenAI
+      // Generate the review
       const review = await generateReflectionReview(note.content);
+
+      // Store the review in the database for caching
+      await storage.createReflectionReview({
+        noteId,
+        reviewText: review,
+        audioUrl: null // Will be populated when TTS is generated
+      });
 
       // Return the review
       res.json({ review });
@@ -854,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const noteContents = recentNotes.map(note => note.content || "").filter(Boolean);
 
       // Generate a more personalized toast content
-      const themes = getThemesFromNotes(noteContents);
+      const themes =getThemesFromNotes(noteContents);
       const toastContent = generateToastContent(noteContents.length, themes);
 
       // Get theappropriate voice ID based on user preference
@@ -1177,7 +1183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/audio/proxy", ensureAuthenticated, async (req, res) => {
     try {
       const { url } = req.query;
-      
+
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: 'Missing audio URL' });
       }
@@ -1190,14 +1196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Proxying audio request for URL:', url);
 
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         console.error('Failed to fetch audio:', response.status, response.statusText);
         return res.status(response.status).json({ error: 'Failed to fetch audio file' });
       }
 
       const audioBuffer = await response.arrayBuffer();
-      
+
       // Set CORS headers and proper content type
       res.set({
         'Content-Type': 'audio/mpeg',
@@ -1214,36 +1220,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // API endpoint to generate speech for reflection reviews
+  // Text-to-speech endpoint for reflection reviews
   app.post("/api/tts/review", ensureAuthenticated, async (req, res) => {
     try {
+      const { text, noteId } = req.body;
       const userId = req.user!.id;
-      const { text } = req.body;
 
       if (!text) {
-        return res.status(400).json({ error: "No text provided for speech generation" });
+        return res.status(400).json({ message: "Text is required" });
       }
 
-      // Get the user's voice preference
-      const voicePreference = await storage.getVoicePreferenceByUserId(userId);
-      const voiceStyle = voicePreference?.voiceStyle || "rachel"; // Default to 'rachel' if no preference
-
-      // Get the ElevenLabs voice ID using your custom voice mapping
-      const elevenLabsVoiceId = getVoiceId(voiceStyle);
-
-      // Generate speech with ElevenLabs using your actual voice samples
-      const result = await generateSpeech(text, elevenLabsVoiceId, userId);
-
-      if (typeof result === 'string') {
-        return res.json({ audioUrl: result });
-      } else if (result && 'error' in result) {
-        return res.status(400).json({ error: result.error, resetTime: result.resetTime });
-      } else {
-        return res.status(500).json({ error: "Failed to generate speech" });
+      // If noteId is provided, check for cached audio
+      if (noteId) {
+        const existingReview = await storage.getReflectionReview(noteId);
+        if (existingReview?.audioUrl) {
+          return res.json({ audioUrl: existingReview.audioUrl });
+        }
       }
+
+      // Get user's voice preference
+      const preferences = await storage.getVoicePreferenceByUserId(userId);
+      const voiceStyle = preferences?.voiceStyle || "motivational";
+
+      // Generate speech
+      const result = await generateSpeech(text, getVoiceId(voiceStyle), userId);
+
+      if (!result) {
+        return res.status(500).json({ message: "Failed to generate speech" });
+      }
+
+      if (typeof result === 'object' && 'error' in result) {
+        return res.status(429).json({ 
+          message: result.error,
+          resetTime: result.resetTime 
+        });
+      }
+
+      // Cache the audio URL if noteId is provided
+      if (noteId && typeof result === 'string') {
+        await storage.updateReflectionReviewAudio(noteId, result);
+      }
+
+      res.json({ audioUrl: result });
     } catch (error) {
-      console.error("Error generating speech for review:", error);
-      return res.status(500).json({ error: "An error occurred while generating speech" });
+      console.error("Error generating speech:", error);
+      res.status(500).json({ message: "Failed to generate speech" });
     }
   });
 

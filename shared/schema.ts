@@ -42,21 +42,19 @@ export const voicePreferences = pgTable("voice_preferences", {
 
 export const toasts = pgTable("toasts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   audioUrl: text("audio_url"),
-  noteIds: json("note_ids").$type<number[]>().notNull(),
-  type: text("type").notNull().default("weekly"), // 'daily' | 'weekly' | 'monthly' | 'yearly'
-  intervalStart: timestamp("interval_start", { withTimezone: true }),
-  intervalEnd: timestamp("interval_end", { withTimezone: true }),
+  weekStartDate: timestamp("week_start_date").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  shared: boolean("shared").notNull().default(false),
-  shareUrl: text("share_url"),
-}, (table) => {
-  return {
-    // Enforce uniqueness to prevent duplicate toasts for the same time period
-    toastUnique: uniqueIndex("toast_unique_idx").on(table.userId, table.type, table.intervalStart),
-  };
+});
+
+export const reflectionReviews = pgTable("reflection_reviews", {
+  id: serial("id").primaryKey(),
+  noteId: integer("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  reviewText: text("review_text").notNull(),
+  audioUrl: text("audio_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const tokens = pgTable("tokens", {

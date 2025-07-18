@@ -49,10 +49,14 @@ export default function ReflectionReviewDialog({
     mutationFn: async (id: number) => {
       const res = await apiRequest("POST", `/api/notes/${id}/review`);
       const data = await res.json();
-      return data.review;
+      return data;
     },
     onSuccess: (data) => {
-      setReviewContent(data);
+      setReviewContent(data.review);
+      // If we have cached audio, set it immediately
+      if (data.audioUrl) {
+        setAudioUrl(data.audioUrl);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -66,7 +70,10 @@ export default function ReflectionReviewDialog({
   // Text-to-speech mutation
   const ttsMutation = useMutation({
     mutationFn: async (text: string) => {
-      const res = await apiRequest("POST", "/api/tts/review", { text });
+      const res = await apiRequest("POST", "/api/tts/review", { 
+        text, 
+        noteId: noteId 
+      });
       const data = await res.json();
       return data.audioUrl;
     },

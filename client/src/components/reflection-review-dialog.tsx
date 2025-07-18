@@ -233,6 +233,7 @@ export default function ReflectionReviewDialog({
         existingAudioElement.remove();
       }
       setIsPlayingAudio(false);
+      setAudioUrl(null); // Clear the audio URL to prevent reuse of stopped audio
       // Disable button briefly to prevent rapid clicking
       setButtonDisabled(true);
       setTimeout(() => setButtonDisabled(false), 500);

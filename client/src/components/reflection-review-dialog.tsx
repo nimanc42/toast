@@ -64,10 +64,8 @@ export default function ReflectionReviewDialog({
     onSuccess: (url) => {
       console.log("TTS audio URL received:", url);
       setAudioUrl(url);
-      // Auto-play when requested
-      if (autoPlayAudio) {
-        setTimeout(() => playAudio(url), 500);
-      }
+      // Don't auto-play - let user click the button
+      // Audio will be available via the Read Aloud button
     },
     onError: (error: Error) => {
       toast({
@@ -79,92 +77,65 @@ export default function ReflectionReviewDialog({
     }
   });
 
-  // Function to play audio - simplified approach
-  const playAudio = (url: string) => {
-    console.log("Attempting to play audio from URL:", url);
+  // Function to play audio - user-initiated only
+  const playAudio = async (url: string) => {
+    console.log("User initiated audio playback from URL:", url);
     
-    // Remove any existing audio element
-    const existingAudio = document.getElementById("reviewAudio");
-    if (existingAudio) {
-      existingAudio.remove();
-    }
-    
-    // Create a fresh audio element
-    const audioElement = document.createElement("audio");
-    audioElement.id = "reviewAudio";
-    audioElement.preload = "auto";
-    audioElement.crossOrigin = "anonymous";
-    
-    // Set up event listeners
-    audioElement.onended = () => {
-      console.log("Audio playback ended");
-      setIsPlayingAudio(false);
-    };
-    
-    audioElement.onerror = (e) => {
-      console.error("Audio error:", e);
-      console.error("Audio element error details:", audioElement.error);
-      setIsPlayingAudio(false);
+    try {
+      // Remove any existing audio element
+      const existingAudio = document.getElementById("reviewAudio");
+      if (existingAudio) {
+        existingAudio.remove();
+      }
       
-      toast({
-        title: "Audio playback error",
-        description: "There was an error playing the audio file. Please try again.",
-        variant: "destructive",
-      });
-    };
-    
-    audioElement.onloadeddata = () => {
-      console.log("Audio data loaded, duration:", audioElement.duration);
-      console.log("Audio readyState:", audioElement.readyState);
-      console.log("Audio networkState:", audioElement.networkState);
+      // Create a fresh audio element
+      const audioElement = new Audio(url);
+      audioElement.id = "reviewAudio";
+      audioElement.preload = "auto";
       
-      // Try to play the audio
-      audioElement.play()
-        .then(() => {
-          console.log("Audio playback started successfully");
-          setIsPlayingAudio(true);
-        })
-        .catch((error) => {
-          console.error("Audio play failed:", error);
-          console.error("Error name:", error.name);
-          console.error("Error message:", error.message);
-          setIsPlayingAudio(false);
-          
-          if (error.name === 'NotAllowedError') {
-            toast({
-              title: "Permission needed",
-              description: "Please click the play button again to allow audio playback.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Playback failed",
-              description: "Audio playback failed. Please try again.",
-              variant: "destructive",
-            });
-          }
+      // Set up event listeners
+      audioElement.onended = () => {
+        console.log("Audio playback ended");
+        setIsPlayingAudio(false);
+      };
+      
+      audioElement.onerror = (e) => {
+        console.error("Audio error:", e);
+        console.error("Audio element error details:", audioElement.error);
+        setIsPlayingAudio(false);
+        
+        toast({
+          title: "Audio playback error",
+          description: "There was an error playing the audio file. Please try again.",
+          variant: "destructive",
         });
-    };
-    
-    audioElement.oncanplaythrough = () => {
-      console.log("Audio can play through completely");
-    };
-    
-    audioElement.onprogress = () => {
-      console.log("Audio loading progress");
-    };
-    
-    audioElement.onstalled = () => {
-      console.log("Audio loading stalled");
-    };
-    
-    audioElement.onsuspend = () => {
-      console.log("Audio loading suspended");
-    };
-    
-    // Set source and append to body
-    audioElement.src = url;
-    document.body.appendChild(audioElement);
+      };
+      
+      // Try to play the audio immediately (user-initiated)
+      await audioElement.play();
+      console.log("Audio playback started successfully");
+      setIsPlayingAudio(true);
+      
+    } catch (error: any) {
+      console.error("Audio play failed:", error);
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      setIsPlayingAudio(false);
+      
+      if (error.name === 'NotAllowedError') {
+        toast({
+          title: "Permission needed",
+          description: "Please click the play button again to allow audio playback.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Playback failed",
+          description: "Audio playback failed. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // Handle reading the review aloud
@@ -193,14 +164,14 @@ export default function ReflectionReviewDialog({
     }
   }, [isOpen, noteId]);
   
-  // Automatically play audio when review content is available and autoPlayAudio is true
+  // Generate audio when review content is available and autoPlayAudio is true
   useEffect(() => {
     let autoPlayTimeout: NodeJS.Timeout | null = null;
     
     if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending && !audioUrl) {
       // Add a small delay to prevent rapid requests
       autoPlayTimeout = setTimeout(() => {
-        // Generate and play the audio
+        // Generate audio but don't auto-play (browser requires user interaction)
         ttsMutation.mutate(reviewContent);
       }, 500);
     }

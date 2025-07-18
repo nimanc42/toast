@@ -211,9 +211,11 @@ export default function ReflectionReviewDialog({
       console.log("Stopping current audio");
       const audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
       if (audioElement) {
+        // Remove event listeners to prevent conflicts
+        audioElement.onended = null;
+        audioElement.onerror = null;
         audioElement.pause();
         audioElement.currentTime = 0;
-        // Remove the audio element to fully stop it
         audioElement.remove();
       }
       setIsPlayingAudio(false);

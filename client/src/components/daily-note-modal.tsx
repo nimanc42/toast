@@ -347,7 +347,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Set review preferences if applicable
+      // Set review preferences if applicable - but only if we're actually saving a new note
       if (withReview) {
         setReviewDialogOpen(true);
         setReviewWithAudio(withAudio);
@@ -370,6 +370,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
         console.log("Saving text reflection:", trimmedText);
 
         // Save as a text reflection (not audio)
+        // IMPORTANT: Never generate audio here - only save the text
         saveMutation.mutate({ 
           content: trimmedText,
           // Note: No audioUrl property here because this is a text reflection
@@ -412,6 +413,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           console.log("Transcription result:", transcript);
 
           // Save only the transcript without the audio URL
+          // IMPORTANT: Never generate audio here - only save the transcribed text
           saveMutation.mutate({ 
             content: transcript || "[Audio reflection]", // Use transcript if available, fallback otherwise
             // Remove audioUrl to prevent UI from showing audio player
@@ -429,9 +431,9 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           console.error("Error during transcription:", error);
 
           // If transcription fails, save with default text
+          // IMPORTANT: Never generate audio here - only save the fallback text
           saveMutation.mutate({ 
             content: "[Audio reflection]",
-            audioUrl: recordingAudioUrl || "audio-url-placeholder",
             bundleTag: null
           });
 
@@ -439,7 +441,7 @@ export default function DailyNoteModal({ isOpen, onClose }: DailyNoteModalProps)
           if (!withReview) {
             toast({
               title: "Transcription unavailable",
-              description: "We couldn't transcribe your audio, but your recording has been saved.",
+              description: "We couldn't transcribe your audio, but your reflection has been saved.",
               variant: "destructive"
             });
           }

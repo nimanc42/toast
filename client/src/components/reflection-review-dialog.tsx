@@ -25,6 +25,8 @@ export default function ReflectionReviewDialog({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const { toast } = useToast();
+  // Store cached audio URLs to prevent regeneration
+  const [cachedAudioUrls, setCachedAudioUrls] = useState<Map<string, string>>(new Map());
 
   // Reset state when the dialog opens or closes
   useEffect(() => {
@@ -57,20 +59,46 @@ export default function ReflectionReviewDialog({
   // Text-to-speech mutation
   const ttsMutation = useMutation({
     mutationFn: async (text: string) => {
+      // Create a cache key based on the text content
+      const cacheKey = btoa(text).substring(0, 32); // Use base64 encoded text as cache key
+
+      // Check if we already have cached audio for this text
+      const cachedUrl = cachedAudioUrls.get(cacheKey);
+      if (cachedUrl) {
+        console.log("Using cached audio URL for review");
+        return cachedUrl;
+      }
+
+      console.log("Generating new TTS audio for review");
       const res = await apiRequest("POST", "/api/tts/review", { text });
       const data = await res.json();
-      return data.audioUrl;
+      const audioUrl = data.audioUrl;
+      // Cache the generated audio URL
+      setCachedAudioUrls(prev => new Map(prev.set(cacheKey, audioUrl)));
+
+      return audioUrl;
     },
     onSuccess: (url) => {
       setAudioUrl(url);
       playAudio(url);
     },
     onError: (error: Error) => {
-      toast({
-        title: "Voice generation failed",
-        description: "Unable to generate voice for this review. Please try again.",
-        variant: "destructive",
-      });
+      console.error("TTS error:", error);
+
+      // Handle rate limit errors specifically
+      if (error.message.includes("limit reached")) {
+        toast({
+          title: "Audio not available",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Voice generation failed",
+          description: "Unable to generate voice for this review. Please try again.",
+          variant: "destructive",
+        });
+      }
       setIsPlayingAudio(false);
     }
   });
@@ -79,19 +107,19 @@ export default function ReflectionReviewDialog({
   const playAudio = (url: string) => {
     // Create or get the audio element
     let audioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
-    
+
     if (!audioElement) {
       audioElement = document.createElement("audio");
       audioElement.id = "reviewAudio";
       audioElement.style.display = "none";
       document.body.appendChild(audioElement);
     }
-    
+
     // Set up event listeners
     audioElement.onended = () => {
       setIsPlayingAudio(false);
     };
-    
+
     audioElement.onerror = (e) => {
       setIsPlayingAudio(false);
       // Only show error if it's a real error, not just normal state changes
@@ -104,7 +132,7 @@ export default function ReflectionReviewDialog({
         });
       }
     };
-    
+
     // Set source and play
     audioElement.src = url;
     audioElement.play()
@@ -150,26 +178,26 @@ export default function ReflectionReviewDialog({
       reviewMutation.mutate(noteId);
     }
   }, [isOpen, noteId]);
-  
+
   // Automatically play audio when review content is available and autoPlayAudio is true
   useEffect(() => {
     let autoPlayTimeout: NodeJS.Timeout | null = null;
-    
-    if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending && !audioUrl) {
+
+    if (autoPlayAudio && reviewContent && !isPlayingAudio && !ttsMutation.isPending && !audioUrl && !reviewMutation.isError) {
       // Add a small delay to prevent rapid requests
       autoPlayTimeout = setTimeout(() => {
         // Generate and play the audio
         ttsMutation.mutate(reviewContent);
       }, 500);
     }
-    
+
     // Clean up timeout if component unmounts or dependencies change
     return () => {
       if (autoPlayTimeout) {
         clearTimeout(autoPlayTimeout);
       }
     };
-  }, [autoPlayAudio, reviewContent, isPlayingAudio, ttsMutation.isPending, audioUrl]);
+  }, [autoPlayAudio, reviewContent, isPlayingAudio, ttsMutation.isPending, audioUrl, reviewMutation.isError]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -177,7 +205,7 @@ export default function ReflectionReviewDialog({
         <DialogHeader>
           <DialogTitle className="text-amber-700">I hear you saying...</DialogTitle>
         </DialogHeader>
-        
+
         <div className="my-4">
           {!reviewContent && (
             <div className="flex items-center justify-center py-8">
@@ -185,7 +213,7 @@ export default function ReflectionReviewDialog({
             </div>
           )}
         </div>
-        
+
         <DialogFooter className="flex flex-col sm:flex-row gap-2">
           <Button 
             onClick={handleReadAloud}

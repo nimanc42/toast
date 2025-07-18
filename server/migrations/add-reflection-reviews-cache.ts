@@ -24,7 +24,7 @@ export async function addReflectionReviewsCache() {
 }
 
 // Run migration if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   addReflectionReviewsCache()
     .then(() => {
       console.log("Migration completed successfully");

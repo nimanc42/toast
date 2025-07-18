@@ -55,6 +55,9 @@ export default function Header() {
               <Link href="/weekly-toast" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Weekly Toast
               </Link>
+              <Link href="/about" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+                About
+              </Link>
               <Link href="/beta-feedback" className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
                 Beta Feedback
               </Link>
@@ -140,6 +143,13 @@ export default function Header() {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Weekly Toast
+              </Link>
+              <Link 
+                href="/about" 
+                className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                About
               </Link>
               <Link 
                 href="/beta-feedback" 

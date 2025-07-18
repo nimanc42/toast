@@ -17,6 +17,7 @@ import WeeklyToastPage from "@/pages/weekly-toast-page";
 import SettingsPage from "@/pages/settings-page";
 import SharedToastPage from "@/pages/shared-toast-page";
 import BetaFeedbackPage from "@/pages/beta-feedback-page";
+import AboutPage from "@/pages/about-page";
 
 import NotFound from "@/pages/not-found";
 import VerifyEmailPage from "@/pages/verify-email-page";
@@ -30,6 +31,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/weekly-toast" component={WeeklyToastPage} />
       <ProtectedRoute path="/settings" component={SettingsPage} />
+      <Route path="/about" component={AboutPage} />
       <Route path="/beta-feedback" component={BetaFeedbackPage} />
 
       <Route path="/auth" component={AuthPage} />

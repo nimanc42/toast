@@ -112,45 +112,107 @@ export default function ReflectionReviewDialog({
       audioElement = document.createElement("audio");
       audioElement.id = "reviewAudio";
       audioElement.style.display = "none";
+      audioElement.preload = "metadata";
       document.body.appendChild(audioElement);
     }
+
+    // Clean up previous event listeners
+    audioElement.onended = null;
+    audioElement.onerror = null;
+    audioElement.onloadstart = null;
+    audioElement.oncanplay = null;
 
     // Set up event listeners
     audioElement.onended = () => {
       setIsPlayingAudio(false);
     };
 
+    audioElement.onloadstart = () => {
+      console.log("Audio loading started");
+    };
+
+    audioElement.oncanplay = () => {
+      console.log("Audio can start playing");
+    };
+
     audioElement.onerror = (e) => {
+      console.error("Audio error event:", e, audioElement.error);
       setIsPlayingAudio(false);
-      // Only show error if it's a real error, not just normal state changes
-      if (audioElement.networkState === audioElement.NETWORK_NO_SOURCE || 
-          audioElement.error?.code === audioElement.error?.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+      
+      // Check for specific error types
+      if (audioElement.error) {
+        const errorCode = audioElement.error.code;
+        let errorMessage = "Audio playback failed";
+        
+        switch (errorCode) {
+          case MediaError.MEDIA_ERR_ABORTED:
+            console.log("Audio playback aborted by user");
+            return; // Don't show error for user-initiated stops
+          case MediaError.MEDIA_ERR_NETWORK:
+            errorMessage = "Network error while loading audio";
+            break;
+          case MediaError.MEDIA_ERR_DECODE:
+            errorMessage = "Audio format not supported";
+            break;
+          case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage = "Audio source not supported";
+            break;
+        }
+        
         toast({
           title: "Audio playback error",
-          description: "There was an error playing the audio.",
+          description: errorMessage,
           variant: "destructive",
         });
       }
     };
 
-    // Set source and play
+    // Reset audio element state
+    audioElement.pause();
+    audioElement.currentTime = 0;
+    
+    // Set source and load
     audioElement.src = url;
-    audioElement.play()
-      .then(() => {
-        setIsPlayingAudio(true);
-      })
-      .catch(err => {
-        console.error("Playback error:", err);
-        setIsPlayingAudio(false);
-        // Only show toast for actual playback failures, not user interaction issues
-        if (err.name !== 'NotAllowedError' && err.name !== 'AbortError') {
-          toast({
-            title: "Audio playback failed",
-            description: "Could not play the audio. Please try again.",
-            variant: "destructive",
-          });
-        }
-      });
+    audioElement.load();
+
+    // Attempt to play with better error handling
+    const playPromise = audioElement.play();
+    
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          console.log("Audio playback started successfully");
+          setIsPlayingAudio(true);
+        })
+        .catch(err => {
+          console.error("Playback promise error:", err);
+          setIsPlayingAudio(false);
+          
+          // Handle specific promise rejection reasons
+          if (err.name === 'NotAllowedError') {
+            toast({
+              title: "Audio playback blocked",
+              description: "Please interact with the page first, then try again.",
+              variant: "destructive",
+            });
+          } else if (err.name === 'AbortError') {
+            console.log("Audio playback aborted");
+            // Don't show error for aborted playback
+          } else if (err.name === 'NotSupportedError') {
+            toast({
+              title: "Audio not supported",
+              description: "Your browser doesn't support this audio format.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Audio playback failed",
+              description: "Could not play the audio. Please try again.",
+              variant: "destructive",
+            });
+          }
+        });
+    }
   };
 
   // Handle reading the review aloud

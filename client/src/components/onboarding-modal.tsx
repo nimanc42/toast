@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Loader2, Play, Volume2 } from "lucide-react";
+import PrivacyAcknowledgementModal from "./privacy-acknowledgement-modal";
 // Using the same user type from auth context
 type UserType = {
   id: number;
@@ -38,6 +39,7 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   const [selectedVoice, setSelectedVoice] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [showPrivacyModal, setShowPrivacyModal] = useState<boolean>(false);
   const { toast } = useToast();
 
   // Fetch available voices from API
@@ -81,8 +83,8 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       return preferenceData;
     },
     onSuccess: () => {
-      // Update firstLogin status to false
-      completeOnboardingMutation.mutate();
+      // Show privacy modal after voice preference is saved
+      setShowPrivacyModal(true);
     },
     onError: (error: Error) => {
       toast({
@@ -117,6 +119,12 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
       });
     },
   });
+
+  // Handle privacy acknowledgement
+  const handlePrivacyAcknowledgement = () => {
+    // Complete the onboarding process
+    completeOnboardingMutation.mutate();
+  };
 
   // Play voice sample
   const playVoiceSample = () => {
@@ -186,78 +194,86 @@ export default function OnboardingModal({ isOpen, onClose, user }: OnboardingMod
   const isPending = saveMutation.isPending || completeOnboardingMutation.isPending;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Welcome to A Toast To You!</DialogTitle>
-          <DialogDescription>
-            Select a voice that will be used to read your weekly reflections and reviews.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="my-6 space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="voice-select" className="text-sm font-medium text-gray-700">
-              Choose Your Voice
-            </label>
-            <Select value={selectedVoice} onValueChange={setSelectedVoice}>
-              <SelectTrigger id="voice-select" className="w-full">
-                <SelectValue placeholder="Select a voice" />
-              </SelectTrigger>
-              <SelectContent>
-                {voices?.map((voice: VoiceOption) => (
-                  <SelectItem key={voice.id} value={voice.id}>
-                    {voice.name} - {voice.description}
-                  </SelectItem>
-                )) || []}
-              </SelectContent>
-            </Select>
+    <>
+      <Dialog open={isOpen && !showPrivacyModal} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Welcome to A Toast To You!</DialogTitle>
+            <DialogDescription>
+              Select a voice that will be used to read your weekly reflections and reviews.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-6 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="voice-select" className="text-sm font-medium text-gray-700">
+                Choose Your Voice
+              </label>
+              <Select value={selectedVoice} onValueChange={setSelectedVoice}>
+                <SelectTrigger id="voice-select" className="w-full">
+                  <SelectValue placeholder="Select a voice" />
+                </SelectTrigger>
+                <SelectContent>
+                  {voices?.map((voice: VoiceOption) => (
+                    <SelectItem key={voice.id} value={voice.id}>
+                      {voice.name} - {voice.description}
+                    </SelectItem>
+                  )) || []}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={playVoiceSample}
+                disabled={!selectedVoice || saveMutation.isPending || voicesLoading}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                {isPlaying ? (
+                  <>
+                    <Volume2 className="mr-2 h-4 w-4" />
+                    Stop Preview
+                  </>
+                ) : (
+                  <>
+                    <Play className="mr-2 h-4 w-4" />
+                    Preview Voice
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-2">
+              You can change your voice choice at any time in your dashboard.
+            </p>
           </div>
           
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={playVoiceSample}
-              disabled={!selectedVoice || saveMutation.isPending || voicesLoading}
-              variant="outline"
-              size="sm"
+          <DialogFooter>
+            <Button 
+              onClick={handleContinue}
+              disabled={!selectedVoice || isPending} 
               className="w-full"
             >
-              {isPlaying ? (
+              {isPending ? (
                 <>
-                  <Volume2 className="mr-2 h-4 w-4" />
-                  Stop Preview
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
                 </>
               ) : (
-                <>
-                  <Play className="mr-2 h-4 w-4" />
-                  Preview Voice
-                </>
+                "Continue"
               )}
             </Button>
-          </div>
-          
-          <p className="text-xs text-gray-500 mt-2">
-            You can change your voice choice at any time in your dashboard.
-          </p>
-        </div>
-        
-        <DialogFooter>
-          <Button 
-            onClick={handleContinue}
-            disabled={!selectedVoice || isPending} 
-            className="w-full"
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Continue"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <PrivacyAcknowledgementModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        onAcknowledge={handlePrivacyAcknowledgement}
+      />
+    </>
   );
 }

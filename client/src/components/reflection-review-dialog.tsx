@@ -212,16 +212,24 @@ export default function ReflectionReviewDialog({
       const existingAudioElement = document.getElementById("reviewAudio") as HTMLAudioElement;
       if (existingAudioElement) {
         console.log("Stopping and removing existing audio element");
-        existingAudioElement.onended = null;
-        existingAudioElement.onerror = null;
-        existingAudioElement.pause();
-        existingAudioElement.currentTime = 0;
+        // Clear all event listeners first
         existingAudioElement.onended = null;
         existingAudioElement.onerror = null;
         existingAudioElement.onloadstart = null;
         existingAudioElement.oncanplay = null;
         existingAudioElement.oncanplaythrough = null;
+        
+        // Pause the audio
+        existingAudioElement.pause();
+        
+        // Reset to beginning
+        existingAudioElement.currentTime = 0;
+        
+        // Clear the source to stop any ongoing loading/streaming
         existingAudioElement.src = "";
+        existingAudioElement.load(); // This forces the audio element to stop completely
+        
+        // Remove from DOM
         existingAudioElement.remove();
       }
       setIsPlayingAudio(false);

@@ -212,7 +212,6 @@ export default function ReflectionReviewDialog({
               <div className="text-center text-gray-600">
                 <Volume2 className="h-12 w-12 mx-auto mb-4 text-amber-500" />
                 <p>Your reflection summary is ready to listen to</p>
-                <p className="text-sm text-gray-500 mt-2">Audio only - no text will be shown</p>
               </div>
             </div>
           )}

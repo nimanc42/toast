@@ -216,6 +216,12 @@ export default function ReflectionReviewDialog({
         existingAudioElement.onerror = null;
         existingAudioElement.pause();
         existingAudioElement.currentTime = 0;
+        existingAudioElement.onended = null;
+        existingAudioElement.onerror = null;
+        existingAudioElement.onloadstart = null;
+        existingAudioElement.oncanplay = null;
+        existingAudioElement.oncanplaythrough = null;
+        existingAudioElement.src = "";
         existingAudioElement.remove();
       }
       setIsPlayingAudio(false);

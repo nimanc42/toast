@@ -22,18 +22,39 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
   useEffect(() => {
     if (!audioUrl) return;
     
+    console.log('Initializing audio player with URL:', audioUrl);
+    
     // Create audio element if one doesn't exist
     if (!audioRef.current) {
-      audioRef.current = new Audio(audioUrl);
+      audioRef.current = new Audio();
+      
+      // Add error event listener
+      audioRef.current.addEventListener("error", (e) => {
+        console.error('Audio element error:', e);
+        console.error('Audio error details:', audioRef.current?.error);
+      });
+      
+      // Add load event listeners
+      audioRef.current.addEventListener("loadstart", () => {
+        console.log('Audio loading started');
+      });
+      
+      audioRef.current.addEventListener("loadeddata", () => {
+        console.log('Audio data loaded');
+      });
+      
+      audioRef.current.addEventListener("canplay", () => {
+        console.log('Audio can start playing');
+      });
       
       // Event listeners
       audioRef.current.addEventListener("timeupdate", updateProgress);
       audioRef.current.addEventListener("ended", handleEnd);
       audioRef.current.addEventListener("progress", updateBuffer);
-    } else {
-      // Update source if changed
-      audioRef.current.src = audioUrl;
     }
+    
+    // Update source
+    audioRef.current.src = audioUrl;
     
     return () => {
       if (audioRef.current) {
@@ -41,6 +62,10 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
         audioRef.current.removeEventListener("timeupdate", updateProgress);
         audioRef.current.removeEventListener("ended", handleEnd);
         audioRef.current.removeEventListener("progress", updateBuffer);
+        audioRef.current.removeEventListener("error", () => {});
+        audioRef.current.removeEventListener("loadstart", () => {});
+        audioRef.current.removeEventListener("loadeddata", () => {});
+        audioRef.current.removeEventListener("canplay", () => {});
       }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -49,7 +74,7 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
   }, [audioUrl]);
   
   // Handle play/pause
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     if (!audioRef.current) return;
     
     if (isPlaying) {
@@ -58,16 +83,39 @@ export default function AudioPlayer({ audioUrl, title, duration = "0:00" }: Audi
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      setIsPlaying(false);
     } else {
-      audioRef.current.play();
-      intervalRef.current = window.setInterval(() => {
-        if (audioRef.current) {
-          setCurrentTime(audioRef.current.currentTime);
+      try {
+        console.log('Attempting to play audio:', audioUrl);
+        await audioRef.current.play();
+        intervalRef.current = window.setInterval(() => {
+          if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+          }
+        }, 1000);
+        setIsPlaying(true);
+        console.log('Audio playback started successfully');
+      } catch (error: any) {
+        console.error('Audio playback error:', error);
+        console.error('Audio URL:', audioUrl);
+        console.error('Audio element state:', {
+          readyState: audioRef.current.readyState,
+          networkState: audioRef.current.networkState,
+          error: audioRef.current.error
+        });
+        
+        // More specific error handling
+        if (error.name === 'NotAllowedError') {
+          console.warn('Audio play blocked by browser - user interaction required');
+        } else if (error.name === 'NotSupportedError') {
+          console.warn('Audio format not supported');
+        } else {
+          console.warn('General audio playback error');
         }
-      }, 1000);
+        
+        setIsPlaying(false);
+      }
     }
-    
-    setIsPlaying(!isPlaying);
   };
   
   // Handle seeking

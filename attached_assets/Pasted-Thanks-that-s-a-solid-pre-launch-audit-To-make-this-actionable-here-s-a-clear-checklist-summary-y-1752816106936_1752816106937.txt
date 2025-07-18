@@ -1,0 +1,77 @@
+Thanks, that’s a solid pre-launch audit. To make this actionable, here’s a clear checklist summary you can copy, track, and send back to your developer or use yourself. I’ve added a few clarifying notes and suggestions:
+
+⸻
+
+✅ Final Pre-Launch Checklist for “A Toast” App
+
+🔧 1. Environment Variables
+
+Make sure the following are set up in the production environment:
+	•	DATABASE_URL – PostgreSQL
+	•	SUPABASE_URL and SUPABASE_ANON_KEY
+	•	OPENAI_API_KEY
+	•	ELEVENLABS_API_KEY
+	•	EMAIL_API_KEY (Resend or SendGrid)
+	•	Any JWT secrets or session config required
+
+📦 2. Database
+	•	Run: npm run db:push to ensure all schema changes are applied
+	•	Confirm new fields (like dailyReminderHour) exist in production database
+
+🔐 3. Authentication
+	•	Test sign up, login, and password recovery flows
+	•	If using OAuth later (e.g. Google, Apple), test redirects
+	•	Ensure privacy/anon promise holds — no personal data is visible in backend or logs
+
+🛠️ 4. Testing Mode
+	•	Confirm testingMode: false in server/config.ts
+
+🌐 5. WebSockets
+	•	Decide: Are WebSockets needed now? If not, clean up or comment out unused WebSocket code to reduce complexity.
+
+🛑 6. Error Handling & Security
+	•	Add a global error handler to catch and log backend crashes (in server/index.ts)
+	•	Implement production security headers:
+	•	Content-Security-Policy
+	•	X-Frame-Options
+	•	X-XSS-Protection
+	•	Referrer-Policy
+	•	Permissions-Policy
+
+🚫 7. Rate Limiting
+	•	Add middleware for API rate limiting to prevent abuse (e.g. express-rate-limit or Supabase policies)
+
+🧪 8. Toast & Reflection Logic
+	•	Confirm daily/weekly toast generation triggers correctly
+	•	Ensure max reflections per day/week limits are enforced
+	•	Audio is not regenerated unnecessarily
+	•	Reflections without “listen” request don’t trigger ElevenLabs
+
+💌 9. Email Notifications
+	•	Daily reminder + toast notification tested using:
+	•	POST /api/admin/run-daily-reminders
+	•	Emails include correct links and time zones
+	•	Ensure unsubscribe / preferences are respected
+
+📤 10. File Storage & Audio Access
+	•	Confirm:
+	•	Audio files are saved (not re-generated)
+	•	Secure but accessible links (Supabase storage or expiring URLs)
+	•	Users can play audio directly from weekly toast emails
+
+📊 11. Health Check
+	•	Add a simple endpoint like:
+
+app.get("/health", (_, res) => res.send("ok"));
+
+To allow uptime monitors like UptimeRobot or health ping on Replit.
+
+🚀 12. Deployment
+	•	Push to Replit deployment branch
+	•	Confirm cron jobs run (hourly) in production
+	•	Watch logs for errors on deployment
+	•	Add final “About A Toast” tab with story
+
+⸻
+
+Let me know if you’d like this turned into a markdown file, Trello checklist, or Notion doc.

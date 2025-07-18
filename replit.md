@@ -120,11 +120,24 @@ ELEVENLABS_API_KEY=...
 
 ### Monitoring and Logging
 - Structured logging for API requests and errors
-- Rate limiting and abuse protection
+- Global error handler with stack trace logging
+- Rate limiting and abuse protection (100 req/15min general, 5 req/15min auth)
+- Health check endpoint at `/health` for uptime monitoring
 - WebSocket support for real-time features (currently disabled)
 - Testing mode for development and debugging
 
+### Security Features
+- Helmet.js security headers (CSP, XSS protection, frame options)
+- Express rate limiting for API abuse prevention
+- JWT token-based authentication with secure HTTP-only cookies
+- Database connection validation and error handling
+- Input validation using Zod schemas
+
 ## Changelog
+- July 18, 2025. **Pre-Launch Security Enhancement**: Added comprehensive security measures including Helmet.js security headers, rate limiting (100 req/15min general, 5 req/15min auth), global error handling with logging, and `/health` endpoint for monitoring
+- July 18, 2025. **UI Cleanup**: Removed all buttons from reflection entry cards except delete button for simplified user experience
+- July 18, 2025. **About Page**: Added comprehensive "About A Toast" page with story, features, values, and call-to-action
+- July 18, 2025. **Production Readiness**: Implemented full pre-launch checklist including database migration, security headers, error handling, and monitoring endpoints
 - July 02, 2025. Set Australia/Perth as default timezone for all users (new and existing)
 - July 02, 2025. Fixed ElevenLabs credit detection system to correctly show available credits
 - July 02, 2025. Initial setup

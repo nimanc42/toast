@@ -1,96 +1,150 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Helmet } from "react-helmet";
-import Header from "@/components/header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Heart, Users, Calendar, Sparkles } from "lucide-react";
 
 export default function AboutPage() {
-  const { user } = useAuth();
-
   return (
-    <>
-      <Helmet>
-        <title>About A Toast - A Toast To You</title>
-        <meta name="description" content="Learn about A Toast - a gentle daily ritual designed to help you reflect on what's good and celebrate yourself with personalized weekly toasts." />
-      </Helmet>
-      
-      <Header />
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-50 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                🥂 About A Toast
-              </h1>
-            </div>
-
-            {/* Main Content */}
-            <div className="prose prose-lg max-w-none text-gray-700 leading-relaxed">
-              <p className="text-xl mb-6">
-                Humans are brilliant, but let's be honest, we're naturally a bit… negative.
-              </p>
-
-              <p className="mb-6">
-                We tend to dwell on what went wrong, what we could have done better, and what's still left undone. That's not a flaw it's survival instinct. But in a world where the pace is fast and the criticism louder than kindness, sometimes we forget to build ourselves up.
-              </p>
-
-              <p className="mb-6">
-                <strong>That's where A Toast comes in.</strong>
-              </p>
-
-              <p className="mb-6">
-                A Toast is a gentle daily ritual designed to help you reflect on what's good. Whether it's something small you did well, something kind someone said, or just a moment you want to remember it all adds up. At the end of the week, you'll get a personalised toast. A celebration of you, in your chosen voice.
-              </p>
-
-              {/* Why's it called A Toast section */}
-              <div className="bg-amber-50 rounded-lg p-6 mb-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  Why's it called A Toast?
-                </h2>
-                <ul className="space-y-3 text-gray-700">
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-3 text-lg">•</span>
-                    <span>Because like the best speeches at weddings and parties, it's about lifting someone up with kind words and this time, that someone is you.</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-3 text-lg">•</span>
-                    <span>If life is our daily bread, then toast is what happens when you warm it up and cover it in butter.</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-amber-500 mr-3 text-lg">•</span>
-                    <span>Because it's rare that we hear good things about ourselves. But when we do, it sticks. It heals. And it matters.</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Final section */}
-              <div className="text-center bg-orange-50 rounded-lg p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                  And also…
-                </h2>
-                <p className="mb-3">
-                  We just really wanted to see a piece of toast holding a champagne glass and doing a toast.
-                </p>
-                <p className="text-gray-600 italic">
-                  I bet you never thought you'd see that when you woke up this morning.
-                </p>
-              </div>
-            </div>
-
-            {/* Call to Action */}
-            {!user && (
-              <div className="mt-8 text-center">
-                <p className="text-gray-600 mb-4">Ready to start your journey of self-celebration?</p>
-                <a 
-                  href="/auth" 
-                  className="inline-block bg-amber-500 hover:bg-amber-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors duration-200"
-                >
-                  Get Started
-                </a>
-              </div>
-            )}
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          
+          {/* Hero Section */}
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              About A Toast
+            </h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Your personal companion for daily reflection and weekly celebration
+            </p>
           </div>
+
+          {/* Story Section */}
+          <Card className="bg-white/80 backdrop-blur-sm border-amber-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Sparkles className="h-6 w-6 text-amber-600" />
+                Our Story
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-lg max-w-none">
+              <p className="text-gray-700 leading-relaxed">
+                "A Toast" was born from a simple belief: that our daily thoughts and experiences 
+                deserve celebration. In a world that often focuses on what went wrong, we wanted 
+                to create a space where you could capture what went right - and be reminded of 
+                it when you need it most.
+              </p>
+              
+              <p className="text-gray-700 leading-relaxed">
+                Every week, our AI companion thoughtfully reviews your reflections and creates 
+                a personalized audio toast - a warm, encouraging message that celebrates your 
+                insights, growth, and unique perspective. It's like having a wise friend who 
+                remembers all the good moments and reminds you of your strength.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="bg-white/80 backdrop-blur-sm border-amber-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-500" />
+                  Daily Reflection
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Capture your thoughts, experiences, and insights through simple text 
+                  or voice recordings. Create a personal archive of your journey.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-amber-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  Weekly Toasts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Receive personalized audio messages that celebrate your week's 
+                  reflections. Choose from different voices and styles that resonate with you.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-amber-200">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-green-500" />
+                  Community
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Connect with friends, share meaningful toasts, and support each other's 
+                  growth journey while maintaining privacy and authenticity.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Values Section */}
+          <Card className="bg-white/80 backdrop-blur-sm border-amber-200">
+            <CardHeader>
+              <CardTitle className="text-2xl">Our Values</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-gray-900">Privacy First</h3>
+                  <p className="text-gray-600">
+                    Your reflections are private by default. We believe in creating a safe 
+                    space for authentic self-expression without judgment.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-gray-900">Authentic Growth</h3>
+                  <p className="text-gray-600">
+                    We celebrate real experiences and genuine insights, not perfection. 
+                    Every reflection matters, no matter how small.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-gray-900">Meaningful Connection</h3>
+                  <p className="text-gray-600">
+                    Technology should bring us closer to ourselves and each other. 
+                    Our AI is designed to understand and celebrate your unique journey.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-gray-900">Joyful Reminder</h3>
+                  <p className="text-gray-600">
+                    Life is full of beautiful moments worth celebrating. We help you 
+                    remember and appreciate the good in your everyday experiences.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Call to Action */}
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Ready to Start Your Journey?
+            </h2>
+            <p className="text-gray-600 max-w-xl mx-auto">
+              Begin capturing your daily reflections today and receive your first 
+              personalized toast this week. Your story matters, and we're here to help you celebrate it.
+            </p>
+          </div>
+
         </div>
       </div>
-    </>
+    </div>
   );
 }

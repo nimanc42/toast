@@ -41,26 +41,26 @@ export default function HomePage() {
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   // Fetch available voices from API
   const { data: voiceOptions } = useQuery<VoiceOption[]>({
     queryKey: ["/api/voices"]
   });
-  
-  
+
+
 
   // Fetch voice preference
   const { data: voicePreference } = useQuery<VoicePreference>({
     queryKey: ["/api/preferences"]
   });
-  
+
   // Update voice preference when preferences load
   useEffect(() => {
     if (voicePreference && voicePreference.voiceStyle) {
       setSelectedVoice(voicePreference.voiceStyle);
     }
   }, [voicePreference]);
-  
+
   // Update voice preference mutation
   const updateVoiceMutation = useMutation({
     mutationFn: async (voice: string) => {
@@ -81,13 +81,13 @@ export default function HomePage() {
       });
     }
   });
-  
+
   // Handle voice selection - only updates local state, doesn't call API
   const handleVoiceChange = (value: string) => {
     setSelectedVoice(value);
     // Voice preference will be saved when user navigates away or clicks save
   };
-  
+
   // Play a voice preview using the sample MP3 files
   const playVoicePreview = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -118,7 +118,7 @@ export default function HomePage() {
     audio.oncanplaythrough = () => {
       console.log('Sample loaded successfully:', selectedVoiceObj.name);
     };
-    
+
     audio.onerror = (e) => {
       console.error('Audio load error:', e, 'for voice:', selectedVoiceObj.name);
       setPreviewPlaying(false);
@@ -142,7 +142,7 @@ export default function HomePage() {
     } catch (err: any) {
       console.error('Audio playback error:', err);
       setPreviewPlaying(false);
-      
+
       // More specific error handling
       if (err.name === 'NotAllowedError') {
         toast({
@@ -165,7 +165,7 @@ export default function HomePage() {
       }
     }
   };
-  
+
   // Helper to get voice name for display in messages
   const getVoiceName = (voiceId: string): string => {
     const voice = voiceOptions?.find(v => v.id === voiceId);
@@ -206,7 +206,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      
+
       <main className="flex-grow bg-gray-50">
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
@@ -282,7 +282,7 @@ export default function HomePage() {
                       </>
                     )}
                   </p>
-                  
+
                   {/* Circular progress indicator */}
                   <div className="relative h-24 w-24 mb-6">
                     <svg className="h-full w-full" viewBox="0 0 100 100">
@@ -305,14 +305,14 @@ export default function HomePage() {
                       </text>
                     </svg>
                   </div>
-                  
+
                   {/* Voice Preference Section */}
                   <div className="mb-6 bg-amber-50 rounded-lg p-4 max-w-md mx-auto">
                     <div className="flex flex-col items-start mb-3">
                       <h3 className="text-base font-medium mb-1 text-amber-800">Voice Preference</h3>
                       <p className="text-sm text-amber-700 opacity-80">Choose your preferred narrator voice</p>
                     </div>
-                    
+
                     <div className="flex flex-col gap-3">
                       {/* Hidden audio element for voice preview */}
                       <audio
@@ -323,7 +323,7 @@ export default function HomePage() {
                         onEnded={() => setPreviewPlaying(false)}
                         onError={() => setPreviewPlaying(false)}
                       ></audio>
-                      
+
                       <div className="flex flex-col sm:flex-row gap-2">
                         <Select
                           value={selectedVoice}
@@ -340,7 +340,7 @@ export default function HomePage() {
                             )) || []}
                           </SelectContent>
                         </Select>
-                        
+
                         <div className="flex gap-2">
                           <Button 
                             onClick={(e) => playVoicePreview(e)} 
@@ -360,7 +360,7 @@ export default function HomePage() {
                               </>
                             )}
                           </Button>
-                          
+
                           <Button
                             onClick={() => updateVoiceMutation.mutate(selectedVoice)}
                             disabled={updateVoiceMutation.isPending}
@@ -383,7 +383,7 @@ export default function HomePage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <Button 
                       variant="default" 
                       className="bg-amber-500 text-white hover:bg-amber-600"
@@ -402,12 +402,12 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-      
+
       <DailyNoteModal 
         isOpen={isNoteModalOpen} 
         onClose={() => setIsNoteModalOpen(false)} 
       />
-      
+
       <Footer />
     </div>
   );

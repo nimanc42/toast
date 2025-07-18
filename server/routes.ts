@@ -257,24 +257,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Audio transcription routes
   app.use('/api/transcribe', transcriptionRoutes);
 
-  // Notes endpoints
-  app.post("/api/notes", ensureAuthenticated, async (req, res) => {
-    try {
-      console.log("Creating note, user:", req.user);
-      console.log("Request body:", req.body);
+  // Create note endpoint
+  app.post('/api/notes', ensureAuthenticated, async (req, res) => {
+    const userId = req.user!.id;
+    const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
 
-      const userId = req.user!.id;
-      const validatedData = insertNoteSchema.parse({
-        ...req.body,
-        userId,
-        // TODO (BundledAway): activate bundleTag feature when UI is ready
-        bundleTag: req.body.bundleTag || null
+    console.log("Creating note, user:", req.user);
+    console.log("Request body:", req.body);
+
+    const insertNoteSchema = z.object({
+        content: z.string().min(1, "Content is required"),
+        audioUrl: z.string().optional(),
+        bundleTag: z.string().nullable().optional()
       });
+
+    const result = insertNoteSchema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({ 
+        error: "Invalid request data",
+        details: result.error.issues 
+      });
+    }
+
+    // Check daily and weekly limits
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(today);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    try {
+      // Get today's notes count
+      const todayNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfDay, endOfDay);
+      if (todayNotes.length >= 2) {
+        return res.status(400).json({ 
+          error: "Daily limit reached",
+          message: "You can only create 2 reflections per day. Try again tomorrow!" 
+        });
+      }
+
+      // Get this week's notes count
+      const weekNotes = await storage.getNotesByUserIdAndDateRange(userId, startOfWeek, endOfWeek);
+      if (weekNotes.length >= 7) {
+        return res.status(400).json({ 
+          error: "Weekly limit reached",
+          message: "You can only create 7 reflections per week. Try again next week!" 
+        });
+      }
+    } catch (error) {
+      console.error("Error checking reflection limits:", error);
+      return res.status(500).json({ error: "Failed to check reflection limits" });
+    }
+
+    const validatedData = {
+      userId,
+      content: result.data.content,
+      audioUrl: result.data.audioUrl || null,
+      bundleTag: result.data.bundleTag || null
+    };
+
+    console.log("Validated data:", validatedData);
+
+    try {
+      let note;
 
       // Check if in testing mode - skip database writes
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
 
-      let note;
       let userBadge = null;
 
       if (isTestingMode) {

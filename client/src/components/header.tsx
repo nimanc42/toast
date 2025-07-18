@@ -17,7 +17,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logoutMutation } = useAuth();
   const [_, navigate] = useLocation();
-  
+
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
@@ -25,7 +25,7 @@ export default function Header() {
       }
     });
   };
-  
+
   // Get user's initials for avatar
   const getInitials = () => {
     if (!user?.name) return "?";
@@ -35,7 +35,7 @@ export default function Header() {
       .toUpperCase()
       .substring(0, 2);
   };
-  
+
   return (
     <header className="bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

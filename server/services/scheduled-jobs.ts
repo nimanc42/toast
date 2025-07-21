@@ -41,7 +41,6 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
       .where(
         and(
           eq(toasts.userId, userId),
-          eq(toasts.type, 'weekly'),
           sql`${toasts.createdAt} >= ${oneDayAgo} AND ${toasts.createdAt} <= ${now.toJSDate()}`
         )
       );
@@ -96,8 +95,8 @@ async function processDailyReminderEmails() {
         }
 
         usersChecked++;
-        const userTimezone = userRow.timezone || 'UTC';
-        const userReminderHour = userRow.daily_reminder_hour || 9;
+        const userTimezone = String(userRow.timezone || 'UTC');
+        const userReminderHour = Number(userRow.daily_reminder_hour || 9);
 
         // Convert current UTC time to user's timezone
         const userLocalTime = now.setZone(userTimezone);
@@ -105,12 +104,12 @@ async function processDailyReminderEmails() {
 
         // Check if it's the user's reminder time
         if (userLocalHour === userReminderHour) {
-          const userName = userRow.name || 'there';
+          const userName = String(userRow.name || 'there');
           const userEmail = userRow.email;
 
           if (userEmail) {
-            logWithTimestamp(`Sending daily reminder to ${userEmail} (local time: ${userLocalTime.toFormat('HH:mm')} in ${userTimezone})`);
-            const success = await sendDailyReflectionReminder(userEmail, userName);
+            logWithTimestamp(`Sending daily reminder to ${String(userEmail)} (local time: ${userLocalTime.toFormat('HH:mm')} in ${userTimezone})`);
+            const success = await sendDailyReflectionReminder(String(userEmail), userName);
 
             if (success) {
               emailsSent++;

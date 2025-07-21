@@ -2,7 +2,6 @@
 import express from "express";
 import { ensureAuthenticated } from "../auth";
 import { storage } from "../storage";
-import { log } from "../config";
 
 const router = express.Router();
 
@@ -26,7 +25,7 @@ router.get('/feedback', ensureAuthenticated, ensureAdmin, async (req, res) => {
     const feedback = await storage.getAllFeedback();
     res.json(feedback);
   } catch (error) {
-    log(`Error fetching feedback: ${error}`, 'routes:admin');
+    console.error(`Error fetching feedback: ${error}`);
     res.status(500).json({ error: 'Failed to fetch feedback' });
   }
 });

@@ -260,8 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Notes endpoints
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
-      console.log("Creating note, user:", req.user);
-      console.log("Request body:", req.body);
+      console.log("Creating note for user:", req.user?.id);
 
       const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
@@ -294,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         (req.session as any).testingNotes.push(note);
 
-        console.log("[Testing Mode] Adding note with content:", note.content ? note.content.substring(0, 50) + "..." : "No content");
+        console.log(`[Testing Mode] Note ${note.id} created for user ${userId}`);
 
         // Save session
         req.session.save((err) => {
@@ -303,12 +302,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             const notes = (req.session as any).testingNotes || [];
             console.log(`[Testing Mode] Stored note in session, current count: ${notes.length}`);
-            console.log(`[Testing Mode] Notes in session: ${JSON.stringify(notes.map((n: any) => ({ id: n.id, content: n.content.substring(0, 30) + "..." })))}`);
+            console.log(`[Testing Mode] Note IDs in session: ${notes.map((n: any) => n.id).join(', ')}`);
           }
         });
 
         // Log the user data for debugging
-        console.log("Testing user:", req.user);
+        console.log("Testing user ID:", req.user?.id);
 
         // Create a mock first note badge for testing
         userBadge = {
@@ -328,9 +327,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         };
       } else {
-        console.log("Validated data:", validatedData);
+        console.log(`Creating note for user ${userId}`);
         note = await storage.createNote(validatedData);
-        console.log("Note created:", note);
+        console.log(`Note ${note.id} created for user ${note.userId}`);
 
         // Check if this is the user's first note and award badge if it is
         try {

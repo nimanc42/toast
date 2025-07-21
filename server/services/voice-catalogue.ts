@@ -12,7 +12,7 @@ export interface VoiceCatalogueEntry {
 // CENTRALIZED VOICE MAPPING: These IDs must match elevenlabs.ts exactly
 const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoice: string; elevenLabsId: string }> = {
   'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'ZF6FPAbjXT4488VcRRnw' },
-  'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: 'onwK6e5Y_E_1OucFyMDw' },
+  'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: '21m00Tcm4TlvDq8ikWAM' },
   'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx', elevenLabsId: 'zcAOhNBS3c14rBihAFp1' },
   'grandpa': { name: 'Grandpa Spuds Oxley', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },
   'maeve': { name: 'Maeve', description: 'Gentle and soothing', ttsVoice: 'shimmer', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },

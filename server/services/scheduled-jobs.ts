@@ -24,10 +24,10 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
   try {
     // Get the current time in the user's timezone
     const now = DateTime.now().setZone(timezone || 'UTC');
-    
+
     // Get the current day of week in the user's timezone (0-6, where 0 is Sunday)
     const currentDayOfWeek = now.weekday === 7 ? 0 : now.weekday; // Convert Luxon's 7 (Sunday) to 0
-    
+
     // Only proceed if today is the user's preferred toast day
     if (currentDayOfWeek !== preferredDay) {
       return false;
@@ -60,7 +60,7 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
 async function processDailyReminderEmails() {
   try {
     logWithTimestamp('Starting daily reminder email job');
-    
+
     // Skip in testing mode
     if (CONFIG.TESTING_MODE) {
       logWithTimestamp('Skipping daily reminder emails in testing mode');
@@ -70,7 +70,7 @@ async function processDailyReminderEmails() {
     // Get current UTC time
     const now = DateTime.now().setZone('UTC');
     const currentUtcHour = now.hour;
-    
+
     logWithTimestamp(`Current UTC hour: ${currentUtcHour}`);
 
     // Get all users who have daily reminders enabled
@@ -80,13 +80,13 @@ async function processDailyReminderEmails() {
       JOIN voice_preferences vp ON u.id = vp.user_id
       WHERE vp.daily_reminder = true
     `);
-    
+
     logWithTimestamp(`Found ${usersWithReminders.rows.length} users with daily reminders enabled`);
-    
+
     let emailsSent = 0;
     let emailErrors = 0;
     let usersChecked = 0;
-    
+
     // Check each user's local time
     for (const userRow of usersWithReminders.rows) {
       try {
@@ -94,24 +94,24 @@ async function processDailyReminderEmails() {
         if (userRow.id === CONFIG.TEST_USER?.id) {
           continue;
         }
-        
+
         usersChecked++;
         const userTimezone = userRow.timezone || 'UTC';
         const userReminderHour = userRow.daily_reminder_hour || 9;
-        
+
         // Convert current UTC time to user's timezone
         const userLocalTime = now.setZone(userTimezone);
         const userLocalHour = userLocalTime.hour;
-        
+
         // Check if it's the user's reminder time
         if (userLocalHour === userReminderHour) {
           const userName = userRow.name || 'there';
           const userEmail = userRow.email;
-          
+
           if (userEmail) {
             logWithTimestamp(`Sending daily reminder to ${userEmail} (local time: ${userLocalTime.toFormat('HH:mm')} in ${userTimezone})`);
             const success = await sendDailyReflectionReminder(userEmail, userName);
-            
+
             if (success) {
               emailsSent++;
             } else {
@@ -124,7 +124,7 @@ async function processDailyReminderEmails() {
         logWithTimestamp(`Error processing daily reminder for user ${userRow.id}:`, error);
       }
     }
-    
+
     logWithTimestamp(`Daily reminder check complete. Checked ${usersChecked} users, sent ${emailsSent} emails with ${emailErrors} errors`);
   } catch (error) {
     logWithTimestamp('Error in daily reminder email job:', error);
@@ -137,7 +137,7 @@ async function processDailyReminderEmails() {
 async function processAutomaticToastGeneration() {
   try {
     logWithTimestamp('Starting automatic toast generation job');
-    
+
     // Skip in testing mode
     if (CONFIG.TESTING_MODE) {
       logWithTimestamp('Skipping automatic toast generation in testing mode');
@@ -147,13 +147,13 @@ async function processAutomaticToastGeneration() {
     // Get all users from the database
     const allUsers = await db.select()
       .from(users);
-    
+
     logWithTimestamp(`Found ${allUsers.length} users to process`);
-    
+
     // Track statistics
     let toastsGenerated = 0;
     let userErrors = 0;
-    
+
     // Process each user
     for (const user of allUsers) {
       try {
@@ -161,24 +161,24 @@ async function processAutomaticToastGeneration() {
         if (user.id === CONFIG.TEST_USER?.id) {
           continue;
         }
-        
+
         // Get user preferences
         const timezone = user.timezone || 'UTC';
         const preferredDay = user.weeklyToastDay ?? 0; // Default to Sunday (0)
-        
+
         // Check if we should generate a toast for this user
         const shouldGenerate = await shouldGenerateToastForUser(user.id, timezone, preferredDay);
-        
+
         if (shouldGenerate) {
           logWithTimestamp(`Generating toast for user ${user.id} (${user.name})`);
-          
+
           // Generate toast for the user
           const generatedToast = await generateWeeklyToast(user.id, user.name);
-          
+
           if (generatedToast) {
             toastsGenerated++;
             logWithTimestamp(`Successfully generated toast for user ${user.id}`);
-            
+
             // Here you would add code to send notifications if implemented
           }
         }
@@ -188,7 +188,7 @@ async function processAutomaticToastGeneration() {
         // Continue with next user even if this one fails
       }
     }
-    
+
     logWithTimestamp(`Automatic toast generation complete. Generated ${toastsGenerated} toasts with ${userErrors} errors`);
   } catch (error) {
     logWithTimestamp('Error in automatic toast generation job:', error);
@@ -200,7 +200,7 @@ async function processAutomaticToastGeneration() {
  */
 export function initializeScheduledJobs() {
   logWithTimestamp('Initializing scheduled jobs');
-  
+
   // Schedule toast generation to run every 15 minutes
   // This ensures timely generation while accounting for different timezones
   cron.schedule('*/15 * * * *', async () => {
@@ -210,7 +210,7 @@ export function initializeScheduledJobs() {
       logWithTimestamp('Unhandled error in toast generation job:', error);
     }
   });
-  
+
   // Schedule daily reminder emails to run every hour
   // This checks each user's local time and sends reminders at their preferred hour
   cron.schedule('0 * * * *', async () => {
@@ -220,7 +220,7 @@ export function initializeScheduledJobs() {
       logWithTimestamp('Unhandled error in daily reminder job:', error);
     }
   });
-  
+
   logWithTimestamp('Scheduled jobs initialized successfully');
 }
 

@@ -430,31 +430,43 @@ export async function ensureAuthenticated(req: Request, res: Response, next: Nex
         // Get the user from the database
         const user = await storage.getUser(userId);
         if (user) {
+          // Remove password from user object
+          const { password: _, ...userWithoutPassword } = user;
           // Attach the user to the request
-          req.user = user;
+          req.user = userWithoutPassword as Express.User;
           
-          // Auto-login this user to establish a session as well (optional but helps with consistency)
-          req.login(user, (err) => {
+          // Auto-login this user to establish a session as well
+          req.login(userWithoutPassword as Express.User, (err) => {
             if (err) {
               console.error("Error establishing session from JWT:", err);
               // Still allow the request to proceed even if session creation fails
             }
             return next();
           });
+          return; // Important: return here to prevent further execution
         } else {
           console.log("JWT token valid but user not found:", userId);
-          res.status(401).json({ message: "Authentication required" });
+          return res.status(401).json({ 
+            message: "User not found", 
+            code: "USER_NOT_FOUND",
+            clearToken: true 
+          });
         }
-        return;
       } else {
         console.log("Invalid JWT token");
-        res.status(401).json({ message: "Invalid authentication token" });
-        return;
+        return res.status(401).json({ 
+          message: "Invalid authentication token",
+          code: "INVALID_TOKEN", 
+          clearToken: true 
+        });
       }
     } catch (error) {
       console.error("JWT verification error:", error);
-      res.status(401).json({ message: "Invalid authentication token" });
-      return;
+      return res.status(401).json({ 
+        message: "Invalid authentication token",
+        code: "TOKEN_VERIFICATION_ERROR",
+        clearToken: true 
+      });
     }
   }
   

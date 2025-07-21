@@ -11,7 +11,7 @@ async function throwIfResNotOk(res: Response) {
         localStorage.removeItem('authToken');
       }
     }
-    
+
     const text = (await res.text()) || res.statusText;
     throw new Error(`${res.status}: ${text}`);
   }
@@ -24,7 +24,7 @@ export async function apiRequest(
 ): Promise<Response> {
   // Get auth token from localStorage if it exists
   const token = localStorage.getItem('authToken');
-  
+
   // Set up headers with auth token if available
   const headers: Record<string, string> = {};
   if (data) {
@@ -34,7 +34,7 @@ export async function apiRequest(
     console.log(`Including auth token in ${method} request to ${url}`);
     headers["Authorization"] = `Bearer ${token}`;
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
@@ -56,52 +56,58 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    // Include authorization header if token exists
-    const headers: Record<string, string> = {};
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-    
-    const res = await fetch(queryKey[0] as string, {
-      headers,
-      credentials: "include",
-    });
+export function getQueryFn({ on401 }: { on401: "throw" | "returnNull" } = { on401: "throw" }) {
+  return async ({ queryKey }: { queryKey: readonly unknown[] }) => {
+    const pathAndSearch = (queryKey[0] as string);
 
-    // Special handling for 401 based on configuration
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      // Only log the 401 but don't clear the token - let the session cookie handle authentication
-      if (token) {
-        console.log('Got 401 on a query with auth token, but keeping token for next attempt');
-        
-        // If we keep getting 401s, it might be because the token is expired
-        // Check if this is happening repeatedly and clear the token after multiple failures
-        const failureCount = parseInt(localStorage.getItem('auth401Count') || '0');
-        if (failureCount > 3) {
-          console.warn('Multiple 401 errors detected, clearing potentially stale token');
+    // Get auth token from localStorage
+    const token = localStorage.getItem('authToken');
+
+    const options: RequestInit = {
+      credentials: 'include',
+    };
+
+    // Add Authorization header if token exists
+    if (token) {
+      options.headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+    }
+
+    const res = await fetch(pathAndSearch, options);
+
+    if (res.status === 401) {
+      // Try to parse the error response to check for clearToken flag
+      try {
+        const errorData = await res.json();
+        if (errorData.clearToken) {
+          console.log("Server requested token clear, removing invalid token");
           localStorage.removeItem('authToken');
           localStorage.removeItem('authTokenExpiry');
-          localStorage.removeItem('auth401Count');
-        } else {
-          localStorage.setItem('auth401Count', (failureCount + 1).toString());
+        }
+      } catch (parseError) {
+        // If we can't parse the error response, clear the token anyway for 401s with existing token
+        if (token) {
+          console.log("Got 401 with token, clearing potentially invalid token");
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('authTokenExpiry');
         }
       }
-      return null;
-    }
-    
-    // Clear 401 counter on successful requests
-    if (res.ok && localStorage.getItem('auth401Count')) {
-      localStorage.removeItem('auth401Count');
+
+      if (on401 === "throw") {
+        throw new Error("Unauthorized");
+      } else {
+        return null;
+      }
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
+    if (!res.ok) {
+      throw new Error(`Request failed with status ${res.status}`);
+    }
+
+    return res.json();
   };
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {

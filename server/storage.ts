@@ -126,7 +126,8 @@ export interface IStorage {
   getUserStreak(userId: number): Promise<number>;
 
   // Feedback methods
-  createFeedback(feedback: InsertFeedback): Promise<Feedback>;
+  createFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
+  getAllFeedback(): Promise<Feedback[]>;
 
   // Reflection review methods
   getReflectionReview(noteId: number): Promise<{ reviewText: string; audioUrl: string | null } | undefined>;

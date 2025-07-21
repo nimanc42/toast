@@ -724,4 +724,12 @@ export class DatabaseStorage implements IStorage {
     const [newFeedback] = await db.insert(feedback).values(feedbackData).returning();
     return newFeedback;
   }
+
+  async getAllFeedback(): Promise<Feedback[]> {
+    const allFeedback = await db
+      .select()
+      .from(feedback)
+      .orderBy(desc(feedback.createdAt));
+    return allFeedback;
+  }
 }

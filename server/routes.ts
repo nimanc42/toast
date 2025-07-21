@@ -37,6 +37,7 @@ import { runImmediateToastGeneration } from './services/scheduled-jobs';
 import OpenAI from "openai";
 import { generateToken } from "./services/jwt";
 import { generateReflectionReview } from "./services/reflection-review";
+import adminRoutes from './routes/admin';
 
 /**
  * Extract main themes from note contents
@@ -859,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const preferences = await storage.getVoicePreferenceByUserId(userId);
       const voiceStyle = preferences?.voiceStyle || 'motivational';
 
-      // Get recent notes to generate the toast
+      // Get recentnotes to generate the toast
       const recentNotes = await storage.getRecentNotesByUserId(userId, 7);
 
       if (recentNotes.length === 0) {
@@ -1343,6 +1344,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Register admin routes
+  app.use('/api/admin', adminRoutes);
 
   const httpServer = createServer(app);
 

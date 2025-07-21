@@ -45,8 +45,13 @@ export const toasts = pgTable("toasts", {
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   audioUrl: text("audio_url"),
-  weekStartDate: timestamp("week_start_date").notNull(),
+  noteIds: json("note_ids").$type<number[]>(), // Array of note IDs used to generate this toast
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  shared: boolean("shared").notNull().default(false),
+  shareUrl: text("share_url"),
+  type: text("type").notNull().default("weekly"), // weekly, monthly, etc.
+  intervalStart: timestamp("interval_start"), // Start of the period this toast covers
+  intervalEnd: timestamp("interval_end"), // End of the period this toast covers
 });
 
 export const tokens = pgTable("tokens", {
@@ -196,7 +201,12 @@ export const insertToastSchema = createInsertSchema(toasts).pick({
   userId: true,
   content: true,
   audioUrl: true,
-  weekStartDate: true,
+  noteIds: true,
+  shared: true,
+  shareUrl: true,
+  type: true,
+  intervalStart: true,
+  intervalEnd: true,
 });
 
 export const insertTokenSchema = createInsertSchema(tokens).pick({

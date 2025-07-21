@@ -42,6 +42,7 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
       .where(
         and(
           eq(toasts.userId, userId),
+          eq(toasts.type, 'weekly'),
           between(toasts.createdAt, oneWeekAgo, nowDate)
         )
       );

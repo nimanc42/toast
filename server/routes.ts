@@ -510,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Generate the review
-      const review = await generateReflectionReview(note.content);
+      const review = await generateReflectionReview(note.content || "");
 
       // Store the review in the database for caching
       await storage.createReflectionReview({
@@ -818,7 +818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata: { 
               voiceChanged: !!voice,
               source: 'manual-trigger',
-              hasAudio: !!audioUrl && !audioUrl.startsWith('Error:')
+              hasAudio: !!publicUrl && !publicUrl.startsWith('Error:')
             } as Record<string, any>
           });
         }
@@ -912,9 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         content: toastContent,
         audioUrl,
-        noteIds,
-        shared: false,
-        shareUrl
+        weekStartDate: new Date()
       });
 
       res.status(201).json(toast);
@@ -937,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have permission to share this toast" });
       }
 
-      const updatedToast = await storage.updateToast(toastId, { shared: true });
+      const updatedToast = await storage.updateToast(toastId, { audioUrl: toast.audioUrl });
       res.json(updatedToast);
     } catch (error) {
       res.status(500).json({ message: "Failed to share toast" });

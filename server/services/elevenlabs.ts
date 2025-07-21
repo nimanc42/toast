@@ -64,7 +64,7 @@ const DEFAULT_STABILITY = 0.5;
 const DEFAULT_SIMILARITY_BOOST = 0.75;
 
 // Rate limiting settings (per user)
-const MAX_REQUESTS_PER_HOUR = 5;
+const MAX_REQUESTS_PER_HOUR = process.env.NODE_ENV === 'development' ? 50 : 10;
 const QUOTA_WARNING_THRESHOLD = 2000; // Show warning when less than this many credits remaining
 
 // Flag to determine if we should use Supabase or local storage

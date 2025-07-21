@@ -99,11 +99,21 @@ export default function ReflectionReviewDialog({
     },
     onError: (error: Error) => {
       console.error("TTS generation failed:", error);
-      toast({
-        title: "Failed to generate audio",
-        description: error.message,
-        variant: "destructive",
-      });
+      
+      // Handle rate limit errors specifically
+      if (error.message.includes("Rate limit exceeded")) {
+        toast({
+          title: "Too many requests",
+          description: "Please wait a moment before generating more audio.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Failed to generate audio",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 

@@ -34,15 +34,15 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
     }
 
     // Check if we've already generated a toast for this user this week
-    // Look for toasts created in the past 24 hours
-    const oneDayAgo = now.minus({ days: 1 }).toJSDate();
+    // Look for toasts created in the past 7 days (weekly generation)
+    const oneWeekAgo = now.minus({ days: 7 }).toJSDate();
     const nowDate = now.toJSDate();
     const existingToasts = await db.select()
       .from(toasts)
       .where(
         and(
           eq(toasts.userId, userId),
-          between(toasts.createdAt, oneDayAgo, nowDate)
+          between(toasts.createdAt, oneWeekAgo, nowDate)
         )
       );
 
@@ -74,21 +74,25 @@ async function processDailyReminderEmails() {
     logWithTimestamp(`Current UTC hour: ${currentUtcHour}`);
 
     // Get all users who have daily reminders enabled
-    const usersWithReminders = await db.execute(sql`
-      SELECT u.id, u.name, u.email, u.timezone, vp.daily_reminder_hour
-      FROM users u
-      JOIN voice_preferences vp ON u.id = vp.user_id
-      WHERE vp.daily_reminder = true
-    `);
+    const usersWithReminders = await db.select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      timezone: users.timezone,
+      dailyReminderHour: voicePreferences.dailyReminderHour
+    })
+      .from(users)
+      .innerJoin(voicePreferences, eq(users.id, voicePreferences.userId))
+      .where(eq(voicePreferences.dailyReminder, true));
 
-    logWithTimestamp(`Found ${usersWithReminders.rows.length} users with daily reminders enabled`);
+    logWithTimestamp(`Found ${usersWithReminders.length} users with daily reminders enabled`);
 
     let emailsSent = 0;
     let emailErrors = 0;
     let usersChecked = 0;
 
     // Check each user's local time
-    for (const userRow of usersWithReminders.rows) {
+    for (const userRow of usersWithReminders) {
       try {
         // Skip test users
         if (userRow.id === CONFIG.TEST_USER?.id) {
@@ -97,7 +101,7 @@ async function processDailyReminderEmails() {
 
         usersChecked++;
         const userTimezone = String(userRow.timezone || 'UTC');
-        const userReminderHour = Number(userRow.daily_reminder_hour || 9);
+        const userReminderHour = Number(userRow.dailyReminderHour || 9);
 
         // Convert current UTC time to user's timezone
         const userLocalTime = now.setZone(userTimezone);

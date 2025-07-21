@@ -1,0 +1,131 @@
+Below is a deep dive on each of today’s nine commits—what they changed, where new bugs could lurk, and how to verify everything actually works end-to-end:
+
+⸻
+
+1. Commit e186407 – Unify voice settings across services
+
+What it did:
+Centralized voice preference lookups so both daily reflections and weekly toasts pull from the same mapping function.
+
+Potential issues & checks:
+	•	Mapping drift: Verify every codepath (reflection TTS, toast TTS, preview samples) calls that same function and not a stale copy.
+	•	Error on unknown style: If you removed the fallback entirely, requesting an unmapped style now throws—ensure the UI never surfaces an unmapped key.
+	•	Test: Select each voice option, generate a reflection and a toast, and confirm the logs show the correct ElevenLabs ID (no Sarah or “echo” anywhere).
+
+⸻
+
+2. Commit 95459c8 – Centralize voice mapping, remove Sarah fallback
+
+What it did:
+Flattened all style→voiceID entries into one lookup table and threw on missing entries instead of defaulting to Sarah.
+
+Potential issues & checks:
+	•	Missing entries: Try tampering the UI (e.g. change a dropdown value in devtools) to an invalid key—confirm you see a clear 500 error rather than silent fallback.
+	•	Runtime “custom” voices: If you allow user-uploaded voices, ensure that branch still populates custom at runtime and doesn’t hit the no-ID error.
+	•	Test: Walk through a “custom” voice flow (if enabled) and confirm cached custom-voice IDs are honored.
+
+⸻
+
+3. Commit 07020a9 – Checkpoint before assistant change (screenshot only)
+
+What it did:
+Added a diagnostic screenshot to demonstrate Sarah over-usage. No functional code change.
+
+Potential issues & checks:
+	•	Clean-up: Ensure no stray debug files or assets remain in your /public folder.
+	•	Test: Run git status to confirm only intended files are tracked.
+
+⸻
+
+4. Commit 6ba7c13 – Improve AI review generation & fix audio for shared entries
+
+What it did:
+Tweaked the review-generation endpoint and adjusted the audio player logic for shared (public) journal links.
+
+Potential issues & checks:
+	•	CORS / Authentication: Shared links may bypass auth; ensure the public review endpoint doesn’t require a valid JWT or else 401 on public share.
+	•	Audio source URL: Confirm the <audio> element on shared pages points to a publicly readable Supabase URL (not a blob URL).
+	•	Test:
+	1.	Generate a reflection, share its link.
+	2.	Open in an incognito window and click “Listen.”
+	3.	Confirm audio plays without login, and no console errors appear.
+
+⸻
+
+5. Commit 849d377 – Fix JWT validation & SQL syntax errors
+
+What it did:
+Patched the malformed raw-SQL in your scheduler (syntax error) and tightened JWT token verification logic.
+
+Potential issues & checks:
+	•	Scheduler still fails: Run your /scheduler job manually and inspect logs—no SQL errors, and toasts generate.
+	•	Auth loop: Attempt API calls with expired, malformed, and missing tokens to ensure you get exactly one 401, not an infinite retry loop.
+	•	Test:
+	•	Use a fresh token → succeeds.
+	•	Use a bad token → single 401, client shows login screen.
+	•	No token → single 401, no repeated calls.
+
+⸻
+
+6. Commit 937825d – Add debug logging for auth issues
+
+What it did:
+Injected verbose logs around token parsing, session lookups, and middleware passes/fails.
+
+Potential issues & checks:
+	•	PII leakage: Ensure you’re not logging entire JWT payloads or user passwords—only log non-sensitive flags (e.g. req.authenticated = false).
+	•	Log volume: On production, too many DEBUG logs can slow things down—consider downgrading these to a “debug” level that you can toggle off in env.
+	•	Test: Toggle your log level via env var; confirm DEBUG logs disappear.
+
+⸻
+
+7. Commit 5d64ae5 – Remove note content from console logs
+
+What it did:
+Stripped all console.log(note.content) calls in server routes, leaving only IDs.
+
+Potential issues & checks:
+	•	Leftover logs: Search for any console.log(…) in notes or reflection routes—there should be none logging user text.
+	•	Audit logs: Confirm deployment logs no longer contain reflection text.
+	•	Test: Create a note with unique content, check logs—only Note {id} created appears.
+
+⸻
+
+8. Commit 5ed49c1 – Apply AI voice prefs to past reflection summaries
+
+What it did:
+Retroactively updated existing reflection records to point their audioUrl through the new mapping so old summaries can be re-played in the user’s chosen voice.
+
+Potential issues & checks:
+	•	Migration gaps: Did you run a data migration? If audioUrl was generated under the old “Sarah” fallback, you may still serve Sarah on old entries.
+	•	Test: For a pre-today reflection, hit “Listen” and confirm it re-generates (or proxies) into the correct new voice, not Sarah.
+
+⸻
+
+9. Commit 2f47d3b – Fix Stop-Playback and prevent extra TTS calls
+
+What it did:
+Rewrote play/stop handlers to use a single audioRef, separate handlePlay()/handleStop() functions, and cached-audio guards to block extra TTS calls when over daily limits.
+
+Potential issues & checks:
+	•	Edge case unmounts: Navigate away during playback—confirm audioRef.current.pause() runs in useEffect cleanup.
+	•	Daily cap enforcement: After two reflections, hitting “Save & Listen” should show “daily cap reached” UI and never call TTS.
+	•	Test:
+	1.	Add two reflections and listen.
+	2.	Add a third, click “Save & Listen” → you should get a “Cap reached” toast and no network call to ElevenLabs.
+
+⸻
+
+Overall Smoke Tests
+	1.	Full Reflection Cycle
+	•	Login → Onboard voice → Create reflection → Listen → Stop → Repeat (caching).
+	2.	Weekly Toast
+	•	Fast-forward cron job → Confirm toast created in correct voice.
+	3.	Auth Flows
+	•	Email/password login → protected API access → logout → 401 flows.
+	4.	Privacy & Logs
+	•	Inspect logs for no PII.
+	5.	Shared Pages
+	•	Public reflection review link → audio plays.
+
+If all of the above pass without unexpected behavior or console errors, you’re in great shape for your friends-and-family beta!

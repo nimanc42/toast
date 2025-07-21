@@ -261,6 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notes", ensureAuthenticated, async (req, res) => {
     try {
       console.log("Creating note for user:", req.user?.id);
+      console.log("Authentication state:", !!req.user, "Session ID:", req.sessionID?.substring(0, 8));
 
       const userId = req.user!.id;
       const validatedData = insertNoteSchema.parse({
@@ -1004,6 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Stats for dashboard
   app.get("/api/stats", ensureAuthenticated, async (req, res) => {
     try {
+      console.log("Stats request - User:", req.user?.id, "Session:", req.sessionID?.substring(0, 8));
       const userId = req.user!.id;
       const isTestingMode = (req.session as any).testingMode === true || CONFIG.TESTING_MODE;
 

@@ -357,6 +357,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reflectionReviews.noteId, noteId));
   }
 
+  async clearReflectionReviewAudioForUser(userId: number): Promise<void> {
+    // Clear audio URLs for all reflection reviews belonging to the user's notes
+    await db
+      .update(reflectionReviews)
+      .set({ audioUrl: null })
+      .where(
+        inArray(reflectionReviews.noteId, 
+          db.select({ id: notes.id })
+            .from(notes)
+            .where(eq(notes.userId, userId))
+        )
+      );
+  }
+
   // Additional methods
   async getUserStreak(userId: number): Promise<number> {
     // Get all notes for this user

@@ -564,12 +564,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const preferences = await storage.getVoicePreferenceByUserId(userId);
 
+      // Check if voice style is changing
+      const voiceStyleChanged = preferences && 
+        validatedData.voiceStyle && 
+        preferences.voiceStyle !== validatedData.voiceStyle;
+
       if (!preferences) {
         const newPreferences = await storage.createVoicePreference(validatedData);
         return res.json(newPreferences);
       }
 
       const updatedPreferences = await storage.updateVoicePreference(preferences.id, validatedData);
+
+      // If voice style changed, clear all cached audio for this user's reflection reviews
+      if (voiceStyleChanged) {
+        console.log(`[Voice Change] Clearing cached audio for user ${userId} due to voice style change from ${preferences.voiceStyle} to ${validatedData.voiceStyle}`);
+        await storage.clearReflectionReviewAudioForUser(userId);
+      }
+
       res.json(updatedPreferences);
     } catch (error) {
       if (error instanceof z.ZodError) {

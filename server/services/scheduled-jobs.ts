@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { DateTime } from 'luxon';
 import { db } from '../db';
-import { users, toasts } from '@shared/schema';
+import { users, toasts, voicePreferences } from '@shared/schema';
 import { generateWeeklyToast } from './toast-generator';
 import { eq, and, between, sql } from 'drizzle-orm';
 import { CONFIG } from '../config';
@@ -36,12 +36,13 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
     // Check if we've already generated a toast for this user this week
     // Look for toasts created in the past 24 hours
     const oneDayAgo = now.minus({ days: 1 }).toJSDate();
+    const nowDate = now.toJSDate();
     const existingToasts = await db.select()
       .from(toasts)
       .where(
         and(
           eq(toasts.userId, userId),
-          sql`${toasts.createdAt} >= ${oneDayAgo} AND ${toasts.createdAt} <= ${now.toJSDate()}`
+          between(toasts.createdAt, oneDayAgo, nowDate)
         )
       );
 

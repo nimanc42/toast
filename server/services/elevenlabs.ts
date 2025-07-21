@@ -400,3 +400,17 @@ export function getVoiceId(voiceStyle: string): string {
 
   return voiceId;
 }
+
+/**
+ * Get the ElevenLabs voice ID for a given voice ID
+ * Uses the centralized mapping system
+ */
+export function getElevenLabsVoiceId(id: string): string {
+  try {
+    return getVoiceId(id);
+  } catch (error) {
+    console.error(`[TTS] Failed to get ElevenLabs voice ID for "${id}":`, error);
+    // Fallback to Rachel instead of Sarah/Grandpa
+    return DEFAULT_VOICE_ID;
+  }
+}

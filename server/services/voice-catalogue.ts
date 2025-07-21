@@ -10,11 +10,12 @@ export interface VoiceCatalogueEntry {
 }
 
 // Voice mapping configuration with ElevenLabs voice IDs
+// These IDs must match the centralized mapping in elevenlabs.ts
 const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoice: string; elevenLabsId: string }> = {
   'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
   'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: 'onwK6e5Y_E_1OucFyMDw' },
   'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx', elevenLabsId: 'zcAOhNBS3c14rBihAFp1' },
-  'grandpa': { name: 'Grandpa', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },
+  'grandpa': { name: 'Grandpa Spuds Oxley', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },
   'maeve': { name: 'Maeve', description: 'Gentle and soothing', ttsVoice: 'shimmer', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
   'rachel': { name: 'Rachel', description: 'Friendly and upbeat', ttsVoice: 'alloy', elevenLabsId: '21m00Tcm4TlvDq8ikWAM' },
   'ranger': { name: 'Ranger', description: 'Strong and motivational', ttsVoice: 'onyx', elevenLabsId: 'MF3mGyEYCl7XYWbV9V6O' },
@@ -98,7 +99,12 @@ export function getTTSVoiceForId(id: string): string {
  */
 export function getElevenLabsVoiceId(id: string): string {
   const mapping = VOICE_MAPPING[id];
-  return mapping?.elevenLabsId || 'ErXwobaYiN019PkySvjV'; // fallback to grandpa voice
+  if (!mapping?.elevenLabsId) {
+    console.error(`[Voice Catalogue] No ElevenLabs mapping found for voice ID: ${id}`);
+    console.error(`[Voice Catalogue] Available voices:`, Object.keys(VOICE_MAPPING));
+    throw new Error(`No ElevenLabs voice mapping found for voice ID: ${id}`);
+  }
+  return mapping.elevenLabsId;
 }
 
 /**

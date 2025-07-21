@@ -21,8 +21,9 @@ async function generateOpenAITTS(
 
     // Map ElevenLabs voice IDs to OpenAI voices - Updated mapping
     const voiceMapping: { [key: string]: string } = {
-      '21m00Tcm4TlvDq8ikWAM': 'alloy',     // Rachel (and David fallback) -> Alloy
+      '21m00Tcm4TlvDq8ikWAM': 'alloy',     // Rachel -> Alloy
       'ZF6FPAbjXT4488VcRRnw': 'nova',      // Amelia -> Nova
+      'jvcMcno3QtjOzGtfpjoI': 'echo',      // David -> Echo
       'zcAOhNBS3c14rBihAFp1': 'onyx',      // Giovanni -> Onyx
       'ErXwobaYiN019PkySvjV': 'echo',      // Grandpa -> Echo
       'XB0fDUnXU5powFXDhCwa': 'shimmer',   // Maeve -> Shimmer
@@ -381,7 +382,7 @@ export function getVoiceId(voiceStyle: string): string {
   const voiceMap: Record<string, string> = {
     // Primary voice mappings - must match voice-catalogue.ts exactly
     'amelia': 'ZF6FPAbjXT4488VcRRnw',
-    'david-antfield': '21m00Tcm4TlvDq8ikWAM', // Temporary fallback to Rachel (working voice)
+    'david-antfield': 'jvcMcno3QtjOzGtfpjoI', // Correct David voice ID
     'giovanni': 'zcAOhNBS3c14rBihAFp1',
     'grandpa': 'ErXwobaYiN019PkySvjV',
     'maeve': 'XB0fDUnXU5powFXDhCwa',
@@ -390,7 +391,7 @@ export function getVoiceId(voiceStyle: string): string {
     'sam': 'yoZ06aMxZJJ28mfd3POQ',
 
     // Legacy aliases for backward compatibility  
-    'david': '21m00Tcm4TlvDq8ikWAM',        // Temporary fallback to Rachel (working voice)
+    'david': 'jvcMcno3QtjOzGtfpjoI',        // Correct David voice ID
     'motivational': '21m00Tcm4TlvDq8ikWAM', // Rachel
     'friendly': '21m00Tcm4TlvDq8ikWAM',     // Rachel  
     'poetic': 'zcAOhNBS3c14rBihAFp1',       // Giovanni

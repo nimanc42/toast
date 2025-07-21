@@ -136,6 +136,7 @@ export default function ReflectionReviewDialog({
     console.log("Stopping audio");
     audio.pause();
     audio.currentTime = 0;
+    audio.src = ""; // Clear the source to properly stop
     setIsPlayingAudio(false);
   };
 

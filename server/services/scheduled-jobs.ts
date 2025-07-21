@@ -42,7 +42,7 @@ async function shouldGenerateToastForUser(userId: number, timezone: string, pref
         and(
           eq(toasts.userId, userId),
           eq(toasts.type, 'weekly'),
-          between(toasts.createdAt, oneDayAgo, now.toJSDate())
+          sql`${toasts.createdAt} >= ${oneDayAgo} AND ${toasts.createdAt} <= ${now.toJSDate()}`
         )
       );
 

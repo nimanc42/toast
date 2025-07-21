@@ -134,6 +134,8 @@ ELEVENLABS_API_KEY=...
 - Input validation using Zod schemas
 
 ## Changelog
+- July 21, 2025. **Critical Voice Mapping Fix**: Resolved major inconsistencies between voice catalogue and ElevenLabs service that caused wrong voices to play. Fixed centralized mapping system with strict validation, eliminated silent fallbacks, and ensured Rachel (not Sarah) is the explicit default voice
+- July 21, 2025. **Voice Cache Invalidation**: Added automatic cache clearing when users change voice preferences, preventing old voice audio from playing after preference changes
 - July 18, 2025. **Audio-Only Experience**: Modified reflection review dialog to only provide audio playback without displaying review text, maintaining privacy and focus on listening experience
 - July 18, 2025. **Database Migration**: Created missing `reflection_reviews` table to enable proper caching of generated reviews and audio files
 - July 18, 2025. **Audio System Fix**: Resolved audio playback issues with comprehensive error handling and user-initiated playback (removed problematic auto-play)

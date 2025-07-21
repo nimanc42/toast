@@ -19,14 +19,16 @@ async function generateOpenAITTS(
   try {
     console.log('[TTS] Using OpenAI TTS as fallback');
 
-    // Map ElevenLabs voice IDs to OpenAI voices
+    // Map ElevenLabs voice IDs to OpenAI voices - Updated mapping
     const voiceMapping: { [key: string]: string } = {
-      'EXAVITQu4vr4xnSDxMaL': 'alloy',     // Rachel -> Alloy
-      'NOpBlnGInO9m6vDvFkFC': 'echo',      // Grandpa -> Echo
-      'AZnzlk1XvdvUeBnXmlld': 'nova',      // Giovanni -> Nova
-      'pNInz6obpgDQGcFmaJgB': 'shimmer',   // Adam -> Shimmer
-      'Xb7hH8MSUJpSbSDYk0k2': 'fable',     // Alice -> Fable
-      'XrExE9yKIg1WjnnlVkGX': 'onyx',      // Matilda -> Onyx
+      '21m00Tcm4TlvDq8ikWAM': 'alloy',     // Rachel -> Alloy
+      'ZF6FPAbjXT4488VcRRnw': 'nova',      // Amelia -> Nova
+      'onwK6e5Y_E_1OucFyMDw': 'echo',      // David -> Echo
+      'zcAOhNBS3c14rBihAFp1': 'onyx',      // Giovanni -> Onyx
+      'ErXwobaYiN019PkySvjV': 'echo',      // Grandpa -> Echo
+      'XB0fDUnXU5powFXDhCwa': 'shimmer',   // Maeve -> Shimmer
+      'MF3mGyEYCl7XYWbV9V6O': 'onyx',      // Ranger -> Onyx
+      'yoZ06aMxZJJ28mfd3POQ': 'nova',      // Sam -> Nova
     };
 
     const openaiVoice = voiceMapping[elevenLabsVoiceId] || 'alloy';
@@ -56,8 +58,8 @@ async function generateOpenAITTS(
   }
 }
 
-// Default voice settings
-const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL'; // Rachel voice
+// Default voice settings - MUST match voice-catalogue.ts
+const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel voice (corrected)
 const DEFAULT_STABILITY = 0.5;
 const DEFAULT_SIMILARITY_BOOST = 0.75;
 
@@ -376,26 +378,35 @@ export async function generateSpeech(
  * @returns The corresponding ElevenLabs voice ID
  */
 export function getVoiceId(voiceStyle: string): string {
+  // CENTRALIZED MAPPING: Must match voice-catalogue.ts exactly
   const voiceMap: Record<string, string> = {
-    // Original voices
-    'motivational': 'EXAVITQu4vr4xnSDxMaL', // Rachel
-    'friendly': '21m00Tcm4TlvDq8ikWAM',     // Adam
-    'poetic': 'AZnzlk1XvdvUeBnXmlld',       // Domi
-    'custom': 'Dnd9VXpAjEGXiRGBf1O6',       // Custom voice added by user
-
-    // Individual voices we have samples for
-    'david': 'jvcMcno3QtjOzGtfpjoI',        // David voice
-    'ranger': 'qNkzaJoHLLdpvgh5tISm',       // Ranger voice
-    'grandpa': 'NOpBlnGInO9m6vDvFkFC',      // Grandpa voice
-    'sam': 'Tx7VLgfksXHVnoY6jDGU',          // Sam voice
+    // Individual voices matching voice-catalogue.ts
+    'amelia': 'ZF6FPAbjXT4488VcRRnw',       // Amelia voice (corrected) 
+    'david': 'onwK6e5Y_E_1OucFyMDw',        // David voice
+    'david-antfield': 'onwK6e5Y_E_1OucFyMDw', // David alias
     'giovanni': 'zcAOhNBS3c14rBihAFp1',     // Giovanni voice
-    'amelia': 'ZF6FPAbjXT4488VcRRnw',       // Amelia voice
-    'maeve': 'UwdJWMIQkTCJhLgSE82b',        // Maeve voice
-    'rachel': 'EXAVITQu4vr4xnSDxMaL'        // Rachel voice
+    'grandpa': 'ErXwobaYiN019PkySvjV',      // Grandpa voice
+    'maeve': 'XB0fDUnXU5powFXDhCwa',        // Maeve voice
+    'rachel': '21m00Tcm4TlvDq8ikWAM',        // Rachel voice (corrected)
+    'ranger': 'MF3mGyEYCl7XYWbV9V6O',       // Ranger voice (corrected)
+    'sam': 'yoZ06aMxZJJ28mfd3POQ',          // Sam voice (corrected)
+
+    // Legacy aliases for backward compatibility
+    'motivational': '21m00Tcm4TlvDq8ikWAM', // Rachel
+    'friendly': '21m00Tcm4TlvDq8ikWAM',     // Rachel  
+    'poetic': 'zcAOhNBS3c14rBihAFp1',       // Giovanni
+    'custom': '21m00Tcm4TlvDq8ikWAM'        // Rachel fallback
   };
 
   console.log(`[TTS] Getting voice ID for style: ${voiceStyle}`);
-  const voiceId = voiceMap[voiceStyle] || DEFAULT_VOICE_ID;
+  
+  if (!voiceMap[voiceStyle]) {
+    console.error(`[TTS] No voice mapping found for: ${voiceStyle}`);
+    console.error(`[TTS] Available voices:`, Object.keys(voiceMap));
+    throw new Error(`No voice mapping found for voice style: ${voiceStyle}`);
+  }
+  
+  const voiceId = voiceMap[voiceStyle];
   console.log(`[TTS] Selected voice ID: ${voiceId}`);
 
   return voiceId;

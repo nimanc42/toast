@@ -9,10 +9,9 @@ export interface VoiceCatalogueEntry {
   ttsVoice: string; // OpenAI TTS voice name
 }
 
-// Voice mapping configuration with ElevenLabs voice IDs
-// These IDs must match the centralized mapping in elevenlabs.ts
+// CENTRALIZED VOICE MAPPING: These IDs must match elevenlabs.ts exactly
 const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoice: string; elevenLabsId: string }> = {
-  'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'EXAVITQu4vr4xnSDxMaL' },
+  'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'ZF6FPAbjXT4488VcRRnw' },
   'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: 'onwK6e5Y_E_1OucFyMDw' },
   'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx', elevenLabsId: 'zcAOhNBS3c14rBihAFp1' },
   'grandpa': { name: 'Grandpa Spuds Oxley', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },

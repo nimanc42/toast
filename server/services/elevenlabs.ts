@@ -25,7 +25,7 @@ async function generateOpenAITTS(
       'ZF6FPAbjXT4488VcRRnw': 'nova',      // Amelia -> Nova
       'jvcMcno3QtjOzGtfpjoI': 'echo',      // David -> Echo
       'zcAOhNBS3c14rBihAFp1': 'onyx',      // Giovanni -> Onyx
-      'ErXwobaYiN019PkySvjV': 'echo',      // Grandpa -> Echo
+      'NOpBlnGInO9m6vDvFkFC': 'echo',      // Grandpa -> Echo
       'XB0fDUnXU5powFXDhCwa': 'shimmer',   // Maeve -> Shimmer
       'MF3mGyEYCl7XYWbV9V6O': 'onyx',      // Ranger -> Onyx
       'yoZ06aMxZJJ28mfd3POQ': 'nova',      // Sam -> Nova
@@ -384,7 +384,7 @@ export function getVoiceId(voiceStyle: string): string {
     'amelia': 'ZF6FPAbjXT4488VcRRnw',
     'david-antfield': 'jvcMcno3QtjOzGtfpjoI', // Correct David voice ID
     'giovanni': 'zcAOhNBS3c14rBihAFp1',
-    'grandpa': 'ErXwobaYiN019PkySvjV',
+    'grandpa': 'NOpBlnGInO9m6vDvFkFC',
     'maeve': 'XB0fDUnXU5powFXDhCwa',
     'rachel': '21m00Tcm4TlvDq8ikWAM',
     'ranger': 'MF3mGyEYCl7XYWbV9V6O',

@@ -134,6 +134,7 @@ ELEVENLABS_API_KEY=...
 - Input validation using Zod schemas
 
 ## Changelog
+- July 22, 2025. **Critical Voice Fix**: Corrected Grandpa Spuds Oxley voice ID from ErXwobaYiN019PkySvjV to NOpBlnGInO9m6vDvFkFC across all service files to ensure authentic voice playback
 - July 21, 2025. **Critical Security & Bug Fixes**: Fixed multiple SQL injection vulnerabilities in scheduled jobs, corrected David voice ID (jvcMcno3QtjOzGtfpjoI), resolved type coercion errors in scheduler, fixed weekly toast generation logic (7 days instead of 1 day), aligned database schema with actual table structure, and added missing imports. All scheduled job database errors resolved.
 - July 21, 2025. **Critical Voice Mapping Fix**: Resolved major inconsistencies between voice catalogue and ElevenLabs service that caused wrong voices to play. Fixed centralized mapping system with strict validation, eliminated silent fallbacks, and ensured Rachel (not Sarah) is the explicit default voice
 - July 21, 2025. **Voice Cache Invalidation**: Added automatic cache clearing when users change voice preferences, preventing old voice audio from playing after preference changes

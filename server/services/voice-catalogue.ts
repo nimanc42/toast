@@ -14,7 +14,7 @@ const VOICE_MAPPING: Record<string, { name: string; description: string; ttsVoic
   'amelia': { name: 'Amelia', description: 'Warm and encouraging', ttsVoice: 'nova', elevenLabsId: 'ZF6FPAbjXT4488VcRRnw' },
   'david-antfield': { name: 'David', description: 'Professional and clear', ttsVoice: 'echo', elevenLabsId: 'jvcMcno3QtjOzGtfpjoI' },
   'giovanni': { name: 'Giovanni', description: 'Smooth and confident', ttsVoice: 'onyx', elevenLabsId: 'zcAOhNBS3c14rBihAFp1' },
-  'grandpa': { name: 'Grandpa Spuds Oxley', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'ErXwobaYiN019PkySvjV' },
+  'grandpa': { name: 'Grandpa Spuds Oxley', description: 'Wise and comforting', ttsVoice: 'echo', elevenLabsId: 'NOpBlnGInO9m6vDvFkFC' },
   'maeve': { name: 'Maeve', description: 'Gentle and soothing', ttsVoice: 'shimmer', elevenLabsId: 'XB0fDUnXU5powFXDhCwa' },
   'rachel': { name: 'Rachel', description: 'Friendly and upbeat', ttsVoice: 'alloy', elevenLabsId: '21m00Tcm4TlvDq8ikWAM' },
   'ranger': { name: 'Ranger', description: 'Strong and motivational', ttsVoice: 'onyx', elevenLabsId: 'MF3mGyEYCl7XYWbV9V6O' },

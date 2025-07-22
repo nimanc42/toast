@@ -9,13 +9,14 @@ const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 // Dev mode for email testing without actually sending emails
 const isDevelopment = process.env.NODE_ENV === 'development';
-const mockEmails = isDevelopment && process.env.DEV_EMAIL_MOCK === 'true';
+const mockEmails = isDevelopment || process.env.DEV_EMAIL_MOCK === 'true';
 
 // Frontend URL for building links
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5000';
 
-// Sender details
-const fromEmail = 'noreply@atoasttoyou.com';
+// Sender details - use environment variable for domain or fall back to Resend's shared domain
+const fromDomain = process.env.EMAIL_FROM_DOMAIN || 'onboard@resend.dev';
+const fromEmail = process.env.EMAIL_FROM_ADDRESS || fromDomain;
 const fromName = 'A Toast to You';
 
 /**

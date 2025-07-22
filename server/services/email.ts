@@ -29,8 +29,11 @@ export async function sendEmail({
   }
 
   try {
+    const fromDomain = process.env.EMAIL_FROM_DOMAIN || 'onboard@resend.dev';
+    const fromEmail = process.env.EMAIL_FROM_ADDRESS || fromDomain;
+    
     const { data, error } = await resend.emails.send({
-      from: 'A Toast to You <notifications@toasttoyou.com>',
+      from: `A Toast to You <${fromEmail}>`,
       to,
       subject,
       html,

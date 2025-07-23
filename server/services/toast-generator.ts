@@ -300,7 +300,7 @@ export async function generateToast(user: User, range: ToastRange): Promise<Toas
  * @param userId ID of the user to generate toast for
  * @param userName Optional user's name for personalized greeting
  */
-export async function generateWeeklyToast(userId: number, userName: string = ''): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, userName: string = '', forceGenerate: boolean = false): Promise<Toast> {
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
 
@@ -327,7 +327,7 @@ export async function generateWeeklyToast(userId: number, userName: string = '')
       between(toasts.createdAt, startDate, endDate)
     )
   });
-  if (toastExists) {
+  if (toastExists && !forceGenerate) {
     throw new Error('A toast has already been generated for this week');
   }
 

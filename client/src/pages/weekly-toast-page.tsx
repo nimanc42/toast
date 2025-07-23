@@ -64,7 +64,7 @@ export default function WeeklyToastPage() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({})
+        body: JSON.stringify({ forceGenerate: true })
       });
       
       if (res.ok) {

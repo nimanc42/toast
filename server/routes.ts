@@ -629,6 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const voice = req.body.voice;
+      const forceGenerate = req.body.forceGenerate || false; // For testing purposes
 
       // Get user for timezone and weekly toast day preferences
       const user = await storage.getUser(userId);
@@ -662,7 +663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Generate the weekly toast using the standardized format with user's preferences
         // Pass the full user object to ensure timezone and weekly toast day preferences are used
-        const result = await generateWeeklyToast(userId, user.name);
+        const result = await generateWeeklyToast(userId, user.name, forceGenerate);
 
         console.log(`[Toast Generator] Result:`, {
           content: result.content ? `${result.content.substring(0, 30)}...` : 'No content', 

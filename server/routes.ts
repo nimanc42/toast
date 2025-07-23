@@ -913,7 +913,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         content: toastContent,
         audioUrl,
-        weekStartDate: new Date()
+        type: 'weekly',
+        intervalStart: new Date(),
+        intervalEnd: new Date()
       });
 
       res.status(201).json(toast);

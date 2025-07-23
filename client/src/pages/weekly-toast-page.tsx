@@ -305,7 +305,7 @@ export default function WeeklyToastPage() {
               <div className="bg-gray-50 p-6 border-b border-gray-200">
                 <h3 className="text-lg font-semibold mb-3">Listen to your toast</h3>
                 <AudioPlayer 
-                  audioUrl={toastToDisplay.audioUrl} 
+                  audioUrl={toastToDisplay.audioUrl ? `/api/audio/proxy?url=${encodeURIComponent(toastToDisplay.audioUrl)}` : null} 
                   title="Your Weekly Toast" 
                   duration="" 
                 />

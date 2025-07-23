@@ -30,6 +30,7 @@ export default function WeeklyToastPage() {
   const [regenerating, setRegenerating] = useState(false);
   const [generatedToast, setGeneratedToast] = useState<{ content: string; audioUrl: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
   
   // Demo toast state for when no toast exists
@@ -115,6 +116,16 @@ export default function WeeklyToastPage() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handler for the "Generate Toast Early" button
+  const handleGenerateToast = async () => {
+    setIsGenerating(true);
+    try {
+      await generateToast();
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -235,8 +246,8 @@ export default function WeeklyToastPage() {
                   <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold font-accent mb-4 text-gray-900">Your Personalized Toast</h1>
-              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-gray-800">
+              <h1 className="text-3xl font-bold font-accent mb-4 text-white">Your Personalized Toast</h1>
+              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-white">
                 {latestToast ? (
                   <>Here's your weekly toast celebrating your progress!</>
                 ) : (
@@ -276,19 +287,33 @@ export default function WeeklyToastPage() {
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
                     </div>
-                    <p className="text-sm text-gray-800 max-w-md">
+                    <p className="text-sm text-white max-w-md">
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>
                     <p className="text-xs mt-2 p-2 bg-blue-900/80 rounded-md max-w-md text-white">
                       <strong>New!</strong> Toast generation is now fully automated. Your weekly toast will appear 
                       here on your selected day without any manual action needed.
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-col sm:flex-row gap-3 items-center justify-center">
                       <Link href="/settings">
                         <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 text-sm font-medium">
                           Set Toast Schedule
                         </Button>
                       </Link>
+                      <Button 
+                        onClick={handleGenerateToast}
+                        disabled={isGenerating}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 text-sm font-medium"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Toast Early'
+                        )}
+                      </Button>
                     </div>
                   </div>
                 )}

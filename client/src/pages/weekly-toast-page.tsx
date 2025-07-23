@@ -246,8 +246,8 @@ export default function WeeklyToastPage() {
                   <line x1="14" y1="1" x2="14" y2="4"></line>
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold font-accent mb-4 text-white">Your Personalized Toast</h1>
-              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-white">
+              <h1 className="text-3xl font-bold font-accent mb-4 text-black">Your Personalized Toast</h1>
+              <p className="text-xl font-light max-w-xl mx-auto mb-4 text-black">
                 {latestToast ? (
                   <>Here's your weekly toast celebrating your progress!</>
                 ) : (
@@ -266,8 +266,8 @@ export default function WeeklyToastPage() {
                         <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                       </svg>
                     </div>
-                    <p className="text-lg mb-2 text-white">Your weekly toast is ready!</p>
-                    <p className="text-sm text-white opacity-90 max-w-md">
+                    <p className="text-lg mb-2 text-black">Your weekly toast is ready!</p>
+                    <p className="text-sm text-black opacity-90 max-w-md">
                       Your next toast will be automatically generated based on your weekly preferences in your settings.
                     </p>
                     <div className="mt-3 flex flex-col sm:flex-row gap-3 items-center justify-center">
@@ -301,7 +301,7 @@ export default function WeeklyToastPage() {
                         <line x1="12" y1="16" x2="12.01" y2="16"></line>
                       </svg>
                     </div>
-                    <p className="text-sm text-white max-w-md">
+                    <p className="text-sm text-black max-w-md">
                       Continue adding daily reflections to make your toast more meaningful.
                     </p>
                     <p className="text-xs mt-2 p-2 bg-blue-900/80 rounded-md max-w-md text-white">

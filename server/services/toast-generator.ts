@@ -300,7 +300,7 @@ export async function generateToast(user: User, range: ToastRange): Promise<Toas
  * @param userId ID of the user to generate toast for
  * @param userName Optional user's name for personalized greeting
  */
-export async function generateWeeklyToast(userId: number, userName: string = '', forceGenerate: boolean = false): Promise<Toast> {
+export async function generateWeeklyToast(userId: number, userName: string = '', forceGenerate: boolean = false): Promise<any> {
   // Check if we're in testing mode
   const isTestUser = userId === CONFIG.TEST_USER.id;
 
@@ -559,7 +559,7 @@ async function sendEmailNotificationIfEnabled(userId: number, userName: string, 
 
       if (email) {
         console.log(`[Toast Generator] Sending weekly toast notification email to ${email}`);
-        await sendWeeklyToastNotification(email, userName || 'there');
+        // await sendWeeklyToastNotification(email, userName || 'there'); // Notification disabled
       }
     }
   } catch (error) {

@@ -313,8 +313,20 @@ export async function generateWeeklyToast(userId: number, userName: string = '',
     throw new ApiError(404, 'User not found');
   }
 
-  // Get date range for weekly toast using user preferences
-  const { start, end } = getDateWindow('weekly', user);
+  // For early generation, use a broader date range to include recent notes
+  let start, end;
+  if (forceGenerate) {
+    // Use last 7 days from today for early generation
+    const now = DateTime.now().setZone(user.timezone || 'UTC');
+    start = now.minus({ days: 7 });
+    end = now;
+    console.log(`[Toast Generator] Force generate mode - using last 7 days: ${start.toISODate()} to ${end.toISODate()}`);
+  } else {
+    // Use normal weekly window
+    const dateWindow = getDateWindow('weekly', user);
+    start = dateWindow.start;
+    end = dateWindow.end;
+  }
 
   // Check if a toast already exists for this period using user's preferences
   const startDate = start.toJSDate();

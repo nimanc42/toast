@@ -270,12 +270,26 @@ export default function WeeklyToastPage() {
                     <p className="text-sm text-white opacity-90 max-w-md">
                       Your next toast will be automatically generated based on your weekly preferences in your settings.
                     </p>
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-col sm:flex-row gap-3 items-center justify-center">
                       <Link href="/settings">
                         <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white text-white">
                           Adjust Toast Preferences
                         </Button>
                       </Link>
+                      <Button 
+                        onClick={handleGenerateToast}
+                        disabled={isGenerating}
+                        className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 text-sm font-medium"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          'Generate Toast Early'
+                        )}
+                      </Button>
                     </div>
                   </div>
                 ) : (

@@ -272,7 +272,7 @@ export default function WeeklyToastPage() {
                     </p>
                     <div className="mt-3 flex flex-col sm:flex-row gap-3 items-center justify-center">
                       <Link href="/settings">
-                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-white text-white">
+                        <Button variant="outline" className="bg-white bg-opacity-20 hover:bg-opacity-30 border-black text-black">
                           Adjust Toast Preferences
                         </Button>
                       </Link>
